@@ -2,6 +2,23 @@
 
 Deliver the smallest correct, secure, maintainable vertical slice that satisfies the accepted request and is proven by observable evidence. This file is the always-loaded map; procedures belong in docs and matching skills. Do not edit workflow policy as a side effect of product work.
 
+## Project
+
+Local-first, offline, no-account Android app (Flutter) for logging bodybuilding workouts: weight, reps, RIR, rep ranges, rule-based suggestions, Persian-first RTL, and safe JSON export/import. Product source of truth: `docs/spec/README.md`; work by requirement ID. The M0 scaffold exists (pinned Flutter 3.47.7, dark fa/en RTL shell, CI guardrails); database and product features remain later milestones.
+
+Target layout: `lib/{app,core,data,features}`, `packages/lift_core` (pure Dart domain), `test/`, `integration_test/`, `drift_schemas/`, `docs/adr/`.
+
+Non-negotiables:
+
+- Never edit an existing migration; only add a new migration step with tests.
+- Release builds declare no `INTERNET` permission (the debug/profile template exception must never reach a release manifest); no analytics, ads, or crash-reporting SDKs.
+- Pin exact dependency versions and record license, maintenance status, and size before adding or upgrading.
+- Domain logic lives only in `packages/lift_core`; no Flutter or database imports there.
+- Every user-facing string exists in both `fa` and `en`.
+- Never touch signing keys or secrets; never put them in the repo, logs, prompts, screenshots, or artifacts.
+
+Tests are mandatory for migrations and update safety, JSON import/export, and `lift_core` domain logic. Elsewhere apply the test-value gate; do not add tests by default.
+
 ## Authority
 
 Current request and accepted criteria → active plan → product/architecture/design/public contracts → quality policy → implementation/tests → version-matched official docs → labeled assumptions. Report material conflicts; do not change correct behavior to satisfy stale tests.

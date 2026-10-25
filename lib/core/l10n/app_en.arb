@@ -1,0 +1,530 @@
+{
+  "@@locale": "en",
+  "appTitle": "Gym Log",
+  "@appTitle": {
+    "description": "Application name used by the operating system task switcher. The public project name is still an owner decision."
+  },
+  "workoutTab": "Workout",
+  "programsTab": "Programs",
+  "historyTab": "History",
+  "progressTab": "Progress",
+  "settingsTitle": "Settings",
+  "workoutEmpty": "No active workout.",
+  "programsEmpty": "No programs yet.",
+  "historyEmpty": "No history yet.",
+  "progressEmpty": "Finish a workout to see progress here.",
+  "progressSessions": "{count, plural, =1{1 session} other{{count} sessions}}",
+  "@progressSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "progressLastTrained": "Last trained {date}",
+  "@progressLastTrained": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "progressBestWeight": "Best weight",
+  "progressBestE1rm": "Best e1RM",
+  "progressEstimatedLabel": "Estimated",
+  "progressLessReliableLabel": "Less reliable",
+  "progressRangeLabel": "Range",
+  "progressRangeFourWeeks": "4 weeks",
+  "progressRangeTwelveWeeks": "12 weeks",
+  "progressRangeOneYear": "1 year",
+  "progressRangeAll": "All",
+  "progressNoDataInRange": "No sessions in this range.",
+  "progressNoDataForExercise": "Log this exercise to see its progress.",
+  "progressChartWeightTitle": "Best set weight",
+  "progressChartE1rmTitle": "Estimated 1RM",
+  "progressChartE1rmHint": "Epley estimate. 11–12 reps are less reliable.",
+  "progressChartRepsTitle": "Reps",
+  "progressChartRirTitle": "RIR",
+  "progressChartRirHint": "Missing RIR appears as a gap.",
+  "progressChartEmptyValues": "No values in this range.",
+  "progressValueMissing": "Not enough data",
+  "languageLabel": "Language",
+  "languagePersian": "Persian",
+  "languageEnglish": "English",
+  "exercisesTitle": "Exercises",
+  "exerciseLibrarySubtitle": "Create and manage exercises",
+  "exercisesEmpty": "No exercises yet.",
+  "noActiveExercises": "No active exercises. Show archived to see them.",
+  "noActiveExercisesPicker": "No active exercises. Add a new exercise.",
+  "addFirstExercise": "Add your first exercise",
+  "addExercise": "Add exercise",
+  "searchExercisesHint": "Search exercises",
+  "clearSearch": "Clear search",
+  "showArchived": "Show archived",
+  "archivedLabel": "Archived",
+  "archive": "Archive",
+  "unarchive": "Restore",
+  "edit": "Edit",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "close": "Close",
+  "save": "Save",
+  "retry": "Retry",
+  "rename": "Rename",
+  "reorder": "Reorder",
+  "nameLabel": "Name",
+  "searchTermLabel": "Search term",
+  "searchTermHint": "Used for image lookup. Falls back to the name.",
+  "muscleGroupLabel": "Muscle group",
+  "muscleGroupNone": "None",
+  "defaultRepRangeLabel": "Default rep range",
+  "repMinLabel": "Min reps",
+  "repMaxLabel": "Max reps",
+  "incrementLabel": "Weight increment",
+  "incrementDefaultHint": "Default 2.5 kg (5 lb)",
+  "lookupImages": "Look up images",
+  "lookupFailed": "Could not open a browser. Search for the exercise manually.",
+  "newExerciseTitle": "New exercise",
+  "editExerciseTitle": "Edit exercise",
+  "exercisePickerTitle": "Choose exercise",
+  "noSearchResults": "No exercises match your search.",
+  "errorNameRequired": "Enter a name.",
+  "errorEnterBothReps": "Enter both rep values or leave them empty.",
+  "errorRepRange": "Use 1 to 100.",
+  "errorMinExceedsMax": "Minimum reps must not exceed maximum reps.",
+  "errorNumberRequired": "Enter a number.",
+  "errorIncrement": "Enter a positive increment.",
+  "duplicateExerciseNameTitle": "Duplicate name",
+  "duplicateExerciseNameBody": "An exercise named \"{name}\" already exists. Save anyway?",
+  "@duplicateExerciseNameBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "saveAnyway": "Save anyway",
+  "saveFailed": "Could not save. Try again.",
+  "loadFailed": "Could not open your data.",
+  "addProgram": "Add program",
+  "newProgramTitle": "New program",
+  "editProgramTitle": "Edit program",
+  "programNameLabel": "Program name",
+  "deleteProgramTitle": "Delete program?",
+  "deleteProgramBody": "This removes the program and its days. Logged history stays.",
+  "programNotFound": "This program no longer exists.",
+  "addDay": "Add day",
+  "newDayTitle": "New day",
+  "editDayTitle": "Edit day",
+  "dayNameLabel": "Day name",
+  "deleteDayTitle": "Delete day?",
+  "deleteDayBody": "This removes the day and its plan items.",
+  "dayNotFound": "This day no longer exists.",
+  "noDaysYet": "No days yet. Add a day to plan this program.",
+  "noPlanItemsYet": "No plan items yet.",
+  "newPlanItemTitle": "New plan item",
+  "editPlanItemTitle": "Edit plan item",
+  "exerciseLabel": "Exercise",
+  "chooseExercise": "Choose exercise",
+  "targetSetsLabel": "Target sets",
+  "errorSetsRange": "Use 1 to 20 sets.",
+  "errorExerciseRequired": "Choose an exercise.",
+  "deletePlanItemTitle": "Delete plan item?",
+  "deletePlanItemBody": "This removes the item from the plan.",
+  "planItemNotFound": "This plan item no longer exists.",
+  "planItemSummary": "{sets} × {min}–{max}",
+  "@planItemSummary": {
+    "placeholders": {
+      "sets": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "muscleChest": "Chest",
+  "muscleBack": "Back",
+  "muscleShoulders": "Shoulders",
+  "muscleBiceps": "Biceps",
+  "muscleTriceps": "Triceps",
+  "muscleForearms": "Forearms",
+  "muscleQuadriceps": "Quadriceps",
+  "muscleHamstrings": "Hamstrings",
+  "muscleGlutes": "Glutes",
+  "muscleCalves": "Calves",
+  "muscleAbdominals": "Abdominals",
+  "muscleFullBody": "Full body",
+  "exerciseNotFound": "This exercise no longer exists.",
+  "moreActions": "More actions",
+  "startWorkoutTitle": "Start a workout",
+  "startEmptyWorkout": "Start empty workout",
+  "noProgramDays": "No planned days yet. Start an empty workout and add exercises.",
+  "activeWorkoutTitle": "Active workout",
+  "finishWorkout": "Finish workout",
+  "finishWorkoutTitle": "Finish workout?",
+  "finishWorkoutBody": "Logged sets stay in your history.",
+  "finishWorkoutConfirm": "Finish",
+  "addSet": "Add set",
+  "setNumber": "Set {number}",
+  "@setNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "weightLabel": "Weight",
+  "repsLabel": "Reps",
+  "rirLabel": "RIR",
+  "rirFivePlus": "5+",
+  "warmupLabel": "Warm-up",
+  "setSaved": "Saved",
+  "logSet": "Log set",
+  "decreaseWeight": "Decrease weight",
+  "increaseWeight": "Increase weight",
+  "decreaseReps": "Decrease reps",
+  "increaseReps": "Increase reps",
+  "weightUnitLabel": "Weight unit",
+  "unitKilograms": "kg",
+  "unitPounds": "lb",
+  "digitStyleLabel": "Digits",
+  "digitStylePersian": "Persian digits",
+  "digitStyleLatin": "Latin digits",
+  "defaultIncrementLabel": "Default weight increment",
+  "defaultIncrementHint": "Used when you create a new exercise.",
+  "defaultIncrementDialogTitle": "Default weight increment",
+  "errorWeightRequired": "Enter a weight.",
+  "errorInvalidNumber": "Use digits only.",
+  "errorWeightDecimals": "Use up to two decimals.",
+  "errorWeightNegative": "Weight cannot be negative.",
+  "errorWeightRange": "Weight is out of range.",
+  "errorRepsRequired": "Enter reps.",
+  "errorRepsNegative": "Reps cannot be negative.",
+  "errorRepsRange": "Use 1 to 1000 reps.",
+  "noExercisesInSession": "No exercises yet. Add one to start logging.",
+  "noExercisesAvailableForSession": "All active exercises are already in this workout.",
+  "repRangeSummary": "{min}–{max}",
+  "@repRangeSummary": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "progressionSuggestionLabel": "Suggestion",
+  "progressionAddWeightReason": "All working sets reached {max} reps last time (sets: {count}), so add {increment}.",
+  "@progressionAddWeightReason": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      },
+      "increment": {
+        "type": "String"
+      }
+    }
+  },
+  "progressionAddRepsReason": "Your weakest set was {reps} reps; aim for {target} reps.",
+  "@progressionAddRepsReason": {
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "progressionHoldReason": "Below {min} reps last time; keep the weight and rebuild.",
+  "@progressionHoldReason": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "progressionLastSession": "Last time: {weight} × {reps}",
+  "@progressionLastSession": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "reps": {
+        "type": "int"
+      }
+    }
+  },
+  "progressionUseLastSession": "Use last time",
+  "historyCalendarPrevious": "Previous month",
+  "historyCalendarNext": "Next month",
+  "historyTrainedDay": "Trained {date}",
+  "@historyTrainedDay": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "historySessionSummary": "Sets: {sets} · Exercises: {exercises}",
+  "@historySessionSummary": {
+    "placeholders": {
+      "sets": {
+        "type": "int"
+      },
+      "exercises": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionDetailTitle": "Session",
+  "sessionNotFound": "This session no longer exists.",
+  "sessionNoteLabel": "Session note",
+  "exerciseNoteLabel": "Exercise note",
+  "addNote": "Add note",
+  "editNote": "Edit note",
+  "noteHint": "Plain text, up to {limit} characters",
+  "@noteHint": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "noteTooLong": "This note is too long.",
+  "editSet": "Edit set",
+  "deleteSet": "Delete set",
+  "setActions": "Set actions",
+  "setDeleted": "Set deleted.",
+  "undo": "Undo",
+  "deleteSessionTitle": "Delete session?",
+  "deleteSessionBody": "This permanently removes the session, its sets, and its notes.",
+  "deleteSession": "Delete session",
+  "sessionDeleted": "Session deleted.",
+  "rirSummary": "RIR {rir}",
+  "@rirSummary": {
+    "placeholders": {
+      "rir": {
+        "type": "int"
+      }
+    }
+  },
+  "noSetsLogged": "No sets logged.",
+  "restTimerLabel": "Rest timer",
+  "restTimerEnabled": "Start after each set",
+  "restTimerHint": "Runs in the app and vibrates when time is up.",
+  "restTimerDuration": "Duration",
+  "restTimerRunning": "Rest {remaining}",
+  "@restTimerRunning": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "restTimerComplete": "Rest complete",
+  "restTimerStop": "Stop timer",
+  "decreaseRestTimer": "Decrease rest duration",
+  "increaseRestTimer": "Increase rest duration",
+  "prBadge": "PR",
+  "prBadgeTooltip": "Personal record: {types}",
+  "@prBadgeTooltip": {
+    "placeholders": {
+      "types": {
+        "type": "String"
+      }
+    }
+  },
+  "prWeightLabel": "heaviest weight",
+  "prRepsLabel": "most reps at this weight",
+  "prE1rmLabel": "highest estimated 1RM",
+  "backupSectionTitle": "Backup",
+  "exportData": "Export data",
+  "exportDataHint": "Save a JSON file with exercises, programs, and history. Photos are not included.",
+  "importData": "Import data",
+  "importDataHint": "Restore from a JSON backup file.",
+  "exportSaved": "Backup saved.",
+  "exportFailed": "Could not save the backup. Try again.",
+  "importErrorTitle": "Could not import",
+  "importErrorEmpty": "This file is empty.",
+  "importErrorTooLarge": "This file is too large to import.",
+  "importErrorTooDeep": "This file is nested too deeply to import.",
+  "importErrorCorrupt": "This file is not valid JSON. It may be truncated.",
+  "importErrorRoot": "This file is not a Gym Log backup.",
+  "importErrorMissingField": "The backup is missing {field}.",
+  "@importErrorMissingField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "importErrorInvalidField": "The backup has an invalid value for {field}.",
+  "@importErrorInvalidField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "importErrorUnsupportedVersion": "This backup version is not supported by this app.",
+  "importErrorNewerVersion": "This backup was made by a newer version of Gym Log. Update the app, then try again.",
+  "importErrorDuplicateId": "The backup contains the same ID more than once: {id}.",
+  "@importErrorDuplicateId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "importErrorOrphanReference": "The backup references an exercise that is missing: {id}.",
+  "@importErrorOrphanReference": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "importErrorAbsurdValue": "The backup contains an out-of-range value: {field}.",
+  "@importErrorAbsurdValue": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "importErrorUnreadable": "Could not read this file.",
+  "importErrorPickerUnavailable": "Could not open the file picker.",
+  "importPreviewTitle": "Import backup",
+  "importSource": "From app version {version}, exported {date}.",
+  "@importSource": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "importModeLabel": "Import mode",
+  "importModeMerge": "Merge",
+  "importModeReplace": "Replace",
+  "importMergeHint": "Adds new records. Existing records are never overwritten.",
+  "importReplaceHint": "Replaces all current data. A snapshot is saved first.",
+  "importSummaryAdd": "Will add {exercises, plural, =1{1 exercise} other{{exercises} exercises}}, {programs, plural, =1{1 program} other{{programs} programs}}, {sessions, plural, =1{1 session} other{{sessions} sessions}}, and {sets, plural, =1{1 set} other{{sets} sets}}.",
+  "@importSummaryAdd": {
+    "placeholders": {
+      "exercises": {
+        "type": "int"
+      },
+      "programs": {
+        "type": "int"
+      },
+      "sessions": {
+        "type": "int"
+      },
+      "sets": {
+        "type": "int"
+      }
+    }
+  },
+  "importSummaryReplace": "Will replace current data with {exercises, plural, =1{1 exercise} other{{exercises} exercises}}, {programs, plural, =1{1 program} other{{programs} programs}}, {sessions, plural, =1{1 session} other{{sessions} sessions}}, and {sets, plural, =1{1 set} other{{sets} sets}}.",
+  "@importSummaryReplace": {
+    "placeholders": {
+      "exercises": {
+        "type": "int"
+      },
+      "programs": {
+        "type": "int"
+      },
+      "sessions": {
+        "type": "int"
+      },
+      "sets": {
+        "type": "int"
+      }
+    }
+  },
+  "importSummaryConflicts": "Not imported to keep local data: {count}.",
+  "@importSummaryConflicts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importSummaryUnchanged": "Unchanged records: {count}.",
+  "@importSummaryUnchanged": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importPhotosExcluded": "Photos are not included in JSON backups.",
+  "sessionPhotosLabel": "Session photos",
+  "exercisePhotoLabel": "Exercise photo",
+  "addPhoto": "Add photo",
+  "changePhoto": "Change photo",
+  "removePhoto": "Remove photo",
+  "takePhoto": "Take photo",
+  "chooseFromGallery": "Choose from gallery",
+  "photoViewerTitle": "Photo",
+  "photoNumber": "Photo {number}",
+  "@photoNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionPhotoCount": "{count} of {max}",
+  "@sessionPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "photoLimitReached": "You can add up to {max} photos per session.",
+  "@photoLimitReached": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "photoPrivateHint": "Stored privately on this device.",
+  "noSessionPhotos": "No session photos yet.",
+  "photoMissing": "This photo is no longer available.",
+  "photoPickFailed": "Could not read this image. Try another one.",
+  "photoStorageFull": "Not enough storage to save the photo.",
+  "photoSaveFailed": "Could not save the photo. Try again.",
+  "photoDeleteFailed": "Could not remove the photo. Try again.",
+  "photoLoadFailed": "Could not load photos.",
+  "removePhotoTitle": "Remove photo?",
+  "removePhotoBody": "This permanently deletes the stored copy.",
+  "importSettingsRestored": "Settings will be restored.",
+  "importNothingToAdd": "Nothing new to import.",
+  "importConfirm": "Import",
+  "importCompleted": "Import complete.",
+  "importFailed": "Could not import. Your data was not changed.",
+  "importDataChanged": "Your data changed during import. Review the file and try again.",
+  "exportReminderTitle": "Back up your data",
+  "exportReminderBody": "You have not exported your data in 30 days. Save a JSON backup so your history survives a lost phone.",
+  "exportReminderExport": "Export now",
+  "exportReminderLater": "Later",
+  "exportReminderDismiss": "Dismiss reminder"
+}

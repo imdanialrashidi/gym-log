@@ -7,3 +7,30 @@ coverage/
 .env.local
 *.log
 .DS_Store
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+*.iml
+.idea/
+local.properties
+
+# Generated localization sources (run: flutter gen-l10n)
+lib/core/l10n/generated/
+
+# Android/Gradle local state
+android/.gradle/
+android/captures/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/key.properties
+*.jks
+*.keystore
+
+# Golden failure output
+**/failures/

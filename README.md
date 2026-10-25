@@ -1,79 +1,67 @@
-# omp Production Workflow Template
+# Gym Log
 
-A minimal, evidence-driven workflow for [oh-my-pi (omp)](https://omp.sh) — a batteries-included coding agent with LSP, persistent eval runtimes, parallel subagents, built-in search/browser, and session continuity already in the box.
+Local-first, offline Android workout log for logging weight, reps, RIR, and
+rep-range work. Flutter app, Persian-first RTL, English LTR, no account, no
+backend, no analytics, and no `INTERNET` permission in release builds.
 
-This template adds only what omp does **not** ship: a short always-loaded agent map, four workflow commands, three skills, product/design/architecture/quality contracts, a scoped PR helper, and one verification gate. Everything omp already does natively (planning, debugging, memory, handoff, model routing) is referenced, not reimplemented.
+Status: **M8 photos**. The four-tab shell, dark theme, fa/en
+localization, Vazirmatn font, pinned toolchain, CI guardrails, exercise
+library, program/day/plan-item planners, the Workout tab's active-session
+logging (units, numeric normalization, prefill, RIR/warm-up, finish), history
+with session detail and editing, the Progress tab with derived personal
+records, Epley e1RM, per-exercise charts, double-progression suggestions, full
+JSON export, validated Merge/Replace import, historical fixtures, the
+export reminder, Persian/Latin digits, Jalali display behind `CalendarService`,
+Saturday-first Persian weeks, and the digit/increment Settings controls exist.
+Sessions persist in the interim app-private JSON document with private,
+EXIF-stripped photo files alongside it; the Drift database and release signing
+are later milestones. The `applicationId` is a
+placeholder and release builds are intentionally refused.
 
-## What this template provides
+## Development
 
-- `AGENTS.md` — short progressive-disclosure map; the only always-loaded workflow file.
-- `.omp/RULES.md` — sticky hard requirements (delivery scope, secrets, no stubs, run-before-yield).
-- `.omp/commands/` — `/spec`, `/build`, `/review`, `/ship`. Deliberately no `plan`/`handoff`/`resume` commands: omp ships those natively (`/plan` mode, `/handoff`, `/resume`). `/advisor` is the native second-model watch, enabled per session — not a command this template owns.
-- `.omp/skills/` — `quick-fix`, `test-design`, `verify`. Deliberately no browser/design/eval skills: omp ships `browser`, `lsp`, `debug`, `web_search`, `eval`, and `task` natively.
-- `docs/` — `HARNESS.md` (operating playbook), `QUALITY.md` (acceptance bar), `PRODUCT.md`, `ARCHITECTURE.md`, `DESIGN.md` (product decisions), `GIT_POLICY.md` (local-only on `main`), `exec-plans/` (durable state for Complex work only).
-- `scripts/omp-pr.mjs` — retired `ai-changes` → `main` helper, kept only as history. Do not use; policy is local-only with no commit/push/PR.
-- `scripts/verify.sh` — canonical gate: template self-checks, then the repo's own cheapest applicable lane.
-- `.github/workflows/quality.yml` — CI runs the gate. Nothing else.
-
-## What it deliberately omits (omp already has it)
-
-| pi-template piece | Why it is not here |
-|---|---|
-| Provider/model routing, launcher flags, `models.env` | omp ships 60+ providers, per-role routing (`/model`, `--smol/--slow/--plan`), fallback chains |
-| `pi-sub-agent`, guard scripts, smart-read harness | omp core is native Rust: in-process search, summaries, approval tiers, `task` subagents |
-| Playwright MCP, `browser-qa` skill, web-search package | omp ships `browser`, `computer`, and 23-backend `web_search` natively |
-| Eval harness, `EVALUATION.md`, `RESEARCH.md` | no benchmark/eval scaffolding belongs in a minimal workflow template |
-| `/plan`, `/handoff`, `/resume` commands | omp natives: `/plan` mode, `/handoff` + `/resume`, `/memory` — plus `/review` here for independent review (no native `/review` command exists) |
-| Frontend-design skill + rubric | replaced by a compact `docs/DESIGN.md` contract with budgets and hard gates |
-| `TOOLING_SETUP.md`, sandbox/docker files | omp is one binary (`install | sh`, brew, bun, nix, ps1); no container story needed |
-
-## Install
-
-Install omp ([docs](https://omp.sh)):
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the pinned Flutter/Android
+toolchain, first-time setup, commands, and the release guard.
 
 ```sh
-curl -fsSL https://omp.sh/install | sh
+flutter pub get
+(cd packages/lift_core && dart pub get)
+flutter gen-l10n
+flutter test
+flutter build apk --debug
 ```
 
-Then open this repository in omp. No packages, no MCP servers, no launcher. Project config lives in `.omp/` and loads automatically; global settings stay in `~/.omp/agent/config.yml` (see `.omp/config.yml` for the documented project-override pattern).
+Full gate (same lane as CI):
 
-Authenticate and pick a model:
+```sh
+bash scripts/verify.sh
+```
+
+## Structure
 
 ```text
-/login
-/model
+lib/app/          bootstrap, router, theme tokens, locale state
+lib/core/         localization, CalendarService, shared widgets and guards
+lib/features/     shell, workout, programs, history, progress, photos, settings
+packages/lift_core/  pure Dart domain package (guard-enforced)
+test/             unit, widget, contrast, golden tests
+android/          pinned Flutter Android host and release guards
+tool/             guards and pinned toolchain metadata
+docs/spec/        product source of truth by requirement ID
+docs/adr/         owner decisions
 ```
 
-## راهنمای سریع (خلاصه `omp_workflow_guide.md`)
+## Contracts
 
-چهار قدم: اول بگو **چی** می‌خواهی (`/spec`)، بعد بگو **بساز** (`/build`)، بعد خودت `/review` را اجرا کن تا نگاه دوم بیندازد، آخر **تحویل بگیر** (`/ship`). تغییر ریز؟ `/skill:quick-fix`.
+- Product: [docs/PRODUCT.md](docs/PRODUCT.md) and [docs/spec/README.md](docs/spec/README.md)
+- Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Design: [docs/DESIGN.md](docs/DESIGN.md)
+- Quality and verification lanes: [docs/QUALITY.md](docs/QUALITY.md)
+- Dependency ledger: [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)
 
-- **پرامپت خوب = نتیجه قابل مشاهده، نه راه‌حل.** نگو «با فلان تکنیک درستش کن»؛ بگو «کاربر باید چه ببیند، و اگر خراب بود چه ببیند». ۳ تا ۷ باید بگو، نه بیشتر.
-- **همیشه راه منفی را هم بگو** (خطا، خالی، قطعی، دسترسی) و آخرش اضافه کن: «بگو چطور تستش کردی».
-- **محدوده را ببند** («به بقیه دست نزن») و **تیکه را کوچک کن** — تیکه کوچکِ تمام‌شده بهتر از تیکه بزرگِ نصفه است.
-- **«تمام شد» بدون مدرک = تمام نشده.** همیشه بپرس: «شاهدت چیه؟»
-- جزئیات کامل، مثال‌ها و جدول عیب‌یابی: [`omp_workflow_guide.md`](omp_workflow_guide.md).
+## Working policy
 
-## Daily usage
-
-```text
-/build Implement <accepted outcome> and verify it.
-/spec <feature>        # implementation-ready contract, no code
-/review                # independent evidence-backed verdict
-/ship                  # full gate, local-only on `main` (no commit/push/PR)
-/skill:quick-fix       # obvious low-risk edit, one targeted proof
-```
-
-Native companions: `/plan` for planning, `/advisor` for High-risk second-model review (extra cost), `/handoff` + `/resume` across sessions, `ultrathink` / `orchestrate` per-turn modes, `/omfg` to forge a rule for a recurring misbehavior.
-
-## Workflow
-
-```text
-intent → classify → acceptance contract → focused discovery (lsp first)
-→ one primary writer → targeted verification → /review when justified
-→ bounded repair (≤2 rounds) → /ship → acceptance → evidence report
-```
-
-Long-running work: `/plan` → incremental work → `/handoff` → fresh context → `/resume`, with durable state in `docs/exec-plans/active/` only when continuity needs it.
-
-Delivery, local-only on `main`: leave the proven change uncommitted in the working tree and report its state. Never commit, push, branch, PR, or merge.
+Local-only on `main`: changes stay uncommitted in the working tree. Do not
+commit, push, branch, open a PR, release, or mutate production. Never add
+secrets or signing keys to the repository, logs, prompts, screenshots, or
+artifacts.

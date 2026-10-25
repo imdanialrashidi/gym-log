@@ -13,19 +13,52 @@ concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: 3.47.7
+  FLUTTER_ARCHIVE: flutter_linux_3.47.7-stable.tar.xz
+  FLUTTER_SHA256: af7455f540df951184c7953fbe3cf884766e7541dacf8571f9f582db03dd6230
+
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
-          node-version: 22
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install pinned Flutter
+        run: |
+          set -Eeuo pipefail
+          archive="$RUNNER_TEMP/$FLUTTER_ARCHIVE"
+          curl -fsSLo "$archive" \
+            "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/$FLUTTER_ARCHIVE"
+          echo "$FLUTTER_SHA256  $archive" | sha256sum -c -
+          tar -xf "$archive" -C "$RUNNER_TOOL_CACHE"
+          echo "$RUNNER_TOOL_CACHE/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Cache pub and Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-flutter-${{ env.FLUTTER_VERSION }}-${{ hashFiles('pubspec.lock', 'packages/lift_core/pubspec.lock', 'android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-${{ env.FLUTTER_VERSION }}-
+
+      - name: Show toolchain
+        run: |
+          flutter --version
+          flutter config --no-analytics
+          java -version
 
       - name: Run verification gate
         run: bash scripts/verify.sh

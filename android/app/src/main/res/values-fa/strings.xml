@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The public project name is an owner decision; keep the brand string
+         identical in both locales until then. -->
+    <string name="app_name">Gym Log</string>
+</resources>
