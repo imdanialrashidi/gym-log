@@ -113,6 +113,9 @@ Status: controls below are labeled when they come from a spec Recommendation; on
 - Project name, `applicationId`, and license are **Needs Decision**.
 - Reference device is **Needs Decision**; performance claims stay `UNPROVEN` until it is chosen.
 - Donation platform and distribution beyond GitHub are **Needs Decision**.
+  About currently opens the repository owner's GitHub Sponsors URL
+  (`lib/app/app_info.dart`); the owner must enable that profile or replace the
+  URL before a public release. Distribution beyond GitHub remains open.
 - The optional RIR gate, ZIP photo archive, CSV export, light theme, and exact Persian search-normalization rules remain open or unconfirmed as labeled in the spec. Chart rendering is resolved by ADR-0008 (custom painter).
 - Target RIR, muscle-group tag, and rest timer are **Assumption**, not commitments.
 

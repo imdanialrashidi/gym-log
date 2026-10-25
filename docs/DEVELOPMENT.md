@@ -58,7 +58,7 @@ flutter pub get
 (cd packages/lift_core && dart pub get)
 flutter gen-l10n
 dart format --output=none --set-exit-if-changed \
-  lib/app lib/core/calendar lib/core/l10n/digit_style_scope.dart \
+  lib/app lib/core/calendar lib/core/links lib/core/l10n/digit_style_scope.dart \
   lib/core/l10n/l10n.dart lib/core/widgets lib/data lib/features lib/main.dart \
   test tool packages/lift_core
 flutter analyze --fatal-infos --fatal-warnings
@@ -68,9 +68,13 @@ dart run tool/guards/check_fa_review_sheet.dart
 dart run tool/guards/check_directionality.dart
 dart run tool/guards/check_calendar_boundary.dart
 dart run tool/guards/check_no_destructive_reset.dart
+dart run tool/guards/check_changelog.dart
+dart run tool/guards/check_no_signing_material.dart
 (cd packages/lift_core && dart test)
 flutter test
+dart run tool/benchmarks/run_benchmarks.dart
 flutter build apk --debug
+tool/release/selfcheck.sh
 (cd android && ./gradlew --console=plain :app:verifyReleaseManifest)
 ```
 
@@ -81,6 +85,10 @@ Useful focused commands:
 
 ```sh
 flutter test test/app_shell_test.dart
+flutter test test/features/about_test.dart
+dart run tool/benchmarks/run_benchmarks.dart --output docs/perf/benchmark-baseline.json
+dart run tool/guards/check_changelog.dart --tag v0.1.0 --print-notes
+tool/release/selfcheck.sh
 flutter test test/theme/contrast_test.dart --reporter expanded
 flutter test --update-goldens test/app_shell_golden_test.dart
 (cd packages/lift_core && dart test)
@@ -116,7 +124,10 @@ flutter test test/features/export_reminder_ui_test.dart
 
 The real Android save/open picker and device UI responsiveness are `UNPROVEN`
 on this workstation; `IO-006` and the 10,000-set UI budget need the reference
-device.
+device. CI micro-benchmark budgets and the reference-device procedure are in
+[docs/perf/README.md](perf/README.md); release signing and the upgrade drill are
+owner steps in [docs/RELEASE.md](RELEASE.md). Agents never create, read, or
+store signing material.
 
 ## Android release guard
 

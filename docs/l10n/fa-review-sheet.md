@@ -6,6 +6,17 @@ Regenerate with `dart run tool/fa_review_sheet.dart`.
 
 | Key | Screen / context | Persian (fa) | English reference | Notes |
 |---|---|---|---|---|
+| `aboutDonate` | General | حمایت مالی | Donate | Review tone and clarity. |
+| `aboutLicenseLabel` | General | مجوز برنامه | App license | Review tone and clarity. |
+| `aboutLicenseValue` | General | کلیه حقوق محفوظ است | All rights reserved | Review tone and clarity. |
+| `aboutLinkFailed` | General | مرورگر باز نشد. | Could not open a browser. | Review tone and clarity. |
+| `aboutNotMedicalAdvice` | General | Gym Log یک دفتر تمرین است، نه توصیه پزشکی. پیش از تغییر برنامه تمرینی با یک متخصص واجد شرایط مشورت کنید. | Gym Log is a training log, not medical advice. Consult a qualified professional before changing your training. | Review tone and clarity. |
+| `aboutOpenSourceLicenses` | General | مجوزهای متن‌باز | Open-source licenses | Review tone and clarity. |
+| `aboutPrivacyBody` | General | داده‌های تمرین شما روی همین دستگاه می‌ماند. Gym Log حساب کاربری، آمارگیری و مجوز شبکه در نسخه انتشار ندارد. عکس‌ها به‌صورت خصوصی و بدون فراداده مکان ذخیره می‌شوند و خروجی JSON هرگز شامل عکس‌ها نیست. پشتیبان‌گیری اندروید خاموش است، بنابراین برای انتقال به گوشی تازه باید خروجی JSON بگیرید و آن را در گوشی جدید وارد کنید. | Your training data stays on this device. Gym Log has no account, no analytics, and no network permission in release builds. Photos are stored privately with location metadata removed, and JSON exports never include photos. Android backup is disabled, so moving to a new phone means exporting a JSON backup and importing it there. | Review tone and clarity. |
+| `aboutPrivacyTitle` | General | حریم خصوصی | Privacy | Review tone and clarity. |
+| `aboutSourceCode` | General | کد منبع | Source code | Review tone and clarity. |
+| `aboutTitle` | General | درباره | About | Review tone and clarity. |
+| `aboutVersion` | General | نسخه {version} | Version {version} | Placeholders: {version} |
 | `activeWorkoutTitle` | Workout | تمرین فعال | Active workout | Review tone and clarity. |
 | `addDay` | Programs | افزودن روز | Add day | Review tone and clarity. |
 | `addExercise` | Exercises | افزودن تمرین | Add exercise | Review tone and clarity. |
@@ -14,6 +25,8 @@ Regenerate with `dart run tool/fa_review_sheet.dart`.
 | `addPhoto` | General | افزودن عکس | Add photo | Review tone and clarity. |
 | `addProgram` | Programs | افزودن برنامه | Add program | Review tone and clarity. |
 | `addSet` | Workout | افزودن ست | Add set | Review tone and clarity. |
+| `androidBackupHint` | Settings / backup | خاموش. پشتیبان‌گیری خودکار اندروید در همه نسخه‌ها غیرفعال است تا داده‌ها از دستگاه خارج نشوند. برای انتقال گوشی خروجی JSON بگیرید. | Off. Android Auto Backup is disabled in every build so your data cannot leave the device. Export a JSON backup to move phones. | Review tone and clarity. |
+| `androidBackupTitle` | Settings / backup | اجازه پشتیبان‌گیری اندروید | Allow Android backup | Review tone and clarity. |
 | `appTitle` | App shell / navigation | Gym Log | Gym Log | Review tone and clarity. |
 | `archive` | Exercises | بایگانی | Archive | Review tone and clarity. |
 | `archivedLabel` | Exercises | بایگانی‌شده | Archived | Review tone and clarity. |

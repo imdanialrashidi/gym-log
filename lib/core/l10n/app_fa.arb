@@ -296,5 +296,25 @@
   "exportReminderBody": "۳۰ روز است که خروجی نگرفته‌اید. یک پشتیبان JSON ذخیره کنید تا تاریخچه در صورت گم شدن گوشی باقی بماند.",
   "exportReminderExport": "همین حالا خروجی بگیر",
   "exportReminderLater": "بعداً",
-  "exportReminderDismiss": "بستن یادآوری"
+  "exportReminderDismiss": "بستن یادآوری",
+  "aboutTitle": "درباره",
+  "aboutVersion": "نسخه {version}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutLicenseLabel": "مجوز برنامه",
+  "aboutLicenseValue": "کلیه حقوق محفوظ است",
+  "aboutOpenSourceLicenses": "مجوزهای متن‌باز",
+  "aboutSourceCode": "کد منبع",
+  "aboutDonate": "حمایت مالی",
+  "aboutLinkFailed": "مرورگر باز نشد.",
+  "aboutPrivacyTitle": "حریم خصوصی",
+  "aboutPrivacyBody": "داده‌های تمرین شما روی همین دستگاه می‌ماند. Gym Log حساب کاربری، آمارگیری و مجوز شبکه در نسخه انتشار ندارد. عکس‌ها به‌صورت خصوصی و بدون فراداده مکان ذخیره می‌شوند و خروجی JSON هرگز شامل عکس‌ها نیست. پشتیبان‌گیری اندروید خاموش است، بنابراین برای انتقال به گوشی تازه باید خروجی JSON بگیرید و آن را در گوشی جدید وارد کنید.",
+  "aboutNotMedicalAdvice": "Gym Log یک دفتر تمرین است، نه توصیه پزشکی. پیش از تغییر برنامه تمرینی با یک متخصص واجد شرایط مشورت کنید.",
+  "androidBackupTitle": "اجازه پشتیبان‌گیری اندروید",
+  "androidBackupHint": "خاموش. پشتیبان‌گیری خودکار اندروید در همه نسخه‌ها غیرفعال است تا داده‌ها از دستگاه خارج نشوند. برای انتقال گوشی خروجی JSON بگیرید."
 }

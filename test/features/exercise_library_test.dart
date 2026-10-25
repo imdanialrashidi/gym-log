@@ -167,7 +167,7 @@ void main() {
       tester,
       store: store,
       initialLocation: '/exercises',
-      lookupLauncher: (Uri uri) async {
+      externalLinkLauncher: (Uri uri) async {
         launched.add(uri);
         return true;
       },
@@ -204,7 +204,7 @@ void main() {
       tester,
       store: store,
       initialLocation: '/exercises',
-      lookupLauncher: (Uri uri) async {
+      externalLinkLauncher: (Uri uri) async {
         throw StateError('no browser');
       },
     );

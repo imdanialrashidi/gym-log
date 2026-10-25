@@ -4,19 +4,27 @@ Local-first, offline Android workout log for logging weight, reps, RIR, and
 rep-range work. Flutter app, Persian-first RTL, English LTR, no account, no
 backend, no analytics, and no `INTERNET` permission in release builds.
 
-Status: **M8 photos**. The four-tab shell, dark theme, fa/en
-localization, Vazirmatn font, pinned toolchain, CI guardrails, exercise
-library, program/day/plan-item planners, the Workout tab's active-session
-logging (units, numeric normalization, prefill, RIR/warm-up, finish), history
-with session detail and editing, the Progress tab with derived personal
-records, Epley e1RM, per-exercise charts, double-progression suggestions, full
-JSON export, validated Merge/Replace import, historical fixtures, the
-export reminder, Persian/Latin digits, Jalali display behind `CalendarService`,
-Saturday-first Persian weeks, and the digit/increment Settings controls exist.
+Status: **M9 hardening and release engineering**. The four-tab shell, dark
+theme, fa/en localization, Vazirmatn font, pinned toolchain, CI guardrails,
+exercise library, program/day/plan-item planners, the Workout tab's
+active-session logging (units, numeric normalization, prefill, RIR/warm-up,
+finish), history with session detail and editing, the Progress tab with derived
+personal records, Epley e1RM, per-exercise charts, double-progression
+suggestions, full JSON export, validated Merge/Replace import, historical
+fixtures, the export reminder, Persian/Latin digits, Jalali display behind
+`CalendarService`, Saturday-first Persian weeks, the digit/increment Settings
+controls, private photos, and the About screen exist.
+
+M9 adds CI micro-benchmarks with hard budgets on a deterministic 10,000-set
+fixture, the reference-device runbook, secrets-only release signing with a
+certificate-fingerprint check, checksum generation, the CHANGELOG/build/schema
+gate, and a tag-triggered release workflow. Device performance budgets remain
+`UNPROVEN` until the owner selects a reference device and records the run; real
+signing and the upgrade drill also remain owner steps (`docs/RELEASE.md`).
 Sessions persist in the interim app-private JSON document with private,
-EXIF-stripped photo files alongside it; the Drift database and release signing
-are later milestones. The `applicationId` is a
-placeholder and release builds are intentionally refused.
+EXIF-stripped photo files alongside it; the Drift database is a later
+milestone. The `applicationId` is a placeholder and release builds are
+intentionally refused.
 
 ## Development
 
@@ -57,6 +65,8 @@ docs/adr/         owner decisions
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Design: [docs/DESIGN.md](docs/DESIGN.md)
 - Quality and verification lanes: [docs/QUALITY.md](docs/QUALITY.md)
+- Release and signing runbook: [docs/RELEASE.md](docs/RELEASE.md)
+- Performance budgets and evidence: [docs/perf/](docs/perf/README.md)
 - Dependency ledger: [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)
 
 ## Working policy

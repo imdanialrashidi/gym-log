@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/locale_override.dart';
+import '../../../app/routes.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
@@ -281,6 +283,17 @@ class SettingsScreen extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (Object error, StackTrace stack) => const SizedBox.shrink(),
             data: (AppData data) => BackupSection(data: data),
+          ),
+          const SizedBox(height: AppTokens.space2),
+          ListTile(
+            key: const Key('open-about'),
+            contentPadding: const EdgeInsetsDirectional.symmetric(
+              horizontal: AppTokens.space1,
+            ),
+            leading: const Icon(Icons.info_outline),
+            title: Text(l10n.aboutTitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => unawaited(context.push(AppRoutes.about)),
           ),
         ],
       ),

@@ -162,6 +162,8 @@ and device performance remain `UNPROVEN`.
 
 M7 adds localization and accessibility polish: the Settings digit and default-increment controls, Persian/Latin digit rendering across every screen and chart, Jalali display behind `CalendarService` with Saturday week starts for Persian, LTR/RTL goldens for every route, a directionality guard for hard-coded left/right layout, 200% text/48 dp set-row and chart tests, and a native-speaker review sheet covering every fa string. The real-device large-font and contrast check (`NFR-A11Y-001`, A17) remains `UNPROVEN`.
 
+M9 adds the About screen and the Settings backup-policy row. About follows the same dark, low-chrome list treatment: version, app license, open-source licenses, source and donation links that open externally, a privacy statement, and a medical-advice notice. The backup row is an enforced-off switch-style status, not an operational toggle: Android Auto Backup is a manifest/build-time decision and `DAT-007`/A18 require it disabled, so the row states the effective policy and points to export/import for migration.
+
 | Flow / screen | Critical states | Viewports/locales | Visual proof |
 |---|---|---|---|
 | Workout / active session | empty start, prefilled rows, changed set, PR, rest timer, finish | phone; fa RTL + en LTR | goldens + tap-count test |
@@ -170,7 +172,8 @@ M7 adds localization and accessibility polish: the Settings digit and default-in
 | Programs, days, plan items | empty, validation errors, reorder, delete confirmation | phone; fa + en | goldens + persistence test |
 | History and session detail | empty, marked calendar, notes, photos, edit/undo | phone; fa + en | goldens + widget test |
 | Progress overview and chart | empty, 1,000 points, missing RIR gaps, range filter | phone; fa + en | goldens + data-preparation test |
-| Settings | language, digits, units, default increment, rest timer, backup, export/import | phone; fa + en | goldens + widget test |
+| Settings | language, digits, units, default increment, rest timer, backup policy, export/import, About entry | phone; fa + en | goldens + widget test |
+| About | version, license, source/donate links, privacy, medical notice, license page | phone; fa + en | goldens + mocked-launcher widget test |
 | Photo viewer | one to three photos, missing file, removal | phone; fa + en | goldens + directory test |
 | Safe Mode | failed migration, newer database, cannot open | phone; fa + en | goldens + write-spy test |
 
@@ -193,3 +196,5 @@ M7 adds localization and accessibility polish: the Settings digit and default-in
 | 2026-10-23 | Digits default to the UI language; an explicit setting overrides everywhere including charts | `SET-002`, `L10N-004`; widget coverage sweep over every route | A digit-bearing surface is added |
 | 2026-10-23 | Settings carries a default increment for new exercises; per-exercise values stay authoritative | `EXR-007`; Settings IA | A global increment becomes unnecessary or confusing |
 | 2026-10-25 | Photos are deterministic app-private files outside the data document; session limit 3; viewer shows missing-file state | `PHO-001`–`PHO-003`, `PHO-005`, `EXR-005`, ADR-0006; directory and injected-failure tests | Photo storage or export policy changes |
+| 2026-10-25 | About shows version, app license ("All rights reserved" until the owner publishes a license), open-source licenses, external source/donate links, privacy, and a not-medical-advice note | `SET-005`; mocked-launcher widget tests; Flutter `LicensePage` | Owner chooses a license or changes donation/source links |
+| 2026-10-25 | The "Allow Android backup" row is an enforced-off status, not a runtime toggle | `DAT-007`, A18, ADR-0007 amendment; Auto Backup is manifest/build-time; release guard fails if backup is enabled | Android or the owner provides a verified runtime opt-in mechanism and the manifest guard is deliberately revised |

@@ -13,6 +13,7 @@ import '../features/programs/presentation/program_editor_screen.dart';
 import '../features/programs/presentation/programs_screen.dart';
 import '../features/progress/presentation/exercise_progress_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
+import '../features/settings/presentation/about_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
 import '../features/workout/presentation/workout_screen.dart';
@@ -80,6 +81,11 @@ GoRouter buildRouter({String initialLocation = '/workout'}) {
         path: '/settings',
         builder: (BuildContext context, GoRouterState state) =>
             const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.about,
+        builder: (BuildContext context, GoRouterState state) =>
+            const AboutScreen(),
       ),
       GoRoute(
         path: AppRoutes.exercises,

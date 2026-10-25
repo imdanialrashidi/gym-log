@@ -161,6 +161,19 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
+        // DAT-007/ADR-0007: Android Auto Backup is a manifest/build-time
+        // policy. This build enforces it off, so the control communicates the
+        // effective state instead of pretending a runtime switch can change it.
+        SwitchListTile(
+          key: const Key('android-backup-toggle'),
+          contentPadding: const EdgeInsetsDirectional.symmetric(
+            horizontal: AppTokens.space1,
+          ),
+          title: Text(l10n.androidBackupTitle),
+          subtitle: Text(l10n.androidBackupHint),
+          value: false,
+          onChanged: null,
+        ),
         ListTile(
           key: const Key('export-data'),
           contentPadding: const EdgeInsetsDirectional.symmetric(

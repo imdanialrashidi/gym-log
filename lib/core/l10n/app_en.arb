@@ -526,5 +526,25 @@
   "exportReminderBody": "You have not exported your data in 30 days. Save a JSON backup so your history survives a lost phone.",
   "exportReminderExport": "Export now",
   "exportReminderLater": "Later",
-  "exportReminderDismiss": "Dismiss reminder"
+  "exportReminderDismiss": "Dismiss reminder",
+  "aboutTitle": "About",
+  "aboutVersion": "Version {version}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutLicenseLabel": "App license",
+  "aboutLicenseValue": "All rights reserved",
+  "aboutOpenSourceLicenses": "Open-source licenses",
+  "aboutSourceCode": "Source code",
+  "aboutDonate": "Donate",
+  "aboutLinkFailed": "Could not open a browser.",
+  "aboutPrivacyTitle": "Privacy",
+  "aboutPrivacyBody": "Your training data stays on this device. Gym Log has no account, no analytics, and no network permission in release builds. Photos are stored privately with location metadata removed, and JSON exports never include photos. Android backup is disabled, so moving to a new phone means exporting a JSON backup and importing it there.",
+  "aboutNotMedicalAdvice": "Gym Log is a training log, not medical advice. Consult a qualified professional before changing your training.",
+  "androidBackupTitle": "Allow Android backup",
+  "androidBackupHint": "Off. Android Auto Backup is disabled in every build so your data cannot leave the device. Export a JSON backup to move phones."
 }

@@ -26,6 +26,7 @@ const Map<String, String> _screenGoldens = <String, String>{
   'progress detail': 'progress_detail',
   'photo viewer': 'photo_viewer',
   'settings': 'settings',
+  'about': 'about',
 };
 
 void main() {

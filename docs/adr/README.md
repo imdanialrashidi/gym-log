@@ -12,7 +12,7 @@ Only the owner decisions supplied on 2026-10-21 are recorded here. Product requi
 | [0004](0004-e1rm-display-thresholds.md) | e1RM shown 1–10, "less reliable" 11–12, hidden above 12 | Accepted |
 | [0005](0005-rtl-chart-time-axis.md) | Chart time axis left-to-right in RTL | Accepted |
 | [0006](0006-session-photos.md) | Maximum 3 photos per session; excluded from JSON export | Accepted (storage/backup/deletion remain spec Recommendations) |
-| [0007](0007-android-backup-toggle.md) | Visible Android backup toggle, default off | Accepted |
+| [0007](0007-android-backup-toggle.md) | Visible Android backup toggle, default off | Accepted; amended 2026-10-25 (enforced-off policy row under the manifest guard) |
 | [0008](0008-chart-rendering.md) | Custom-painter progress charts; no chart package | Accepted (2026-10-21 spike) |
 | [0009](0009-double-progression-precedence.md) | Suggestion is a labeled, revertible draft; mixed weights produce no suggestion; bodyweight is reps-only | Accepted (2026-10-22 implementation reading) |
 

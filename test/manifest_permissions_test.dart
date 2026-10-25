@@ -42,6 +42,45 @@ void main() {
     }
   });
 
+  test('release signing has no debug fallback and reads secrets only', () {
+    final String build = File('android/app/build.gradle.kts')
+        .readAsStringSync();
+
+    expect(
+      build.contains('signingConfigs.getByName("debug")'),
+      isFalse,
+      reason: 'A debug signing fallback would break updates for every user.',
+    );
+    for (final String variable in <String>[
+      'GYM_LOG_KEYSTORE_PATH',
+      'GYM_LOG_KEYSTORE_PASSWORD',
+      'GYM_LOG_KEY_ALIAS',
+      'GYM_LOG_KEY_PASSWORD',
+    ]) {
+      expect(
+        build.contains('System.getenv("$variable")'),
+        isTrue,
+        reason: 'Signing value $variable must come from the environment.',
+      );
+    }
+    expect(
+      RegExp(r'signingConfig\s*=\s*signingConfigs\.findByName\("release"\)')
+          .hasMatch(build),
+      isTrue,
+      reason: 'Release builds must use the secrets-backed signing config.',
+    );
+    expect(
+      RegExp(
+        r'tasks\.matching\s*\{\s*it\.name in releaseTaskNames\s*\}'
+        r'\s*\.configureEach\s*\{[^}]*dependsOn\([^)]*'
+        r'"verifyReleaseSigning"[^)]*\)',
+        dotAll: true,
+      ).hasMatch(build),
+      isTrue,
+      reason: 'assembleRelease and bundleRelease must depend on verifyReleaseSigning.',
+    );
+  });
+
   test('main manifest keeps the offline/local-only posture', () {
     final String main = File('android/app/src/main/AndroidManifest.xml')
         .readAsStringSync();

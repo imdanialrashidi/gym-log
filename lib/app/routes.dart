@@ -1,4 +1,5 @@
 abstract final class AppRoutes {
+  static const String about = '/about';
   static const String exercises = '/exercises';
   static const String exercisePicker = '/exercise-picker';
 

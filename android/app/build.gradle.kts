@@ -1,5 +1,13 @@
+import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element
+
+// Release signing material comes only from the environment/secrets. Nothing
+// here is written to the repository, and no value is ever logged.
+val releaseKeystorePath: String? = System.getenv("GYM_LOG_KEYSTORE_PATH")
+val releaseKeystorePassword: String? = System.getenv("GYM_LOG_KEYSTORE_PASSWORD")
+val releaseKeyAlias: String? = System.getenv("GYM_LOG_KEY_ALIAS")
+val releaseKeyPassword: String? = System.getenv("GYM_LOG_KEY_PASSWORD")
 
 plugins {
     id("com.android.application")
@@ -31,12 +39,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // Created only when the owner supplies secrets. Never falls back to the
+        // debug key: Android would reject the update for every installed user.
+        if (!releaseKeystorePath.isNullOrBlank()) {
+            create("release") {
+                storeFile = File(releaseKeystorePath)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Release signing is out of scope until the owner supplies the
-            // permanent identity and signing plan. The release guards below
-            // prevent an accidental placeholder release.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 }
@@ -56,7 +74,8 @@ flutter {
 //
 // NFR-ARCH-001: release builds must not declare INTERNET.
 // DAT-007 / NFR-PRV-001: Android backup must be disabled by default.
-// Section 23.5: a placeholder applicationId must never be released.
+// Section 23.5 / DAT-005: signing comes only from owner secrets; a placeholder
+// applicationId or missing key must never produce a release build.
 //
 // These tasks are wired into assembleRelease/bundleRelease. They also run in
 // isolation in the verification lane so the merged release manifest is checked
@@ -72,6 +91,7 @@ tasks.register("verifyReleaseApplicationId") {
     description = "Refuses release builds while applicationId is a placeholder."
     doLast {
         if (configuredApplicationId == null ||
+            configuredApplicationId == "com.example" ||
             configuredApplicationId.startsWith("com.example.")
         ) {
             throw GradleException(
@@ -83,6 +103,56 @@ tasks.register("verifyReleaseApplicationId") {
         logger.lifecycle(
             "Release applicationId verified: $configuredApplicationId."
         )
+    }
+}
+
+tasks.register("verifyReleaseSigning") {
+    group = "verification"
+    description = "Requires owner-supplied signing secrets and never a debug key."
+    doLast {
+        val missing = mutableListOf<String>()
+        if (releaseKeystorePath.isNullOrBlank()) {
+            missing += "GYM_LOG_KEYSTORE_PATH"
+        }
+        if (releaseKeystorePassword.isNullOrBlank()) {
+            missing += "GYM_LOG_KEYSTORE_PASSWORD"
+        }
+        if (releaseKeyAlias.isNullOrBlank()) {
+            missing += "GYM_LOG_KEY_ALIAS"
+        }
+        if (releaseKeyPassword.isNullOrBlank()) {
+            missing += "GYM_LOG_KEY_PASSWORD"
+        }
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                "Release build refused: signing secrets are missing " +
+                    "(${missing.joinToString()}). Release signing uses only " +
+                    "repository secrets; no debug-key fallback exists."
+            )
+        }
+
+        val keystore = File(releaseKeystorePath!!)
+        if (!keystore.isFile) {
+            throw GradleException(
+                "Release build refused: keystore file does not exist at " +
+                    "GYM_LOG_KEYSTORE_PATH."
+            )
+        }
+        // project.rootDir is the Android project (android/); the Git
+        // repository is its parent. Check both so a key at the repository
+        // root cannot slip through.
+        val androidRoot = project.rootDir.canonicalFile
+        val repositoryRoot = androidRoot.parentFile?.canonicalFile ?: androidRoot
+        val keystorePath = keystore.canonicalFile.toPath()
+        if (keystorePath.startsWith(androidRoot.toPath()) ||
+            keystorePath.startsWith(repositoryRoot.toPath())
+        ) {
+            throw GradleException(
+                "Release build refused: the keystore must live outside the " +
+                    "repository. Never commit signing material."
+            )
+        }
+        logger.lifecycle("Release signing material verified from secrets.")
     }
 }
 
@@ -196,5 +266,9 @@ tasks.register("verifyReleaseManifest") {
 }
 
 tasks.matching { it.name in releaseTaskNames }.configureEach {
-    dependsOn("verifyReleaseApplicationId", "verifyReleaseManifest")
+    dependsOn(
+        "verifyReleaseApplicationId",
+        "verifyReleaseManifest",
+        "verifyReleaseSigning",
+    )
 }

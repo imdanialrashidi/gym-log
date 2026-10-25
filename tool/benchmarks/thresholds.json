@@ -1,0 +1,24 @@
+{
+  "warmupIterations": 3,
+  "measuredIterations": 15,
+  "benchmarks": [
+    {
+      "id": "NFR-PERF-003",
+      "metric": "prefill_query",
+      "budgetMs": 50,
+      "description": "Prefill for an exercise with 10,000 logged sets"
+    },
+    {
+      "id": "NFR-PERF-005",
+      "metric": "chart_aggregation",
+      "budgetMs": 200,
+      "description": "Progress aggregation for 1,000 chart points (CI proxy; first paint stays a device trace)"
+    },
+    {
+      "id": "NFR-PERF-006",
+      "metric": "export_json",
+      "budgetMs": 3000,
+      "description": "JSON export of the 10,000-set fixture (CI codec proxy; UI responsiveness stays a device check)"
+    }
+  ]
+}

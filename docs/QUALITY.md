@@ -47,17 +47,30 @@ editor/detail/picker, orphan pruning, and JSON/backup exclusion checks. The
 session-detail and photo-viewer surfaces have fa/en goldens; picker and
 injected-failure behavior is covered by widget and real-file tests.
 
+M9 adds the About screen (version, license, source, donation, privacy, and
+medical-advice notice), the enforced-off Android backup policy row, CI
+micro-benchmarks with hard budgets on a deterministic 10,000-set fixture, the
+reference-device runbook, secrets-only release signing with a certificate
+fingerprint check, checksum generation, the CHANGELOG/build/schema gate, and
+the tag-triggered release workflow. About links are covered by widget tests with
+a mocked launcher; `NFR-PERF-003` passes in CI, while device budgets and real
+signing/upgrade drill remain owner steps.
+
 Device performance, process-death criteria, and the real Android system
 share/picker remain `UNPROVEN` on this workstation; the reload-from-file test
 is the available persistence proof, and the export codec is measured off the
 UI thread. Real camera/gallery flows, Android killing the activity mid-pick,
-and real-device backup behavior are not simulated.
+real signing/install-over-update, and real-device backup behavior are not
+simulated.
 
 - Product contract: `docs/PRODUCT.md`; requirements and statuses: `docs/spec/`.
 - Stack and invariants: `docs/ARCHITECTURE.md`; visual contract: `docs/DESIGN.md`.
 - Reference device, permanent `applicationId`, project name, and license are
   **Needs Decision**. Release builds are refused while the applicationId is the
-  placeholder. Device performance criteria remain `UNPROVEN`.
+  placeholder or signing secrets are absent. About states "All rights reserved"
+  until the owner chooses and publishes a license. Device performance criteria
+  remain `UNPROVEN`; `NFR-PERF-003` is proven by the CI fixture benchmark.
+  Owner release steps live in `docs/RELEASE.md`.
 - `scripts/project-verify.sh` is the canonical local lane; CI runs
   `scripts/verify.sh`, which executes it. Do not claim a lane ran unless the
   command output was observed.
@@ -201,7 +214,7 @@ flutter pub get
 (cd packages/lift_core && dart pub get)
 flutter gen-l10n
 dart format --output=none --set-exit-if-changed \
-  lib/app lib/core/calendar lib/core/l10n/digit_style_scope.dart lib/core/l10n/l10n.dart lib/core/widgets lib/data lib/features \
+  lib/app lib/core/calendar lib/core/links lib/core/l10n/digit_style_scope.dart lib/core/l10n/l10n.dart lib/core/widgets lib/data lib/features \
   lib/main.dart test tool packages/lift_core
 flutter analyze --fatal-infos --fatal-warnings
 (cd packages/lift_core && dart analyze --fatal-infos --fatal-warnings)
@@ -210,9 +223,13 @@ dart run tool/guards/check_fa_review_sheet.dart
 dart run tool/guards/check_directionality.dart
 dart run tool/guards/check_calendar_boundary.dart
 dart run tool/guards/check_no_destructive_reset.dart
+dart run tool/guards/check_changelog.dart
+dart run tool/guards/check_no_signing_material.dart
 (cd packages/lift_core && dart test)
 flutter test
+dart run tool/benchmarks/run_benchmarks.dart
 flutter build apk --debug
+tool/release/selfcheck.sh
 (cd android && ./gradlew --console=plain :app:verifyReleaseManifest)
 ```
 
@@ -225,16 +242,22 @@ template self-checks. The Flutter archive and version are pinned in
 | Guard | Command | Fails when |
 |---|---|---|
 | Release manifest posture (`NFR-ARCH-001`, `DAT-007`, `PHO-001`) | `(cd android && ./gradlew --console=plain :app:verifyReleaseManifest)` | merged release manifest has `INTERNET`, broad storage/media location, `CAMERA`, `allowBackup` is not `false`, `fullBackupContent` is not `false`, or `dataExtractionRules` is missing |
-| Placeholder release identity | `flutter build apk --release` (expected failure until owner decision) | `applicationId` starts with `com.example.` |
+| Placeholder release identity | `flutter build apk --release` or `(cd android && ./gradlew :app:verifyReleaseApplicationId)` (expected failure until owner decision) | `applicationId` starts with `com.example.` |
 | fa/en resource parity (`L10N-002`) | `dart run tool/guards/check_l10n.dart` | a key or placeholder exists in only one locale, or a value is empty |
 | fa review coverage (`L10N-010`) | `dart run tool/guards/check_fa_review_sheet.dart` | a fa key or its Persian text is missing from `docs/l10n/fa-review-sheet.md`, or the sheet has stale content |
 | Direction-aware layout (`L10N-001`, `L10N-004`) | `dart run tool/guards/check_directionality.dart` | app code hard-codes physical left/right spacing, alignment, corners, or LTR text direction (chart excepted) |
 | Calendar boundary (`L10N-005`) | `dart run tool/guards/check_calendar_boundary.dart` | any file except `lib/core/calendar/calendar_service.dart` imports `shamsi_date` |
 | Pure domain package (`NFR-MNT-001`) | `(cd packages/lift_core && dart test)` | `lift_core` imports Flutter, database, platform, UI, or another package |
 | No destructive reset (`DAT-002`) | `dart run tool/guards/check_no_destructive_reset.dart` | `deleteDatabase`, `DROP TABLE`/`DROP DATABASE`, or `PRAGMA writable_schema` appears in app/domain source |
+| Performance budgets (`NFR-PERF-003`, proxies for `005`/`006`) | `dart run tool/benchmarks/run_benchmarks.dart` | a median on the 10,000-set fixture exceeds its threshold in `tool/benchmarks/thresholds.json` |
+| Changelog and version discipline (`DAT-008`) | `dart run tool/guards/check_changelog.dart` | a release entry lacks `Build:`/`Schema:`, build numbers do not increase, or the newest entry does not match `pubspec.yaml` |
+| No signing material in the tree (`DAT-005`) | `dart run tool/guards/check_no_signing_material.dart` | a keystore/base64 keystore/`key.properties` exists, a private-key block appears, or Gradle contains a literal signing password |
+| Signing secrets only (`DAT-005`) | `(cd android && ./gradlew :app:verifyReleaseSigning)` | `GYM_LOG_*` signing values are missing, the keystore file is absent, or the keystore sits inside the repository |
+| Release packaging tools | `tool/release/selfcheck.sh` | certificate-mismatch or checksum-mismatch detection stops working, or naming/checksum generation fails |
 
 Each guard is proven by temporarily introducing the violation and observing a
-failure, then reverting. The release identity guard is intentionally red in M0;
+failure, then reverting. The release identity guard and release signing gate are
+intentionally red until the owner supplies the permanent identity and secrets;
 the other guards are green in `scripts/project-verify.sh`.
 
 ### Criteria that require a physical device
@@ -247,7 +270,7 @@ widget tests, goldens, an emulator, or a debug build:
 | `UI-001` | First launch on a physical device set to light system theme is dark (the widget test proves theme selection, not the device/splash path). |
 | `NFR-COMP-001` | Install and launch on an API 24 physical device (or the owner-selected reference device). |
 | `NFR-A11Y-001` | Text contrast, 48 dp targets, and 200% text scale on a real Android renderer. |
-| `NFR-PERF-001..006` | Profile-mode cold start, tap-to-confirmation, prefill, chart, history scroll, and export measurements on the reference device. |
+| `NFR-PERF-001..006` | Profile-mode cold start, tap-to-confirmation, prefill, chart, history scroll, and export measurements on the reference device. `NFR-PERF-003` is additionally proven by the CI fixture benchmark; proxies for `005`/`006` do not replace the device trace. See `docs/perf/`. |
 | `DAT-007` / backup posture | Real-device backup behavior and data-extraction rules, not only the merged-manifest guard. |
 | `DAT-005` / `DAT-008` | Owner signing, install-over-update, and upgrade drill on a real device. |
 | Photos, camera/gallery, share/import (`PHO-*`, `IO-*`) | Real system picker/share behavior; real Android activity death and lost-data recovery; real Auto Backup behavior. Injected-failure and directory tests are the workstation proof. |
@@ -275,4 +298,6 @@ These are project operating rules. Where the spec labels the underlying behavior
 - Product scenarios A1–A18: [docs/spec/20-acceptance-and-checklists.md](spec/20-acceptance-and-checklists.md).
 - Owner gates: G1 logging-speed friend test, G2 double-progression de-scope, G3 corrupt/large-file import, G4 budgets and drills.
 - Delivery checklist: [Section 37.4](spec/20-acceptance-and-checklists.md#374-delivery-checklist-each-release).
+- Owner runbook: [docs/RELEASE.md](RELEASE.md); performance evidence:
+  [docs/perf/](perf/README.md).
 - Product outcome: [docs/PRODUCT.md](PRODUCT.md).

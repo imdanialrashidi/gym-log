@@ -24,7 +24,7 @@ flutter gen-l10n
 
 step "Format check"
 dart format --output=none --set-exit-if-changed \
-  lib/app lib/core/calendar lib/core/l10n/digit_style_scope.dart lib/core/l10n/l10n.dart lib/core/widgets lib/data lib/features \
+  lib/app lib/core/calendar lib/core/links lib/core/l10n/digit_style_scope.dart lib/core/l10n/l10n.dart lib/core/widgets lib/data lib/features \
   lib/main.dart \
   test tool packages/lift_core
 
@@ -38,13 +38,21 @@ dart run tool/guards/check_fa_review_sheet.dart
 dart run tool/guards/check_directionality.dart
 dart run tool/guards/check_calendar_boundary.dart
 dart run tool/guards/check_no_destructive_reset.dart
+dart run tool/guards/check_changelog.dart
+dart run tool/guards/check_no_signing_material.dart
 
 step "Tests"
 (cd packages/lift_core && dart test)
 flutter test
 
+step "Performance micro-benchmarks"
+dart run tool/benchmarks/run_benchmarks.dart
+
 step "Android debug build"
 flutter build apk --debug
+
+step "Release tooling self-check"
+tool/release/selfcheck.sh
 
 step "Release manifest guard"
 (cd android && ./gradlew --console=plain :app:verifyReleaseManifest)

@@ -38,3 +38,25 @@ The exact scope of Android backup when the toggle is on (whether photos are incl
 - Toggle changes the effective behavior and survives restart.
 - Export contains no photos regardless of the toggle.
 - Export reminder still follows `SET-004`.
+
+## Amendment 2026-10-25: enforced-off policy row
+
+Android Auto Backup is controlled by the build-time manifest
+(`android:allowBackup`, `fullBackupContent`, and the data-extraction rules) and
+the system settings; an app has no runtime API to opt a device into or out of
+Auto Backup. `DAT-007` and acceptance scenario A18 require the release manifest
+to keep backup disabled, and the release guard fails otherwise. A toggle that
+persisted a preference and changed nothing would be a display-only control.
+
+The implemented resolution is a visible `Allow Android backup` switch-style row
+that is **off and non-interactive** on every build, with a hint that data
+leaves the device only through JSON export. It reports the policy enforced by
+the manifest guard rather than pretending to change it. The export reminder and
+manual export/import remain the backup path. Revisit this amendment only with a
+verified platform mechanism that can change the backed-up payload at runtime
+and an explicit change to the A18/DAT-007 manifest guard.
+
+Verification: `test/features/about_test.dart` asserts the row is off and
+disabled; `android/app/build.gradle.kts` `verifyReleaseManifest` fails when
+`allowBackup`, `fullBackupContent`, or the extraction rules are weakened;
+`test/manifest_permissions_test.dart` pins the source manifest.
