@@ -8,8 +8,9 @@ import '../../../app/app_clock.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/action_runner.dart';
 import '../../../data/app_data_controller.dart';
-import '../../../data/backup_coordinator.dart';
+import '../../../data/backup_flow.dart';
 import '../../../data/export_reminder.dart';
 
 /// In-app 30-day export reminder (`SET-004`). It never posts a notification
@@ -31,7 +32,7 @@ class _ExportReminderBannerState extends ConsumerState<ExportReminderBanner> {
     }
     setState(() => _busy = true);
     try {
-      final bool saved = await ref.read(backupCoordinatorProvider).export(data);
+      final bool saved = await ref.read(backupFlowProvider).export(data);
       if (!mounted) {
         return;
       }
@@ -50,25 +51,18 @@ class _ExportReminderBannerState extends ConsumerState<ExportReminderBanner> {
   }
 
   Future<void> _snooze(DateTime now) async {
-    try {
-      await ref.read(exportReminderControllerProvider.notifier).snooze(now);
-    } catch (_) {
-      if (mounted) {
-        _showSnack(context.l10n.saveFailed);
-      }
-    }
+    await runDataAction(
+      context,
+      () => ref.read(exportReminderControllerProvider.notifier).snooze(now),
+    );
   }
 
   Future<void> _dismiss(DateTime baseline) async {
-    try {
-      await ref
-          .read(exportReminderControllerProvider.notifier)
-          .dismiss(baseline);
-    } catch (_) {
-      if (mounted) {
-        _showSnack(context.l10n.saveFailed);
-      }
-    }
+    await runDataAction(
+      context,
+      () =>
+          ref.read(exportReminderControllerProvider.notifier).dismiss(baseline),
+    );
   }
 
   void _showSnack(String message) {

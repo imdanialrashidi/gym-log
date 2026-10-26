@@ -33,7 +33,7 @@ void main() {
     );
     expect(
       progressionReasonTextFor(fa, suggestion, WeightUnit.kilograms),
-      'دفعه قبل هر 3 ست به 12 تکرار رسید؛ 2.5 کیلوگرم اضافه کنید.',
+      'دفعه قبل هر 3 ست به 12 تکرار رسیدی؛ 2.5 کیلوگرم اضافه کن.',
     );
   });
 
@@ -52,7 +52,7 @@ void main() {
     );
     expect(
       progressionReasonTextFor(fa, suggestion, WeightUnit.pounds),
-      'دفعه قبل هر 4 ست به 10 تکرار رسید؛ 5 پوند اضافه کنید.',
+      'دفعه قبل هر 4 ست به 10 تکرار رسیدی؛ 5 پوند اضافه کن.',
     );
   });
 
@@ -67,7 +67,7 @@ void main() {
     );
     expect(
       progressionReasonTextFor(fa, suggestion, WeightUnit.kilograms),
-      'ضعیف‌ترین ست شما 9 تکرار بود؛ هدف 10 تکرار است.',
+      'ضعیف‌ترین ست دفعه قبل 9 تکرار بود؛ هدف 10 تکرار است.',
     );
   });
 
@@ -82,7 +82,7 @@ void main() {
     );
     expect(
       progressionReasonTextFor(fa, suggestion, WeightUnit.kilograms),
-      'دفعه قبل زیر 8 تکرار بود؛ وزن را نگه دارید و دوباره بسازید.',
+      'دفعه قبل زیر 8 تکرار بودی؛ وزن را نگه دار و دوباره بساز.',
     );
   });
 }

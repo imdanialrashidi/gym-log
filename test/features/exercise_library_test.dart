@@ -10,14 +10,28 @@ Exercise _exercise(
   String name, {
   bool archived = false,
   MuscleGroup? muscleGroup,
+  int incrementGrams = 2500,
 }) {
   return Exercise(
     id: id,
     name: name,
     muscleGroup: muscleGroup,
+    incrementGrams: incrementGrams,
     archivedAt: archived ? DateTime.utc(2026, 10, 21, 12) : null,
     createdAt: DateTime.utc(2026, 10, 20, 10),
   );
+}
+
+String _fieldText(WidgetTester tester, String key) {
+  return tester
+      .widget<EditableText>(
+        find.descendant(
+          of: find.byKey(Key(key)),
+          matching: find.byType(EditableText),
+        ),
+      )
+      .controller
+      .text;
 }
 
 void main() {
@@ -48,6 +62,38 @@ void main() {
     expect(find.text('Bench Press'), findsOneWidget);
     expect(find.text('No exercises yet.'), findsNothing);
     expect(store.data.exercises.single.name, 'Bench Press');
+  });
+
+  testWidgets('renaming an exercise in lb keeps its increment grams', (
+    WidgetTester tester,
+  ) async {
+    final MemoryAppDataStore store = MemoryAppDataStore(
+      AppData(
+        exercises: <Exercise>[
+          _exercise('exercise-1', 'Bench Press', incrementGrams: 100000),
+        ],
+        settings: const AppSettings(weightUnit: WeightUnit.pounds),
+      ),
+    );
+
+    await pumpGymLogApp(
+      tester,
+      store: store,
+      initialLocation: '/exercise-editor/exercise-1',
+    );
+
+    // 100000 g displays as 220.46 lb; confirming it must not store 99999 g.
+    expect(_fieldText(tester, 'exercise-increment-field'), '220.46');
+    await tester.enterText(
+      find.byKey(const Key('exercise-name-field')),
+      'Bench Press (paused)',
+    );
+    await tester.tap(find.byKey(const Key('save-exercise')));
+    await tester.pumpAndSettle();
+
+    final Exercise saved = store.data.exerciseById('exercise-1')!;
+    expect(saved.name, 'Bench Press (paused)');
+    expect(saved.incrementGrams, 100000);
   });
 
   testWidgets('archive hides the exercise but preserves its record', (

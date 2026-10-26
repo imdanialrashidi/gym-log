@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gym_log/data/rest_timer_store.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'support/memory_app_data_store.dart';
+import 'support/memory_rest_timer_store.dart';
 import 'support/test_app.dart';
 
 Exercise _exercise(String id, String name) {
@@ -84,6 +86,51 @@ Session _history() {
   );
 }
 
+Session _summarySession() {
+  return Session(
+    id: 'summary-session',
+    startedAt: DateTime.utc(2026, 10, 21, 10),
+    endedAt: DateTime.utc(2026, 10, 21, 11, 12),
+    programDayId: 'day-1',
+    exercises: <SessionExercise>[
+      SessionExercise(
+        id: 'summary-session-exercise',
+        exerciseId: 'exercise-1',
+        sortOrder: 0,
+        targetSets: 3,
+        repMin: 8,
+        repMax: 12,
+        sets: <SetLog>[
+          SetLog(
+            id: 'summary-set-0',
+            weightGrams: 102500,
+            reps: 8,
+            rir: 2,
+            setIndex: 0,
+            loggedAt: DateTime.utc(2026, 10, 21, 10, 5),
+          ),
+          SetLog(
+            id: 'summary-set-1',
+            weightGrams: 100000,
+            reps: 9,
+            rir: 1,
+            setIndex: 1,
+            loggedAt: DateTime.utc(2026, 10, 21, 10, 12),
+          ),
+          SetLog(
+            id: 'summary-set-2',
+            weightGrams: 97500,
+            reps: 8,
+            rir: 1,
+            setIndex: 2,
+            loggedAt: DateTime.utc(2026, 10, 21, 10, 21),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 Session _activeSession({bool personalRecord = false}) {
   return Session(
     id: 'active-session',
@@ -118,6 +165,7 @@ AppData _data({bool active = false, bool personalRecord = false}) {
     programs: <Program>[_program()],
     sessions: <Session>[
       _history(),
+      _summarySession(),
       if (active) _activeSession(personalRecord: personalRecord),
     ],
   );
@@ -136,6 +184,7 @@ Future<void> _pump(
     ),
     initialLocation: '/workout',
     locale: locale,
+    clock: () => DateTime.utc(2026, 10, 21, 12),
   );
 }
 
@@ -177,10 +226,93 @@ void main() {
     await _pump(tester, locale: const Locale('fa'), active: true);
 
     expect(Directionality.of(tester.element(_screen)), TextDirection.rtl);
-    expect(find.text('ذخیره شد'), findsOneWidget);
+    expect(find.text('ثبت شد'), findsOneWidget);
     await expectLater(
       _screen,
       matchesGoldenFile('goldens/workout_active_fa.png'),
+    );
+  });
+
+  testWidgets('English LTR running rest golden', (WidgetTester tester) async {
+    final DateTime now = DateTime.utc(2026, 10, 21, 12);
+    await pumpGymLogApp(
+      tester,
+      store: MemoryAppDataStore(_data(active: true)),
+      initialLocation: '/workout',
+      clock: () => now,
+      restTimerStore: MemoryRestTimerStore(
+        PersistedRestTimer(
+          endsAt: now.add(const Duration(seconds: 90)),
+          duration: const Duration(seconds: 120),
+        ),
+      ),
+    );
+
+    expect(Directionality.of(tester.element(_screen)), TextDirection.ltr);
+    expect(find.byKey(const Key('rest-timer-banner')), findsOneWidget);
+    expect(find.text('Rest 01:30'), findsOneWidget);
+    await expectLater(
+      _screen,
+      matchesGoldenFile('goldens/workout_rest_en.png'),
+    );
+  });
+
+  testWidgets('Persian RTL running rest golden', (WidgetTester tester) async {
+    final DateTime now = DateTime.utc(2026, 10, 21, 12);
+    await pumpGymLogApp(
+      tester,
+      store: MemoryAppDataStore(_data(active: true)),
+      initialLocation: '/workout',
+      locale: const Locale('fa'),
+      clock: () => now,
+      restTimerStore: MemoryRestTimerStore(
+        PersistedRestTimer(
+          endsAt: now.add(const Duration(seconds: 90)),
+          duration: const Duration(seconds: 120),
+        ),
+      ),
+    );
+
+    expect(Directionality.of(tester.element(_screen)), TextDirection.rtl);
+    expect(find.byKey(const Key('rest-timer-banner')), findsOneWidget);
+    await expectLater(
+      _screen,
+      matchesGoldenFile('goldens/workout_rest_fa.png'),
+    );
+  });
+
+  testWidgets('English LTR session summary golden', (
+    WidgetTester tester,
+  ) async {
+    await pumpGymLogApp(
+      tester,
+      store: MemoryAppDataStore(_data()),
+      initialLocation: '/session-summary/summary-session',
+      clock: () => DateTime.utc(2026, 10, 21, 12),
+    );
+
+    expect(Directionality.of(tester.element(_screen)), TextDirection.ltr);
+    await expectLater(
+      _screen,
+      matchesGoldenFile('goldens/session_summary_en.png'),
+    );
+  });
+
+  testWidgets('Persian RTL session summary golden', (
+    WidgetTester tester,
+  ) async {
+    await pumpGymLogApp(
+      tester,
+      store: MemoryAppDataStore(_data()),
+      initialLocation: '/session-summary/summary-session',
+      locale: const Locale('fa'),
+      clock: () => DateTime.utc(2026, 10, 21, 12),
+    );
+
+    expect(Directionality.of(tester.element(_screen)), TextDirection.rtl);
+    await expectLater(
+      _screen,
+      matchesGoldenFile('goldens/session_summary_fa.png'),
     );
   });
 

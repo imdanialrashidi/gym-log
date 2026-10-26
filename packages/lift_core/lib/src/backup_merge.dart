@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'app_data.dart';
 import 'backup.dart';
+import 'body_weight.dart';
 import 'exercise.dart';
 import 'program.dart';
 import 'session.dart';
@@ -19,6 +20,7 @@ class ImportCounts {
     this.sessions = 0,
     this.sessionExercises = 0,
     this.sets = 0,
+    this.bodyWeights = 0,
   });
 
   static const ImportCounts zero = ImportCounts();
@@ -30,8 +32,9 @@ class ImportCounts {
   final int sessions;
   final int sessionExercises;
   final int sets;
+  final int bodyWeights;
 
-  int get topLevelRecords => exercises + programs + sessions;
+  int get topLevelRecords => exercises + programs + sessions + bodyWeights;
 
   int get totalRecords =>
       exercises +
@@ -40,7 +43,8 @@ class ImportCounts {
       planItems +
       sessions +
       sessionExercises +
-      sets;
+      sets +
+      bodyWeights;
 
   ImportCounts operator +(ImportCounts other) {
     return ImportCounts(
@@ -51,6 +55,7 @@ class ImportCounts {
       sessions: sessions + other.sessions,
       sessionExercises: sessionExercises + other.sessionExercises,
       sets: sets + other.sets,
+      bodyWeights: bodyWeights + other.bodyWeights,
     );
   }
 
@@ -63,7 +68,8 @@ class ImportCounts {
         other.planItems == planItems &&
         other.sessions == sessions &&
         other.sessionExercises == sessionExercises &&
-        other.sets == sets;
+        other.sets == sets &&
+        other.bodyWeights == bodyWeights;
   }
 
   @override
@@ -75,13 +81,15 @@ class ImportCounts {
     sessions,
     sessionExercises,
     sets,
+    bodyWeights,
   );
 
   @override
   String toString() =>
       'ImportCounts(exercises: $exercises, programs: $programs, '
       'days: $days, planItems: $planItems, sessions: $sessions, '
-      'sessionExercises: $sessionExercises, sets: $sets)';
+      'sessionExercises: $sessionExercises, sets: $sets, '
+      'bodyWeights: $bodyWeights)';
 }
 
 /// Outcome counts for a Merge dry run.
@@ -191,6 +199,7 @@ ImportCounts countAppData(AppData data) {
     sessions: data.sessions.length,
     sessionExercises: sessionExercises,
     sets: sets,
+    bodyWeights: data.bodyWeights.length,
   );
 }
 
@@ -237,6 +246,9 @@ MergeResult mergeAppData(AppData current, AppData incoming) {
   final List<Exercise> exercises = <Exercise>[...current.exercises];
   final List<Program> programs = <Program>[...current.programs];
   final List<Session> sessions = <Session>[...current.sessions];
+  final List<BodyWeightEntry> bodyWeights = <BodyWeightEntry>[
+    ...current.bodyWeights,
+  ];
 
   final Map<String, Exercise> currentExercises = <String, Exercise>{
     for (final Exercise exercise in current.exercises) exercise.id: exercise,
@@ -247,6 +259,11 @@ MergeResult mergeAppData(AppData current, AppData incoming) {
   final Map<String, Session> currentSessions = <String, Session>{
     for (final Session session in current.sessions) session.id: session,
   };
+  final Map<String, BodyWeightEntry> currentBodyWeights =
+      <String, BodyWeightEntry>{
+        for (final BodyWeightEntry entry in current.bodyWeights)
+          entry.id: entry,
+      };
   final Set<String> mergedExerciseIds = <String>{
     for (final Exercise exercise in current.exercises) exercise.id,
   };
@@ -343,10 +360,30 @@ MergeResult mergeAppData(AppData current, AppData incoming) {
         );
   }
 
+  for (final BodyWeightEntry entry in incoming.bodyWeights) {
+    final BodyWeightEntry? existing = currentBodyWeights[entry.id];
+    if (existing != null) {
+      if (_sameJson(existing.toJson(), entry.toJson())) {
+        unchanged = unchanged + const ImportCounts(bodyWeights: 1);
+      } else {
+        conflicts += 1;
+      }
+      continue;
+    }
+    if (usedIds.contains(entry.id)) {
+      conflicts += 1;
+      continue;
+    }
+    bodyWeights.add(entry);
+    usedIds.add(entry.id);
+    added = added + const ImportCounts(bodyWeights: 1);
+  }
+
   final bool hasLocalData =
       current.exercises.isNotEmpty ||
       current.programs.isNotEmpty ||
-      current.sessions.isNotEmpty;
+      current.sessions.isNotEmpty ||
+      current.bodyWeights.isNotEmpty;
   final bool settingsChanged =
       !hasLocalData &&
       !_sameJson(current.settings.toJson(), incoming.settings.toJson());
@@ -354,6 +391,7 @@ MergeResult mergeAppData(AppData current, AppData incoming) {
     exercises: exercises,
     programs: programs,
     sessions: sessions,
+    bodyWeights: bodyWeights,
     settings: hasLocalData ? current.settings : incoming.settings,
   );
 
@@ -402,6 +440,9 @@ void _collectIds(AppData data, Set<String> ids) {
   }
   for (final Session session in data.sessions) {
     ids.addAll(_sessionIds(session));
+  }
+  for (final BodyWeightEntry entry in data.bodyWeights) {
+    ids.add(entry.id);
   }
 }
 

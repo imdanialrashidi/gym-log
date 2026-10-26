@@ -8,12 +8,17 @@ Future<String?> showNameDialog(
   BuildContext context, {
   required String title,
   required String label,
+  required int maxLength,
   String initialValue = '',
 }) {
   return showDialog<String>(
     context: context,
-    builder: (BuildContext context) =>
-        _NameDialog(title: title, label: label, initialValue: initialValue),
+    builder: (BuildContext context) => _NameDialog(
+      title: title,
+      label: label,
+      maxLength: maxLength,
+      initialValue: initialValue,
+    ),
   );
 }
 
@@ -21,11 +26,13 @@ class _NameDialog extends StatefulWidget {
   const _NameDialog({
     required this.title,
     required this.label,
+    required this.maxLength,
     required this.initialValue,
   });
 
   final String title;
   final String label;
+  final int maxLength;
   final String initialValue;
 
   @override
@@ -62,11 +69,18 @@ class _NameDialogState extends State<_NameDialog> {
           key: const Key('name-dialog-field'),
           controller: _controller,
           autofocus: true,
+          maxLength: widget.maxLength,
           textInputAction: TextInputAction.done,
-          decoration: InputDecoration(labelText: widget.label),
-          validator: (String? value) => value == null || value.trim().isEmpty
-              ? l10n.errorNameRequired
-              : null,
+          decoration: InputDecoration(labelText: widget.label, counterText: ''),
+          validator: (String? value) {
+            if (value == null || value.trim().isEmpty) {
+              return l10n.errorNameRequired;
+            }
+            if (value.trim().length > widget.maxLength) {
+              return l10n.errorInputTooLong;
+            }
+            return null;
+          },
           onFieldSubmitted: (_) => _submit(),
         ),
       ),

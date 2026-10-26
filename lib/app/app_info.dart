@@ -1,5 +1,6 @@
 /// Public app identity written into exports. Keep in sync with `pubspec.yaml`;
-/// `test/data/app_info_test.dart` enforces the pair.
+/// `test/data/export_reminder_test.dart` reads the pubspec version and compares
+/// it with [appVersion].
 const String appVersion = '0.1.0';
 
 /// Top-level export generator marker.

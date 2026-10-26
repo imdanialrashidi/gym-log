@@ -10,15 +10,18 @@ import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
 import '../../../data/app_data_controller.dart';
-import '../../../data/backup_coordinator.dart';
+import '../../../data/app_data_store.dart';
+import '../../../data/backup_flow.dart';
 import '../../../data/photo_index_controller.dart';
-import 'backup_error_text.dart';
+import '../../backup/presentation/backup_error_text.dart';
+import '../../backup/presentation/backup_feedback.dart';
 
 /// Export and import controls in Settings (`IO-001`–`IO-003`, `IO-006`).
 class BackupSection extends ConsumerStatefulWidget {
-  const BackupSection({required this.data, super.key});
+  const BackupSection({required this.data, super.key, this.showHeading = true});
 
   final AppData data;
+  final bool showHeading;
 
   @override
   ConsumerState<BackupSection> createState() => _BackupSectionState();
@@ -33,22 +36,20 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
     }
     setState(() => _busy = true);
     try {
-      final bool saved = await ref
-          .read(backupCoordinatorProvider)
-          .export(widget.data);
+      final bool saved = await ref.read(backupFlowProvider).export(widget.data);
       if (!mounted) {
         return;
       }
       if (saved) {
-        _showSnack(context.l10n.exportSaved);
+        showBackupSnack(context, context.l10n.exportSaved);
       }
     } on PlatformException {
       if (mounted) {
-        _showSnack(context.l10n.exportFailed);
+        showBackupSnack(context, context.l10n.exportFailed);
       }
     } catch (_) {
       if (mounted) {
-        _showSnack(context.l10n.exportFailed);
+        showBackupSnack(context, context.l10n.exportFailed);
       }
     } finally {
       if (mounted) {
@@ -63,104 +64,94 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
     }
     setState(() => _busy = true);
     try {
-      final BackupCoordinator coordinator = ref.read(backupCoordinatorProvider);
-      final BackupDocument? document = await coordinator.pickImport();
-      if (document == null || !mounted) {
+      final BackupFlow flow = ref.read(backupFlowProvider);
+      final ImportDraft? draft = await flow.pickImport();
+      if (draft == null || !mounted) {
         return;
       }
-      final AppData current = ref.read(appDataControllerProvider).requireValue;
-      final ImportPreview mergePreview = previewImport(
-        current: current,
-        document: document,
-        mode: ImportMode.merge,
-      );
-      final ImportPreview replacePreview = previewImport(
-        current: current,
-        document: document,
-        mode: ImportMode.replace,
-      );
       setState(() => _busy = false);
-      final ImportPreview? preview = await showDialog<ImportPreview>(
+      final ImportMode? mode = await showDialog<ImportMode>(
         context: context,
-        builder: (BuildContext dialogContext) => _ImportPreviewDialog(
-          mergePreview: mergePreview,
-          replacePreview: replacePreview,
-        ),
+        builder: (BuildContext dialogContext) =>
+            _ImportPreviewDialog(draft: draft),
       );
-      if (preview == null || !mounted) {
+      if (mode == null || !mounted) {
         return;
       }
       setState(() => _busy = true);
-      await coordinator.apply(preview);
-      ref.invalidate(photoIndexProvider);
+      await flow.commit(draft, mode);
       if (mounted) {
-        _showSnack(context.l10n.importCompleted);
+        showBackupSnack(context, context.l10n.importCompleted);
       }
-    } on BackupError catch (error) {
+    } on ImportFailure catch (failure) {
       if (mounted) {
+        // Stop the inline spinner before the modal error, or pumpAndSettle
+        // never settles behind an animating indicator.
         setState(() => _busy = false);
-        await _showError(backupErrorText(context.l10n, error));
-      }
-    } on PlatformException catch (error) {
-      if (mounted) {
-        setState(() => _busy = false);
-        await _showError(switch (error.code) {
-          'too_large' => context.l10n.importErrorTooLarge,
-          'unavailable' => context.l10n.importErrorPickerUnavailable,
-          _ => context.l10n.importErrorUnreadable,
-        });
-      }
-    } on ImportPreviewMismatch {
-      if (mounted) {
-        setState(() => _busy = false);
-        await _showError(context.l10n.importDataChanged);
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _busy = false);
-        await _showError(context.l10n.importFailed);
+        await showImportFailureDialog(
+          context,
+          importFailureText(context.l10n, failure),
+        );
       }
     } finally {
-      if (mounted && _busy) {
+      if (mounted) {
         setState(() => _busy = false);
       }
     }
   }
 
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _showError(String message) {
-    return showDialog<void>(
+  Future<void> _restoreSnapshot(DataSnapshotInfo info) async {
+    if (_busy) {
+      return;
+    }
+    final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(dialogContext.l10n.importErrorTitle),
-        content: Text(message),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(dialogContext.l10n.close),
-          ),
-        ],
-      ),
+      builder: (BuildContext dialogContext) =>
+          _RestoreSnapshotDialog(info: info),
     );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(appDataControllerProvider.notifier)
+          .restoreSnapshot(info.fileName);
+      ref.invalidate(dataSnapshotsProvider);
+      ref.invalidate(photoIndexProvider);
+      if (mounted) {
+        showBackupSnack(context, context.l10n.importCompleted);
+      }
+    } catch (_) {
+      if (mounted) {
+        await showImportFailureDialog(
+          context,
+          context.l10n.restoreBackupFailed,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final List<DataSnapshotInfo> snapshots =
+        ref.watch(dataSnapshotsProvider).value ?? const <DataSnapshotInfo>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-          child: Text(
-            l10n.backupSectionTitle,
-            style: Theme.of(context).textTheme.titleMedium,
+        if (widget.showHeading)
+          Padding(
+            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
+            child: Text(
+              l10n.backupSectionTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ),
-        ),
         // DAT-007/ADR-0007: Android Auto Backup is a manifest/build-time
         // policy. This build enforces it off, so the control communicates the
         // effective state instead of pretending a runtime switch can change it.
@@ -203,19 +194,95 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
           subtitle: Text(l10n.importDataHint),
           onTap: _import,
         ),
+        if (snapshots.isNotEmpty) ...<Widget>[
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              AppTokens.space1,
+              AppTokens.space2,
+              AppTokens.space1,
+              AppTokens.space1,
+            ),
+            child: Text(
+              l10n.previousDataVersions,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          for (final DataSnapshotInfo info in snapshots)
+            ListTile(
+              key: Key('data-snapshot-${info.fileName}'),
+              contentPadding: const EdgeInsetsDirectional.symmetric(
+                horizontal: AppTokens.space1,
+              ),
+              enabled: !_busy,
+              leading: const Icon(Icons.history),
+              title: Text(
+                context.digits(
+                  context.formatDate(
+                    info.savedAt,
+                    style: AppDateStyle.dateTime,
+                  ),
+                ),
+              ),
+              subtitle: Text(l10n.restoreSnapshotBody),
+              onTap: () => _restoreSnapshot(info),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _RestoreSnapshotDialog extends StatelessWidget {
+  const _RestoreSnapshotDialog({required this.info});
+
+  final DataSnapshotInfo info;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AlertDialog(
+      key: const Key('restore-snapshot-dialog'),
+      title: Text(l10n.restoreSnapshotTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              context.digits(
+                context.formatDate(info.savedAt, style: AppDateStyle.dateTime),
+              ),
+            ),
+            const SizedBox(height: AppTokens.space1),
+            Text(l10n.restoreSnapshotBody),
+            const SizedBox(height: AppTokens.space1),
+            Text(
+              l10n.restoreSnapshotPhotosWarning,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          key: const Key('restore-snapshot-cancel'),
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          key: const Key('restore-snapshot-confirm'),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(l10n.importConfirm),
+        ),
       ],
     );
   }
 }
 
 class _ImportPreviewDialog extends StatefulWidget {
-  const _ImportPreviewDialog({
-    required this.mergePreview,
-    required this.replacePreview,
-  });
+  const _ImportPreviewDialog({required this.draft});
 
-  final ImportPreview mergePreview;
-  final ImportPreview replacePreview;
+  final ImportDraft draft;
 
   @override
   State<_ImportPreviewDialog> createState() => _ImportPreviewDialogState();
@@ -224,8 +291,7 @@ class _ImportPreviewDialog extends StatefulWidget {
 class _ImportPreviewDialogState extends State<_ImportPreviewDialog> {
   ImportMode _mode = ImportMode.merge;
 
-  ImportPreview get _preview =>
-      _mode == ImportMode.merge ? widget.mergePreview : widget.replacePreview;
+  ImportPreview get _preview => widget.draft.previewFor(_mode);
 
   @override
   Widget build(BuildContext context) {
@@ -305,12 +371,14 @@ class _ImportPreviewDialogState extends State<_ImportPreviewDialog> {
                           summary.added.programs,
                           summary.added.sessions,
                           summary.added.sets,
+                          summary.added.bodyWeights,
                         )
                       : l10n.importSummaryReplace(
                           summary.added.exercises,
                           summary.added.programs,
                           summary.added.sessions,
                           summary.added.sets,
+                          summary.added.bodyWeights,
                         ),
                 ),
                 key: const Key('import-summary'),
@@ -353,9 +421,7 @@ class _ImportPreviewDialogState extends State<_ImportPreviewDialog> {
         ),
         FilledButton(
           key: const Key('import-confirm'),
-          onPressed: canImport
-              ? () => Navigator.of(context).pop(preview)
-              : null,
+          onPressed: canImport ? () => Navigator.of(context).pop(_mode) : null,
           child: Text(l10n.importConfirm),
         ),
       ],

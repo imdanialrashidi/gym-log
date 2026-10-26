@@ -63,6 +63,64 @@ void main() {
     ],
   );
 
+  group('prefillFromWorkingSets', () {
+    test('matches prefillForExercise for every index', () {
+      final List<Session> sessions = <Session>[
+        history,
+        _session('session-2', DateTime.utc(2026, 10, 20, 10), <SessionExercise>[
+          _exercise('session-exercise-2', 'bench', <SetLog>[
+            _set('warmup', 150000, 5, warmup: true, order: 0),
+            _set('working-1', 110000, 6, rir: 1, order: 1),
+            _set('working-2', 110000, 5, rir: 2, order: 2),
+          ]),
+          _exercise('session-exercise-2-squat', 'squat', <SetLog>[
+            _set('squat-1', 90000, 5, order: 0),
+          ], sortOrder: 1),
+        ]),
+      ];
+      final List<SetLog> workingSets = lastWorkingSetsForExercise(
+        sessions: sessions,
+        exerciseId: 'bench',
+        excludeSessionId: 'active',
+      );
+
+      for (int index = 0; index <= workingSets.length; index++) {
+        final SetPrefill grouped = prefillFromWorkingSets(
+          workingSets: workingSets,
+          setIndex: index,
+        );
+        final SetPrefill scanned = prefillForExercise(
+          sessions: sessions,
+          exerciseId: 'bench',
+          setIndex: index,
+          excludeSessionId: 'active',
+        );
+        expect(
+          grouped.weightGrams,
+          scanned.weightGrams,
+          reason: 'index $index',
+        );
+        expect(grouped.reps, scanned.reps, reason: 'index $index');
+        expect(grouped.rir, scanned.rir, reason: 'index $index');
+      }
+    });
+
+    test('empty working sets have no prefill; negative index is rejected', () {
+      expect(
+        prefillFromWorkingSets(
+          workingSets: const <SetLog>[],
+          setIndex: 0,
+        ).isEmpty,
+        isTrue,
+      );
+      expect(
+        () =>
+            prefillFromWorkingSets(workingSets: const <SetLog>[], setIndex: -1),
+        throwsArgumentError,
+      );
+    });
+  });
+
   group('prefillForExercise', () {
     test('first session has no prefill', () {
       final SetPrefill prefill = prefillForExercise(

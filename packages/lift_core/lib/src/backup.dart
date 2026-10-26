@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'app_data.dart';
+import 'body_weight.dart';
 import 'exercise.dart';
+import 'limits.dart';
 import 'program.dart';
 import 'session.dart';
 import 'settings.dart';
@@ -120,6 +122,8 @@ Map<String, Object?> buildBackupMap(
     throw ArgumentError.value(generator, 'generator');
   }
   final Map<String, Object?> document = data.toJson();
+  final List<Object?> bodyWeights = (document['bodyWeights']! as List)
+      .cast<Object?>();
   return <String, Object?>{
     'schemaVersion': backupSchemaVersion,
     'appVersion': version,
@@ -128,6 +132,9 @@ Map<String, Object?> buildBackupMap(
     'exercises': document['exercises'],
     'programs': document['programs'],
     'sessions': document['sessions'],
+    // Additive field: omitted while empty so every historical fixture keeps
+    // round-tripping byte-for-byte, and older readers stay compatible.
+    if (bodyWeights.isNotEmpty) 'bodyWeights': bodyWeights,
     'settings': document['settings'],
   };
 }
@@ -214,6 +221,10 @@ BackupDocument parseBackup(String text) {
     'sessions',
     Session.fromJson,
   );
+  // Additive in backup schema 1: older files have no body-weight check-ins.
+  final List<BodyWeightEntry> bodyWeights = root.containsKey('bodyWeights')
+      ? _decodeList(root, 'bodyWeights', BodyWeightEntry.fromJson)
+      : const <BodyWeightEntry>[];
   final Map<String, Object?> settingsJson = _readRequiredMap(root, 'settings');
   final AppSettings settings;
   try {
@@ -232,8 +243,9 @@ BackupDocument parseBackup(String text) {
     );
   }
 
-  _validateIdentityAndReferences(exercises, programs, sessions);
-  _validateTimestamps(exercises, programs, sessions);
+  _validateIdentityAndReferences(exercises, programs, sessions, bodyWeights);
+  _validateTextAndOrderBounds(exercises, programs, sessions);
+  _validateTimestamps(exercises, programs, sessions, bodyWeights);
 
   final int activeSessions = sessions.where((Session s) => s.isActive).length;
   if (activeSessions > 1) {
@@ -250,6 +262,7 @@ BackupDocument parseBackup(String text) {
       exercises: exercises,
       programs: programs,
       sessions: sessions,
+      bodyWeights: bodyWeights,
       settings: settings,
     );
   } on ArgumentError catch (error) {
@@ -405,6 +418,7 @@ void _validateIdentityAndReferences(
   List<Exercise> exercises,
   List<Program> programs,
   List<Session> sessions,
+  List<BodyWeightEntry> bodyWeights,
 ) {
   final Map<String, String> seen = <String, String>{};
 
@@ -449,6 +463,14 @@ void _validateIdentityAndReferences(
         );
       }
     }
+  }
+
+  for (
+    int bodyWeightIndex = 0;
+    bodyWeightIndex < bodyWeights.length;
+    bodyWeightIndex += 1
+  ) {
+    addId(bodyWeights[bodyWeightIndex].id, 'bodyWeights[$bodyWeightIndex].id');
   }
 
   for (
@@ -541,10 +563,96 @@ void _validateIdentityAndReferences(
   }
 }
 
+/// Rejects over-limit free text and ordering values at the untrusted boundary.
+///
+/// Field paths only: never echo a user's name. Older on-device documents are
+/// loaded through the permissive models, not this parser, so this cannot lock
+/// an existing install out.
+void _validateTextAndOrderBounds(
+  List<Exercise> exercises,
+  List<Program> programs,
+  List<Session> sessions,
+) {
+  void checkText(String value, String field, int maximum) {
+    if (value.length > maximum) {
+      throw BackupError(BackupErrorCode.absurdValue, field: field);
+    }
+  }
+
+  void checkOrder(int value, String field) {
+    if (value < 0 || value > maximumSortOrder) {
+      throw BackupError(
+        BackupErrorCode.absurdValue,
+        field: field,
+        value: '$value',
+      );
+    }
+  }
+
+  for (int index = 0; index < exercises.length; index += 1) {
+    final Exercise exercise = exercises[index];
+    checkText(
+      exercise.name,
+      'exercises[$index].name',
+      maximumExerciseNameLength,
+    );
+    final String? searchTerm = exercise.searchTerm;
+    if (searchTerm != null) {
+      checkText(
+        searchTerm,
+        'exercises[$index].searchTerm',
+        maximumSearchTermLength,
+      );
+    }
+  }
+  for (
+    int programIndex = 0;
+    programIndex < programs.length;
+    programIndex += 1
+  ) {
+    final Program program = programs[programIndex];
+    checkText(
+      program.name,
+      'programs[$programIndex].name',
+      maximumProgramNameLength,
+    );
+    for (int dayIndex = 0; dayIndex < program.days.length; dayIndex += 1) {
+      final ProgramDay day = program.days[dayIndex];
+      final String dayPath = 'programs[$programIndex].days[$dayIndex]';
+      checkText(day.name, '$dayPath.name', maximumDayNameLength);
+      checkOrder(day.sortOrder, '$dayPath.sortOrder');
+      for (int itemIndex = 0; itemIndex < day.items.length; itemIndex += 1) {
+        checkOrder(
+          day.items[itemIndex].sortOrder,
+          '$dayPath.items[$itemIndex].sortOrder',
+        );
+      }
+    }
+  }
+  for (
+    int sessionIndex = 0;
+    sessionIndex < sessions.length;
+    sessionIndex += 1
+  ) {
+    final Session session = sessions[sessionIndex];
+    for (
+      int exerciseIndex = 0;
+      exerciseIndex < session.exercises.length;
+      exerciseIndex += 1
+    ) {
+      checkOrder(
+        session.exercises[exerciseIndex].sortOrder,
+        'sessions[$sessionIndex].exercises[$exerciseIndex].sortOrder',
+      );
+    }
+  }
+}
+
 void _validateTimestamps(
   List<Exercise> exercises,
   List<Program> programs,
   List<Session> sessions,
+  List<BodyWeightEntry> bodyWeights,
 ) {
   for (int index = 0; index < exercises.length; index += 1) {
     _checkTimestamp(exercises[index].createdAt, 'exercises[$index].createdAt');
@@ -564,6 +672,16 @@ void _validateTimestamps(
     if (archivedAt != null) {
       _checkTimestamp(archivedAt, 'programs[$programIndex].archivedAt');
     }
+  }
+  for (
+    int bodyWeightIndex = 0;
+    bodyWeightIndex < bodyWeights.length;
+    bodyWeightIndex += 1
+  ) {
+    _checkTimestamp(
+      bodyWeights[bodyWeightIndex].recordedAt,
+      'bodyWeights[$bodyWeightIndex].recordedAt',
+    );
   }
   for (
     int sessionIndex = 0;

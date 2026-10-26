@@ -149,6 +149,16 @@ void main() {
       initialLocation: '/workout',
       locale: const Locale('fa'),
     );
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('start-day-day-1')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(
+      tester.element(find.byKey(const Key('start-day-day-1'))),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('start-day-day-1')));
     await tester.pumpAndSettle();
 
@@ -163,6 +173,11 @@ void main() {
     // Latin input still parses.
     await tester.enterText(find.byKey(const Key('set-0-0-weight')), '102.5');
     await tester.enterText(find.byKey(const Key('set-0-0-reps')), '9');
+    await Scrollable.ensureVisible(
+      tester.element(find.byKey(const Key('set-0-0-check'))),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('set-0-0-check')));
     await tester.pumpAndSettle();
 
@@ -232,9 +247,25 @@ void main() {
       initialLocation: '/workout',
       locale: const Locale('fa'),
     );
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('start-day-day-1')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(
+      tester.element(find.byKey(const Key('start-day-day-1'))),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('start-day-day-1')));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('set-0-0-reps-plus')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('set-0-0-reps-plus')));
     await tester.pumpAndSettle();
 
@@ -310,6 +341,27 @@ void main() {
     expect(_fieldText(tester, 'exercise-increment-field'), '5');
   });
 
+  testWidgets('confirming the default increment unchanged keeps null', (
+    WidgetTester tester,
+  ) async {
+    final MemoryAppDataStore store = MemoryAppDataStore(_seed());
+    expect(store.data.settings.defaultIncrementGrams, isNull);
+    await _openSettings(tester, store);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('default-increment-row')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byKey(const Key('default-increment-row')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('default-increment-save')));
+    await tester.pumpAndSettle();
+
+    expect(store.data.settings.defaultIncrementGrams, isNull);
+    expect(store.data.settings.incrementFor(WeightUnit.kilograms), 2500);
+  });
+
   testWidgets('increment dialog accepts Persian digits and rejects zero', (
     WidgetTester tester,
   ) async {
@@ -329,7 +381,7 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('default-increment-save')));
     await tester.pumpAndSettle();
-    expect(find.text('یک مقدار مثبت وارد کنید.'), findsOneWidget);
+    expect(find.text('یک مقدار مثبت وارد کن.'), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const Key('default-increment-field')),
@@ -337,7 +389,10 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('default-increment-save')));
     await tester.pumpAndSettle();
-    expect(store.data.settings.defaultIncrementGrams, 2500);
+    // 2.5 kg is the unit default, so confirming it keeps the null
+    // "follow the unit" state instead of pinning an explicit override.
+    expect(store.data.settings.defaultIncrementGrams, isNull);
+    expect(store.data.settings.incrementFor(WeightUnit.kilograms), 2500);
   });
 }
 
@@ -352,4 +407,13 @@ class _LoadFailingStore implements AppDataStore {
 
   @override
   Future<void> snapshot() async {}
+
+  @override
+  Future<List<DataSnapshotInfo>> listSnapshots() async =>
+      const <DataSnapshotInfo>[];
+
+  @override
+  Future<AppData> loadSnapshot(String fileName) async {
+    throw const DataStoreException('injected missing snapshot');
+  }
 }

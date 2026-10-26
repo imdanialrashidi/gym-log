@@ -5,16 +5,15 @@ import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
 import 'set_input_errors.dart';
-import 'set_row.dart';
 
 /// Edits one already logged set (`LOG-006`). Returns the new values or `null`
 /// when cancelled; the parent owns persistence and failure feedback.
-Future<SetDraft?> showSetEditDialog(
+Future<SetEntry?> showSetEditDialog(
   BuildContext context, {
   required SetLog set,
   required WeightUnit unit,
 }) {
-  return showDialog<SetDraft>(
+  return showDialog<SetEntry>(
     context: context,
     builder: (BuildContext context) => _SetEditDialog(set: set, unit: unit),
   );
@@ -51,9 +50,10 @@ class _SetEditDialogState extends State<_SetEditDialog> {
 
   void _save() {
     final AppLocalizations l10n = context.l10n;
-    final WeightParseResult weight = parseWeightInput(
+    final WeightParseResult weight = parseWeightField(
       _weight.text,
-      widget.unit,
+      unit: widget.unit,
+      originalGrams: widget.set.weightGrams,
     );
     final RepsParseResult reps = parseRepsInput(_reps.text);
     if (!weight.isValid || !reps.isValid) {
@@ -68,7 +68,7 @@ class _SetEditDialogState extends State<_SetEditDialog> {
       return;
     }
     Navigator.of(context).pop(
-      SetDraft(
+      SetEntry(
         weightGrams: weight.grams!,
         reps: reps.reps!,
         rir: _rir,

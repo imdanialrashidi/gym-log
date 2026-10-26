@@ -206,6 +206,12 @@ extension AppCalendarContext on BuildContext {
   int get weekStartIndex =>
       _calendar.weekStartIndex(Localizations.localeOf(this).languageCode);
 
+  /// First day of the week as `DateTime.weekday` (1 = Monday … 7 = Sunday).
+  int get weekStartsOn {
+    final int index = weekStartIndex;
+    return index == 0 ? DateTime.sunday : index;
+  }
+
   /// Display-calendar month containing [value].
   CalendarMonth calendarMonth(DateTime value) => _calendar.month(
     value,

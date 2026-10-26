@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -5,34 +8,10 @@ import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
 import '../../../core/widgets/pr_badge.dart';
+import '../../../core/widgets/rir_info.dart';
+import '../../../core/widgets/training_formats.dart';
 import 'progression_reason_text.dart';
 import 'set_input_errors.dart';
-
-/// A committed set plus any personal records it earned.
-class SetLogOutcome {
-  const SetLogOutcome({
-    required this.set,
-    this.personalRecords = const <PersonalRecordType>{},
-  });
-
-  final SetLog set;
-  final Set<PersonalRecordType> personalRecords;
-}
-
-/// One set's editable draft values.
-class SetDraft {
-  const SetDraft({
-    required this.weightGrams,
-    required this.reps,
-    required this.isWarmup,
-    this.rir,
-  });
-
-  final int weightGrams;
-  final int reps;
-  final int? rir;
-  final bool isWarmup;
-}
 
 /// The set row: typed or stepped weight/reps, optional RIR chips, a warm-up
 /// toggle, and one check action that commits immediately.
@@ -62,7 +41,7 @@ class SetRow extends StatefulWidget {
   final int setNumber;
   final WeightUnit unit;
   final int incrementGrams;
-  final Future<SetLogOutcome> Function(SetDraft draft) onLog;
+  final Future<LoggedSet> Function(SetEntry entry) onLog;
   final SetLog? savedSet;
   final Set<PersonalRecordType> personalRecords;
   final int? initialWeightGrams;
@@ -83,7 +62,8 @@ class SetRow extends StatefulWidget {
   State<SetRow> createState() => _SetRowState();
 }
 
-class _SetRowState extends State<SetRow> {
+class _SetRowState extends State<SetRow>
+    with AutomaticKeepAliveClientMixin<SetRow> {
   late final TextEditingController _weight;
   late final TextEditingController _reps;
   SetLog? _saved;
@@ -92,13 +72,19 @@ class _SetRowState extends State<SetRow> {
   bool _warmup = false;
   bool _saving = false;
   bool _suggestionDismissed = false;
-  String? _weightError;
-  String? _repsError;
-  String? _saveError;
+  NumberProblem? _weightProblem;
+  NumberProblem? _repsProblem;
+  bool _saveFailed = false;
+  int? _canonicalWeightGrams;
   late DigitStyle _digitStyle;
   bool _valuesInitialized = false;
 
   bool get _locked => _saved != null || _saving;
+
+  /// Keep an in-progress draft alive when the user scrolls to another exercise
+  /// and back. Saved rows are cheap, so keeping them is harmless.
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -139,6 +125,7 @@ class _SetRowState extends State<SetRow> {
         saved?.reps ?? suggestion?.targetReps ?? widget.initialReps;
     _rir = saved == null ? widget.initialRir : saved.rir;
     _warmup = saved?.isWarmup ?? widget.initialWarmup;
+    _canonicalWeightGrams = weightGrams;
     _weight.text = weightGrams == null
         ? ''
         : applyDigitStyle(formatWeight(weightGrams, widget.unit), _digitStyle);
@@ -149,6 +136,7 @@ class _SetRowState extends State<SetRow> {
     setState(() {
       _suggestionDismissed = true;
       final int? weightGrams = widget.initialWeightGrams;
+      _canonicalWeightGrams = weightGrams;
       _weight.text = weightGrams == null
           ? ''
           : applyDigitStyle(
@@ -159,8 +147,8 @@ class _SetRowState extends State<SetRow> {
         widget.initialReps?.toString() ?? '',
         _digitStyle,
       );
-      _weightError = null;
-      _repsError = null;
+      _weightProblem = null;
+      _repsProblem = null;
     });
   }
 
@@ -190,8 +178,17 @@ class _SetRowState extends State<SetRow> {
       return;
     }
     if (saved != null) {
+      _canonicalWeightGrams = saved.weightGrams;
       _weight.text = context.digits(
         formatWeight(saved.weightGrams, widget.unit),
+      );
+      return;
+    }
+    final int? canonical = _canonicalWeightGrams;
+    if (canonical != null) {
+      _weight.text = applyDigitStyle(
+        formatWeight(canonical, widget.unit),
+        _digitStyle,
       );
       return;
     }
@@ -214,8 +211,11 @@ class _SetRowState extends State<SetRow> {
     super.dispose();
   }
 
-  WeightParseResult get _parsedWeight =>
-      parseWeightInput(_weight.text, widget.unit);
+  WeightParseResult get _parsedWeight => parseWeightField(
+    _weight.text,
+    unit: widget.unit,
+    originalGrams: _canonicalWeightGrams,
+  );
 
   int? get _parsedReps => parseRepsInput(_reps.text).reps;
 
@@ -257,18 +257,19 @@ class _SetRowState extends State<SetRow> {
       0,
       maximumSetWeightGrams,
     );
+    _canonicalWeightGrams = next;
     _weight.text = applyDigitStyle(
       formatWeight(next, widget.unit),
       _digitStyle,
     );
-    setState(() => _weightError = null);
+    setState(() => _weightProblem = null);
   }
 
   void _stepReps(int direction) {
     final int base = _parsedReps ?? 0;
     final int next = (base + direction).clamp(1, maximumSetRepetitions);
     _reps.text = applyDigitStyle('$next', _digitStyle);
-    setState(() => _repsError = null);
+    setState(() => _repsProblem = null);
   }
 
   void _toggleWarmup() {
@@ -288,31 +289,26 @@ class _SetRowState extends State<SetRow> {
   }
 
   Future<void> _check() async {
-    final AppLocalizations l10n = context.l10n;
     final WeightParseResult weight = _parsedWeight;
     final RepsParseResult reps = parseRepsInput(_reps.text);
     if (!weight.isValid || !reps.isValid) {
       setState(() {
-        _weightError = weight.problem == null
-            ? null
-            : context.digits(_weightErrorText(l10n, weight.problem!));
-        _repsError = reps.problem == null
-            ? null
-            : context.digits(_repsErrorText(l10n, reps.problem!));
-        _saveError = null;
+        _weightProblem = weight.problem;
+        _repsProblem = reps.problem;
+        _saveFailed = false;
       });
       return;
     }
 
     setState(() {
       _saving = true;
-      _weightError = null;
-      _repsError = null;
-      _saveError = null;
+      _weightProblem = null;
+      _repsProblem = null;
+      _saveFailed = false;
     });
     try {
-      final SetLogOutcome outcome = await widget.onLog(
-        SetDraft(
+      final LoggedSet outcome = await widget.onLog(
+        SetEntry(
           weightGrams: weight.grams!,
           reps: reps.reps!,
           rir: _rir,
@@ -322,6 +318,11 @@ class _SetRowState extends State<SetRow> {
       if (!mounted) {
         return;
       }
+      unawaited(
+        outcome.personalRecords.isEmpty
+            ? HapticFeedback.lightImpact()
+            : HapticFeedback.mediumImpact(),
+      );
       setState(() {
         _saved = outcome.set;
         _personalRecords = outcome.personalRecords;
@@ -334,7 +335,7 @@ class _SetRowState extends State<SetRow> {
       }
       setState(() {
         _saving = false;
-        _saveError = l10n.saveFailed;
+        _saveFailed = true;
       });
     }
   }
@@ -344,376 +345,899 @@ class _SetRowState extends State<SetRow> {
     WeightUnit.pounds => context.l10n.unitPounds,
   };
 
-  OutlineInputBorder _inputBorder(Color color, {double width = 1}) {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-      borderSide: BorderSide(color: color, width: width),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final AppLocalizations l10n = context.l10n;
-    final bool saved = _saved != null;
-    final ProgressionSuggestion? suggestion = saved || _suggestionDismissed
+    final SetLog? savedSet = _saved;
+    if (savedSet != null) {
+      return _buildSaved(context, l10n, savedSet);
+    }
+    final ProgressionSuggestion? suggestion = _suggestionDismissed
         ? null
         : widget.suggestion;
-    final TextStyle numberStyle =
-        Theme.of(context).textTheme.titleLarge
-            ?.copyWith(color: AppTokens.textPrimary) ??
-        const TextStyle(color: AppTokens.textPrimary);
+    final NumberProblem? weightProblem = _weightProblem;
+    final NumberProblem? repsProblem = _repsProblem;
 
     return Semantics(
       container: true,
       label: context.digits(l10n.setNumber(widget.setNumber)),
       child: Container(
         margin: const EdgeInsetsDirectional.only(bottom: AppTokens.space1),
-        padding: const EdgeInsetsDirectional.all(AppTokens.space2),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: saved ? AppTokens.surface2 : AppTokens.surface,
-          borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-          border: Border.all(
-            color: saved ? AppTokens.accent : AppTokens.outline,
-            width: saved ? 2 : 1,
-          ),
+          color: AppTokens.background,
+          borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
+          border: Border.all(color: AppTokens.outline),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Wrap(
-                    spacing: AppTokens.space1,
-                    runSpacing: AppTokens.space1,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: <Widget>[
-                      Text(context.digits(l10n.setNumber(widget.setNumber))),
-                      if (saved && _personalRecords.isNotEmpty)
-                        PrBadge(
-                          key: ValueKey<String>('${widget.rowKey}-pr'),
-                          types: _personalRecords,
-                        ),
-                      FilterChip(
-                        key: ValueKey<String>('${widget.rowKey}-warmup'),
-                        label: Text(
-                          l10n.warmupLabel,
-                          style: TextStyle(
-                            color: _warmup
-                                ? AppTokens.onAccent
-                                : AppTokens.textPrimary,
-                          ),
-                        ),
-                        selected: _warmup,
-                        onSelected: _locked ? null : (_) => _toggleWarmup(),
-                        selectedColor: AppTokens.accent,
-                        backgroundColor: AppTokens.surface2,
-                        side: BorderSide(
-                          color: _warmup
-                              ? AppTokens.accent
-                              : AppTokens.textSecondary,
-                        ),
-                        checkmarkColor: AppTokens.onAccent,
-                        materialTapTargetSize: MaterialTapTargetSize.padded,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppTokens.space1),
-                if (saved)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Icon(
-                        Icons.check_circle,
-                        color: AppTokens.accent,
-                        size: 20,
-                      ),
-                      const SizedBox(width: AppTokens.space1),
-                      Text(
-                        l10n.setSaved,
-                        key: ValueKey<String>('${widget.rowKey}-saved'),
-                        style: const TextStyle(
-                          color: AppTokens.accent,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (widget.onEdit != null || widget.onDelete != null)
-                        PopupMenuButton<String>(
-                          key: ValueKey<String>('${widget.rowKey}-actions'),
-                          tooltip: l10n.setActions,
-                          onSelected: (String action) {
-                            if (action == 'edit') {
-                              widget.onEdit?.call(_saved!);
-                            } else {
-                              widget.onDelete?.call(_saved!);
-                            }
-                          },
-                          itemBuilder: (BuildContext context) =>
-                              <PopupMenuEntry<String>>[
-                                PopupMenuItem<String>(
-                                  key: ValueKey<String>(
-                                    '${widget.rowKey}-edit',
-                                  ),
-                                  value: 'edit',
-                                  child: Text(l10n.editSet),
-                                ),
-                                PopupMenuItem<String>(
-                                  key: ValueKey<String>(
-                                    '${widget.rowKey}-delete',
-                                  ),
-                                  value: 'delete',
-                                  child: Text(l10n.deleteSet),
-                                ),
-                              ],
-                          icon: const Icon(Icons.more_vert),
-                        ),
-                    ],
-                  )
-                else
-                  IconButton.filled(
-                    key: ValueKey<String>('${widget.rowKey}-check'),
-                    tooltip: l10n.logSet,
-                    onPressed: _saving ? null : _check,
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppTokens.accent,
-                      foregroundColor: AppTokens.onAccent,
-                      minimumSize: const Size(
-                        AppTokens.minTouchTarget,
-                        AppTokens.minTouchTarget,
-                      ),
-                    ),
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppTokens.onAccent,
-                            ),
-                          )
-                        : const Icon(Icons.check),
-                  ),
-              ],
-            ),
-            if (suggestion != null) ...<Widget>[
-              const SizedBox(height: AppTokens.space1),
-              Container(
-                key: ValueKey<String>('${widget.rowKey}-suggestion'),
-                width: double.infinity,
-                padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-                decoration: BoxDecoration(
-                  color: AppTokens.surface2,
-                  borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-                  border: const BorderDirectional(
-                    start: BorderSide(color: AppTokens.highlight, width: 3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(
+                AppTokens.space2,
+                AppTokens.space1,
+                AppTokens.space1,
+                0,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Wrap(
+                      spacing: AppTokens.space1,
+                      runSpacing: AppTokens.space1,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
-                        const Icon(
-                          Icons.trending_up,
-                          color: AppTokens.highlight,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppTokens.space1),
-                        Text(
-                          l10n.progressionSuggestionLabel,
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(color: AppTokens.highlight),
+                        _SetBadge(number: widget.setNumber, saved: false),
+                        _WarmupToggle(
+                          key: ValueKey<String>('${widget.rowKey}-warmup'),
+                          label: l10n.warmupLabel,
+                          selected: _warmup,
+                          onTap: _locked ? null : _toggleWarmup,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      progressionReasonText(context, suggestion, widget.unit),
-                      key: ValueKey<String>(
-                        '${widget.rowKey}-suggestion-reason',
-                      ),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    if (widget.initialWeightGrams != null &&
-                        widget.initialReps != null) ...<Widget>[
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: AppTokens.space1,
-                        runSpacing: AppTokens.space1,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            context.digits(
-                              l10n.progressionLastSession(
-                                formatWeight(
-                                  widget.initialWeightGrams!,
-                                  widget.unit,
-                                ),
-                                widget.initialReps!,
-                              ),
-                            ),
-                            key: ValueKey<String>(
-                              '${widget.rowKey}-suggestion-last',
-                            ),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppTokens.textSecondary),
-                          ),
-                          TextButton(
-                            key: ValueKey<String>(
-                              '${widget.rowKey}-suggestion-revert',
-                            ),
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(
-                                AppTokens.minTouchTarget,
-                                AppTokens.minTouchTarget,
-                              ),
-                              padding: const EdgeInsetsDirectional.symmetric(
-                                horizontal: AppTokens.space1,
-                              ),
-                            ),
-                            onPressed: _revertSuggestion,
-                            child: Text(l10n.progressionUseLastSession),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: AppTokens.space1),
+                  _CheckSquare(
+                    rowKey: widget.rowKey,
+                    saving: _saving,
+                    onTap: _saving ? null : _check,
+                    tooltip: l10n.logSet,
+                  ),
+                ],
               ),
-            ],
-            const SizedBox(height: AppTokens.space1),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                IconButton(
-                  key: ValueKey<String>('${widget.rowKey}-weight-minus'),
-                  tooltip: l10n.decreaseWeight,
-                  onPressed: _canDecreaseWeight ? () => _stepWeight(-1) : null,
-                  icon: const Icon(Icons.remove),
-                ),
-                Expanded(
-                  child: TextField(
-                    key: ValueKey<String>('${widget.rowKey}-weight'),
+            ),
+            if (suggestion != null)
+              _SuggestionBlock(
+                rowKey: widget.rowKey,
+                suggestion: suggestion,
+                unit: widget.unit,
+                initialWeightGrams: widget.initialWeightGrams,
+                initialReps: widget.initialReps,
+                onRevert: _revertSuggestion,
+              ),
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(
+                AppTokens.space2,
+                AppTokens.space1,
+                AppTokens.space2,
+                AppTokens.space2,
+              ),
+              child: Column(
+                children: <Widget>[
+                  _NumberDeck(
+                    label: l10n.weightLabel,
+                    unitLabel: _unitLabel,
+                    fieldKey: ValueKey<String>('${widget.rowKey}-weight'),
                     controller: _weight,
                     readOnly: _locked,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    textAlign: TextAlign.center,
-                    style: numberStyle,
-                    decoration: InputDecoration(
-                      labelText: l10n.weightLabel,
-                      suffixText: _unitLabel,
-                      errorText: _weightError,
-                      errorMaxLines: 2,
-                      border: _inputBorder(AppTokens.textSecondary),
-                      enabledBorder: _inputBorder(AppTokens.textSecondary),
-                      focusedBorder: _inputBorder(AppTokens.accent, width: 2),
-                      disabledBorder: _inputBorder(AppTokens.textSecondary),
-                      errorBorder: _inputBorder(AppTokens.danger, width: 2),
-                      focusedErrorBorder: _inputBorder(
-                        AppTokens.danger,
-                        width: 2,
-                      ),
-                    ),
-                    onChanged: (_) => setState(() => _weightError = null),
+                    errorText: weightProblem == null
+                        ? null
+                        : context.digits(_weightErrorText(l10n, weightProblem)),
+                    minusKey: ValueKey<String>('${widget.rowKey}-weight-minus'),
+                    plusKey: ValueKey<String>('${widget.rowKey}-weight-plus'),
+                    minusTooltip: l10n.decreaseWeight,
+                    plusTooltip: l10n.increaseWeight,
+                    onMinus: _canDecreaseWeight ? () => _stepWeight(-1) : null,
+                    onPlus: _canIncreaseWeight ? () => _stepWeight(1) : null,
+                    onChanged: (_) => setState(() {
+                      _weightProblem = null;
+                      _canonicalWeightGrams = null;
+                    }),
                   ),
-                ),
-                IconButton(
-                  key: ValueKey<String>('${widget.rowKey}-weight-plus'),
-                  tooltip: l10n.increaseWeight,
-                  onPressed: _canIncreaseWeight ? () => _stepWeight(1) : null,
-                  icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                IconButton(
-                  key: ValueKey<String>('${widget.rowKey}-reps-minus'),
-                  tooltip: l10n.decreaseReps,
-                  onPressed: _canDecreaseReps ? () => _stepReps(-1) : null,
-                  icon: const Icon(Icons.remove),
-                ),
-                Expanded(
-                  child: TextField(
-                    key: ValueKey<String>('${widget.rowKey}-reps'),
+                  const SizedBox(height: AppTokens.space1),
+                  _NumberDeck(
+                    label: l10n.repsLabel,
+                    fieldKey: ValueKey<String>('${widget.rowKey}-reps'),
                     controller: _reps,
                     readOnly: _locked,
                     keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    style: numberStyle,
-                    decoration: InputDecoration(
-                      labelText: l10n.repsLabel,
-                      errorText: _repsError,
-                      errorMaxLines: 2,
-                      border: _inputBorder(AppTokens.textSecondary),
-                      enabledBorder: _inputBorder(AppTokens.textSecondary),
-                      focusedBorder: _inputBorder(AppTokens.accent, width: 2),
-                      disabledBorder: _inputBorder(AppTokens.textSecondary),
-                      errorBorder: _inputBorder(AppTokens.danger, width: 2),
-                      focusedErrorBorder: _inputBorder(
-                        AppTokens.danger,
-                        width: 2,
+                    errorText: repsProblem == null
+                        ? null
+                        : context.digits(_repsErrorText(l10n, repsProblem)),
+                    minusKey: ValueKey<String>('${widget.rowKey}-reps-minus'),
+                    plusKey: ValueKey<String>('${widget.rowKey}-reps-plus'),
+                    minusTooltip: l10n.decreaseReps,
+                    plusTooltip: l10n.increaseReps,
+                    onMinus: _canDecreaseReps ? () => _stepReps(-1) : null,
+                    onPlus: _canIncreaseReps ? () => _stepReps(1) : null,
+                    onChanged: (_) => setState(() => _repsProblem = null),
+                  ),
+                  const SizedBox(height: AppTokens.space2),
+                  Row(
+                    children: <Widget>[
+                      Text(
+                        l10n.rirLabel,
+                        style: const TextStyle(
+                          color: AppTokens.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      RirInfoButton(
+                        buttonKey: ValueKey<String>(
+                          '${widget.rowKey}-rir-info',
+                        ),
+                        compact: true,
+                      ),
+                      const Spacer(),
+                      Flexible(
+                        child: Text(
+                          context.digits(
+                            _rir == null
+                                ? l10n.rirHintShort
+                                : rirDescription(l10n, _rir),
+                          ),
+                          textAlign: TextAlign.end,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: _rir == null
+                                    ? AppTokens.textSecondary
+                                    : AppTokens.accent,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTokens.space1),
+                  _RirScale(
+                    rowKey: widget.rowKey,
+                    selected: _rir,
+                    onSelected: _locked ? null : _toggleRir,
+                  ),
+                  if (_saveFailed) ...<Widget>[
+                    const SizedBox(height: AppTokens.space1),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        l10n.saveFailed,
+                        style: const TextStyle(color: AppTokens.danger),
                       ),
                     ),
-                    onChanged: (_) => setState(() => _repsError = null),
-                  ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSaved(
+    BuildContext context,
+    AppLocalizations l10n,
+    SetLog saved,
+  ) {
+    final ThemeData theme = Theme.of(context);
+    final String weight = context.digits(
+      formatWeight(saved.weightGrams, widget.unit),
+    );
+    final String rir = saved.rir == null
+        ? ''
+        : saved.rir == maximumStoredRir
+        ? 'RIR ${l10n.rirFivePlus}'
+        : l10n.rirSummary(saved.rir!);
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(bottom: AppTokens.space1),
+      child: Semantics(
+        container: true,
+        label: context.digits(
+          '${l10n.setNumber(widget.setNumber)} · $weight '
+          '${weightUnitLabel(context, widget.unit)} × ${saved.reps}',
+        ),
+        child: Container(
+          key: ValueKey<String>('${widget.rowKey}-summary'),
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            AppTokens.space2,
+            AppTokens.space1,
+            AppTokens.spaceHalf,
+            AppTokens.space1,
+          ),
+          decoration: BoxDecoration(
+            color: AppTokens.surface2,
+            borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
+            border: Border.all(color: AppTokens.accent.withValues(alpha: 0.45)),
+          ),
+          child: Row(
+            children: <Widget>[
+              _SetBadge(number: widget.setNumber, saved: true),
+              const SizedBox(width: AppTokens.space1),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.end,
+                      children: <Widget>[
+                        Text(
+                          weight,
+                          key: ValueKey<String>(
+                            '${widget.rowKey}-summary-weight',
+                          ),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const <FontFeature>[
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(bottom: 2),
+                          child: Text(
+                            weightUnitLabel(context, widget.unit),
+                            style: theme.textTheme.labelSmall,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(
+                            bottom: 1,
+                            start: 2,
+                            end: 2,
+                          ),
+                          child: Text('×', style: theme.textTheme.labelMedium),
+                        ),
+                        Text(
+                          context.digits('${saved.reps}'),
+                          key: ValueKey<String>(
+                            '${widget.rowKey}-summary-reps',
+                          ),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const <FontFeature>[
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
+                        ),
+                        if (saved.isWarmup)
+                          _SavedMetaChip(
+                            icon: Icons.local_fire_department_outlined,
+                            label: l10n.warmupLabel,
+                          ),
+                        if (rir.isNotEmpty)
+                          KeyedSubtree(
+                            key: ValueKey<String>(
+                              '${widget.rowKey}-summary-rir',
+                            ),
+                            child: _SavedMetaChip(
+                              icon: Icons.timelapse,
+                              label: context.digits(rir),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const Icon(
+                              Icons.check_circle,
+                              color: AppTokens.accent,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              l10n.setSaved,
+                              key: ValueKey<String>('${widget.rowKey}-saved'),
+                              style: const TextStyle(
+                                color: AppTokens.accent,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_personalRecords.isNotEmpty)
+                          PrBadge(
+                            key: ValueKey<String>('${widget.rowKey}-pr'),
+                            types: _personalRecords,
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-                IconButton(
-                  key: ValueKey<String>('${widget.rowKey}-reps-plus'),
-                  tooltip: l10n.increaseReps,
-                  onPressed: _canIncreaseReps ? () => _stepReps(1) : null,
-                  icon: const Icon(Icons.add),
+              ),
+              if (widget.onEdit != null || widget.onDelete != null)
+                PopupMenuButton<String>(
+                  key: ValueKey<String>('${widget.rowKey}-actions'),
+                  tooltip: l10n.setActions,
+                  onSelected: (String action) {
+                    if (action == 'edit') {
+                      widget.onEdit?.call(saved);
+                    } else {
+                      widget.onDelete?.call(saved);
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          key: ValueKey<String>('${widget.rowKey}-edit'),
+                          value: 'edit',
+                          child: Text(l10n.editSet),
+                        ),
+                        PopupMenuItem<String>(
+                          key: ValueKey<String>('${widget.rowKey}-delete'),
+                          value: 'delete',
+                          child: Text(l10n.deleteSet),
+                        ),
+                      ],
+                  icon: const Icon(Icons.more_vert),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SavedMetaChip extends StatelessWidget {
+  const _SavedMetaChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsetsDirectional.only(bottom: 1),
+      padding: const EdgeInsetsDirectional.symmetric(
+        horizontal: 6,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppTokens.surface3,
+        borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 12, color: AppTokens.textSecondary),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: AppTokens.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SetBadge extends StatelessWidget {
+  const _SetBadge({required this.number, required this.saved});
+
+  final int number;
+  final bool saved;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 32,
+      padding: const EdgeInsetsDirectional.symmetric(
+        horizontal: AppTokens.space1,
+      ),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: saved ? AppTokens.accent.withValues(alpha: 0.12) : null,
+        borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+        border: Border.all(
+          color: saved ? AppTokens.accentDeep : AppTokens.outline,
+        ),
+      ),
+      child: Text(
+        context.digits(number.toString().padLeft(2, '0')),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: saved ? AppTokens.accent : AppTokens.textPrimary,
+          fontWeight: FontWeight.w700,
+          fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
+class _WarmupToggle extends StatelessWidget {
+  const _WarmupToggle({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: AppTokens.minTouchTarget),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+          child: Container(
+            padding: const EdgeInsetsDirectional.symmetric(
+              horizontal: AppTokens.space1,
+            ),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppTokens.accent.withValues(alpha: 0.14)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+              border: Border.all(
+                color: selected ? AppTokens.accent : AppTokens.outline,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  Icons.local_fire_department_outlined,
+                  size: 14,
+                  color: selected ? AppTokens.accent : AppTokens.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: selected
+                        ? AppTokens.accent
+                        : AppTokens.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: AppTokens.space1),
-            Text(l10n.rirLabel, style: Theme.of(context).textTheme.labelMedium),
-            const SizedBox(height: AppTokens.space1),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CheckSquare extends StatelessWidget {
+  const _CheckSquare({
+    required this.rowKey,
+    required this.saving,
+    required this.onTap,
+    required this.tooltip,
+  });
+
+  final String rowKey;
+  final bool saving;
+  final VoidCallback? onTap;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: InkWell(
+          key: ValueKey<String>('$rowKey-check'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+          child: Container(
+            width: AppTokens.minTouchTarget,
+            height: AppTokens.minTouchTarget,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTokens.accent,
+              borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+            ),
+            child: saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTokens.onAccent,
+                    ),
+                  )
+                : const Icon(Icons.check, color: AppTokens.onAccent, size: 24),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NumberDeck extends StatelessWidget {
+  const _NumberDeck({
+    required this.label,
+    required this.fieldKey,
+    required this.controller,
+    required this.readOnly,
+    required this.keyboardType,
+    required this.minusKey,
+    required this.plusKey,
+    required this.minusTooltip,
+    required this.plusTooltip,
+    required this.onMinus,
+    required this.onPlus,
+    required this.onChanged,
+    this.unitLabel,
+    this.errorText,
+  });
+
+  final String label;
+  final String? unitLabel;
+  final Key fieldKey;
+  final TextEditingController controller;
+  final bool readOnly;
+  final TextInputType keyboardType;
+  final Key minusKey;
+  final Key plusKey;
+  final String minusTooltip;
+  final String plusTooltip;
+  final VoidCallback? onMinus;
+  final VoidCallback? onPlus;
+  final ValueChanged<String> onChanged;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppTokens.surface2,
+            borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+            border: Border(
+              bottom: BorderSide(
+                color: errorText == null ? AppTokens.outline : AppTokens.danger,
+                width: errorText == null ? 1 : 2,
+              ),
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              _StepButton(
+                key: minusKey,
+                tooltip: minusTooltip,
+                icon: Icons.remove,
+                onTap: onMinus,
+              ),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const SizedBox(height: 4),
+                    Text(
+                      unitLabel == null ? label : '$label · $unitLabel',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall,
+                    ),
+                    TextField(
+                      key: fieldKey,
+                      controller: controller,
+                      readOnly: readOnly,
+                      keyboardType: keyboardType,
+                      textAlign: TextAlign.center,
+                      textAlignVertical: TextAlignVertical.center,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        hintText: context.digits('0'),
+                        contentPadding: const EdgeInsetsDirectional.symmetric(
+                          vertical: 2,
+                        ),
+                      ),
+                      onChanged: onChanged,
+                    ),
+                    const SizedBox(height: 2),
+                  ],
+                ),
+              ),
+              _StepButton(
+                key: plusKey,
+                tooltip: plusTooltip,
+                icon: Icons.add,
+                onTap: onPlus,
+              ),
+            ],
+          ),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: 2),
+            child: Text(
+              errorText!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppTokens.danger, fontSize: 12),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _StepButton extends StatelessWidget {
+  const _StepButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    super.key,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onTap,
+      icon: Icon(icon, size: 20),
+      style: IconButton.styleFrom(
+        minimumSize: const Size(
+          AppTokens.minTouchTarget,
+          AppTokens.minTouchTarget,
+        ),
+        foregroundColor: AppTokens.textPrimary,
+        disabledForegroundColor: AppTokens.textSecondary.withValues(alpha: 0.4),
+        shape: const RoundedRectangleBorder(),
+      ),
+    );
+  }
+}
+
+class _RirScale extends StatelessWidget {
+  const _RirScale({
+    required this.rowKey,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String rowKey;
+  final int? selected;
+  final ValueChanged<int>? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+        border: Border.all(color: AppTokens.outline),
+      ),
+      child: Column(
+        children: <Widget>[
+          for (int row = 0; row < 2; row += 1) ...<Widget>[
+            if (row > 0)
+              const Divider(height: 1, thickness: 1, color: AppTokens.outline),
+            Row(
+              children: <Widget>[
+                for (int column = 0; column < 3; column += 1) ...<Widget>[
+                  if (column > 0)
+                    const SizedBox(
+                      width: 1,
+                      height: AppTokens.minTouchTarget,
+                      child: ColoredBox(color: AppTokens.outline),
+                    ),
+                  Expanded(
+                    child: _RirCell(
+                      key: ValueKey<String>('$rowKey-rir-${row * 3 + column}'),
+                      value: row * 3 + column,
+                      selected: selected == row * 3 + column,
+                      label: context.digits(
+                        row * 3 + column == maximumStoredRir
+                            ? l10n.rirFivePlus
+                            : row * 3 + column,
+                      ),
+                      onTap: onSelected == null
+                          ? null
+                          : () => onSelected!(row * 3 + column),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RirCell extends StatelessWidget {
+  const _RirCell({
+    required this.value,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final int value;
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: AppTokens.minTouchTarget,
+          ),
+          alignment: Alignment.center,
+          color: selected ? AppTokens.accent : Colors.transparent,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? AppTokens.onAccent : AppTokens.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SuggestionBlock extends StatelessWidget {
+  const _SuggestionBlock({
+    required this.rowKey,
+    required this.suggestion,
+    required this.unit,
+    required this.onRevert,
+    this.initialWeightGrams,
+    this.initialReps,
+  });
+
+  final String rowKey;
+  final ProgressionSuggestion suggestion;
+  final WeightUnit unit;
+  final VoidCallback onRevert;
+  final int? initialWeightGrams;
+  final int? initialReps;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return Container(
+      key: ValueKey<String>('$rowKey-suggestion'),
+      margin: const EdgeInsetsDirectional.fromSTEB(
+        AppTokens.space2,
+        AppTokens.space1,
+        AppTokens.space2,
+        0,
+      ),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        AppTokens.space1,
+        AppTokens.space1,
+        AppTokens.space1,
+        AppTokens.space1,
+      ),
+      decoration: const BoxDecoration(
+        color: AppTokens.surface2,
+        border: BorderDirectional(
+          start: BorderSide(color: AppTokens.highlight, width: 3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(
+                Icons.trending_up,
+                color: AppTokens.highlight,
+                size: 18,
+              ),
+              const SizedBox(width: AppTokens.space1),
+              Text(
+                l10n.progressionSuggestionLabel,
+                style: Theme.of(context).textTheme.labelLarge
+                    ?.copyWith(color: AppTokens.highlight),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            progressionReasonText(context, suggestion, unit),
+            key: ValueKey<String>('$rowKey-suggestion-reason'),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          if (initialWeightGrams != null && initialReps != null) ...<Widget>[
+            const SizedBox(height: 4),
             Wrap(
               spacing: AppTokens.space1,
               runSpacing: AppTokens.space1,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
-                for (int value = 0; value <= maximumStoredRir; value++)
-                  ChoiceChip(
-                    key: ValueKey<String>('${widget.rowKey}-rir-$value'),
-                    label: Text(
-                      context.digits(
-                        value == maximumStoredRir ? l10n.rirFivePlus : value,
-                      ),
-                      style: TextStyle(
-                        color: _rir == value
-                            ? AppTokens.onAccent
-                            : AppTokens.textPrimary,
-                      ),
+                Text(
+                  context.digits(
+                    l10n.progressionLastSession(
+                      formatWeight(initialWeightGrams!, unit),
+                      initialReps!,
                     ),
-                    selected: _rir == value,
-                    showCheckmark: false,
-                    selectedColor: AppTokens.accent,
-                    backgroundColor: AppTokens.surface2,
-                    side: BorderSide(
-                      color: _rir == value
-                          ? AppTokens.accent
-                          : AppTokens.textSecondary,
-                    ),
-                    onSelected: _locked ? null : (_) => _toggleRir(value),
-                    materialTapTargetSize: MaterialTapTargetSize.padded,
                   ),
+                  key: ValueKey<String>('$rowKey-suggestion-last'),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: AppTokens.textSecondary),
+                ),
+                TextButton(
+                  key: ValueKey<String>('$rowKey-suggestion-revert'),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(
+                      AppTokens.minTouchTarget,
+                      AppTokens.minTouchTarget,
+                    ),
+                    padding: const EdgeInsetsDirectional.symmetric(
+                      horizontal: AppTokens.space1,
+                    ),
+                  ),
+                  onPressed: onRevert,
+                  child: Text(l10n.progressionUseLastSession),
+                ),
               ],
             ),
-            if (_saveError != null) ...<Widget>[
-              const SizedBox(height: AppTokens.space1),
-              Text(
-                _saveError!,
-                style: const TextStyle(color: AppTokens.danger),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }

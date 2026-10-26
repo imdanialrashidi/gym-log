@@ -89,6 +89,10 @@
   "exercisePickerTitle": "Choose exercise",
   "noSearchResults": "No exercises match your search.",
   "errorNameRequired": "Enter a name.",
+  "errorInputTooLong": "This value is too long.",
+  "@errorInputTooLong": {
+    "description": "Generic limit error when a pasted value exceeds the field maximum."
+  },
   "errorEnterBothReps": "Enter both rep values or leave them empty.",
   "errorRepRange": "Use 1 to 100.",
   "errorMinExceedsMax": "Minimum reps must not exceed maximum reps.",
@@ -106,6 +110,43 @@
   "saveAnyway": "Save anyway",
   "saveFailed": "Could not save. Try again.",
   "loadFailed": "Could not open your data.",
+  "loadingData": "Loading your data",
+  "@loadingData": {
+    "description": "Accessibility label for the static first-load placeholder."
+  },
+  "liveSessionLabel": "Live workout",
+  "@liveSessionLabel": {
+    "description": "Accessibility label for the sticky in-app live workout bar."
+  },
+  "liveOpenWorkout": "Open workout",
+  "@liveOpenWorkout": {
+    "description": "Tooltip for the live workout bar while another tab is open."
+  },
+  "liveNextSet": "Next: {exercise} · set {setNumber}",
+  "@liveNextSet": {
+    "description": "The next set to log, shown in the live workout bar.",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      },
+      "setNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "liveNextExercise": "Next: {exercise}",
+  "@liveNextExercise": {
+    "description": "The next exercise, shown when the current exercise is complete.",
+    "placeholders": {
+      "exercise": {
+        "type": "String"
+      }
+    }
+  },
+  "liveAllSetsDone": "All sets logged",
+  "@liveAllSetsDone": {
+    "description": "Shown in the live workout bar when no planned sets remain."
+  },
   "addProgram": "Add program",
   "newProgramTitle": "New program",
   "editProgramTitle": "Edit program",
@@ -323,6 +364,10 @@
   "restTimerHint": "Runs in the app and vibrates when time is up.",
   "restTimerDuration": "Duration",
   "restTimerRunning": "Rest {remaining}",
+  "restTimerBannerLabel": "Rest timer running",
+  "@restTimerBannerLabel": {
+    "description": "Stable screen-reader label; the per-second countdown is not announced."
+  },
   "@restTimerRunning": {
     "placeholders": {
       "remaining": {
@@ -419,8 +464,8 @@
   "importModeMerge": "Merge",
   "importModeReplace": "Replace",
   "importMergeHint": "Adds new records. Existing records are never overwritten.",
-  "importReplaceHint": "Replaces all current data. A snapshot is saved first.",
-  "importSummaryAdd": "Will add {exercises, plural, =1{1 exercise} other{{exercises} exercises}}, {programs, plural, =1{1 program} other{{programs} programs}}, {sessions, plural, =1{1 session} other{{sessions} sessions}}, and {sets, plural, =1{1 set} other{{sets} sets}}.",
+  "importReplaceHint": "Replaces all current data. A snapshot of the data file is saved first; photos are not in it and are deleted.",
+  "importSummaryAdd": "Will add {exercises, plural, =1{1 exercise} other{{exercises} exercises}}, {programs, plural, =1{1 program} other{{programs} programs}}, {sessions, plural, =1{1 session} other{{sessions} sessions}}, {sets, plural, =1{1 set} other{{sets} sets}}, and {weights, plural, =1{1 weight check-in} other{{weights} weight check-ins}}.",
   "@importSummaryAdd": {
     "placeholders": {
       "exercises": {
@@ -434,10 +479,13 @@
       },
       "sets": {
         "type": "int"
+      },
+      "weights": {
+        "type": "int"
       }
     }
   },
-  "importSummaryReplace": "Will replace current data with {exercises, plural, =1{1 exercise} other{{exercises} exercises}}, {programs, plural, =1{1 program} other{{programs} programs}}, {sessions, plural, =1{1 session} other{{sessions} sessions}}, and {sets, plural, =1{1 set} other{{sets} sets}}.",
+  "importSummaryReplace": "Will replace current data with {exercises, plural, =1{1 exercise} other{{exercises} exercises}}, {programs, plural, =1{1 program} other{{programs} programs}}, {sessions, plural, =1{1 session} other{{sessions} sessions}}, {sets, plural, =1{1 set} other{{sets} sets}}, and {weights, plural, =1{1 weight check-in} other{{weights} weight check-ins}}.",
   "@importSummaryReplace": {
     "placeholders": {
       "exercises": {
@@ -450,6 +498,9 @@
         "type": "int"
       },
       "sets": {
+        "type": "int"
+      },
+      "weights": {
         "type": "int"
       }
     }
@@ -470,7 +521,23 @@
       }
     }
   },
-  "importPhotosExcluded": "Photos are not included in JSON backups.",
+  "importPhotosExcluded": "Photos are not included in JSON backups; Replace and restore delete photos that are not in the selected file.",
+  "previousDataVersions": "Previous data versions",
+  "@previousDataVersions": {
+    "description": "Subheader for restorable pre-Replace data snapshots."
+  },
+  "restoreSnapshotTitle": "Restore this data version?",
+  "@restoreSnapshotTitle": {
+    "description": "Confirmation title before restoring a pre-Replace data snapshot."
+  },
+  "restoreSnapshotBody": "Replaces all current data with this data-file snapshot. The current data is saved as another snapshot first.",
+  "@restoreSnapshotBody": {
+    "description": "Explains that restoring a data snapshot keeps the current document."
+  },
+  "restoreSnapshotPhotosWarning": "Photos are not in this snapshot. Photos whose workout no longer exists are deleted permanently.",
+  "@restoreSnapshotPhotosWarning": {
+    "description": "Explicit warning that snapshot restore does not restore photos."
+  },
   "sessionPhotosLabel": "Session photos",
   "exercisePhotoLabel": "Exercise photo",
   "addPhoto": "Add photo",
@@ -546,5 +613,308 @@
   "aboutPrivacyBody": "Your training data stays on this device. Gym Log has no account, no analytics, and no network permission in release builds. Photos are stored privately with location metadata removed, and JSON exports never include photos. Android backup is disabled, so moving to a new phone means exporting a JSON backup and importing it there.",
   "aboutNotMedicalAdvice": "Gym Log is a training log, not medical advice. Consult a qualified professional before changing your training.",
   "androidBackupTitle": "Allow Android backup",
-  "androidBackupHint": "Off. Android Auto Backup is disabled in every build so your data cannot leave the device. Export a JSON backup to move phones."
+  "androidBackupHint": "Off. Android Auto Backup is disabled in every build so your data cannot leave the device. Export a JSON backup to move phones.",
+  "restoreFromBackup": "Restore from backup",
+  "@restoreFromBackup": {
+    "description": "Recovery path when the saved document cannot be read."
+  },
+  "restoreBackupHint": "Your saved data could not be read. Import a JSON backup to replace it; a snapshot of the unreadable data file (not photos) is kept first.",
+  "@restoreBackupHint": {
+    "description": "Recovery path when the saved document cannot be read."
+  },
+  "restoreBackupFailed": "Could not restore the backup.",
+  "@restoreBackupFailed": {
+    "description": "Recovery path when the saved document cannot be read."
+  },
+  "appTagline": "Your training, measured.",
+  "thisWeek": "This week",
+  "weekRange": "{start} – {end}",
+  "@weekRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "weeklySummaryTitle": "Weekly summary",
+  "weeklySummarySubtitle": "Volume, time, and sets by week",
+  "previousWeeks": "Previous weeks",
+  "noTrainingThisWeek": "No training logged this week yet.",
+  "weeklySummaryEmpty": "Finish a workout to see your weekly summary.",
+  "muscleSetsTitle": "Sets by muscle",
+  "muscleSetsHint": "Working sets this week",
+  "muscleSetsEmpty": "Tag exercises with a muscle group to see this split.",
+  "unassignedMuscle": "Unassigned",
+  "workoutsLabel": "{count, plural, =0{No workouts} =1{1 workout} other{{count} workouts}}",
+  "@workoutsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setsLabel": "{count, plural, =0{No sets} =1{1 set} other{{count} sets}}",
+  "@setsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "volumeLabel": "Volume",
+  "timeLabel": "Time",
+  "durationHours": "{hours} h",
+  "@durationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "durationMinutes": "{minutes} min",
+  "@durationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursMinutes": "{hours} h {minutes} min",
+  "@durationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "durationLessThanMinute": "Under a minute",
+  "durationUnknown": "Not recorded",
+  "checkInCount": "{count, plural, =1{1 check-in} other{{count} check-ins}}",
+  "@checkInCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "logWeight": "Log weight",
+  "logWeightThisWeek": "Log this week's weight",
+  "updateWeightThisWeek": "Update this week's weight",
+  "bodyWeightTitle": "Body weight",
+  "bodyWeightSubtitle": "Weekly check-in",
+  "bodyWeightHint": "Weigh in at the same time each week, ideally in the morning before eating.",
+  "bodyWeightLogTitle": "Log body weight",
+  "bodyWeightEmpty": "No weight check-ins yet. Log your weight to start the trend.",
+  "bodyWeightChartTitle": "Weekly trend",
+  "bodyWeightChartSubtitle": "Latest check-in per week",
+  "bodyWeightHistory": "Check-ins",
+  "bodyWeightThisWeek": "This week",
+  "bodyWeightMissingWeek": "No check-in",
+  "bodyWeightDeleted": "Weight check-in deleted.",
+  "bodyWeightSaved": "Weight logged.",
+  "bodyWeightErrorRange": "Enter a realistic body weight.",
+  "deleteWeightTitle": "Delete this check-in?",
+  "deleteWeightBody": "The weight trend is recalculated without it.",
+  "sinceLastCheckIn": "since last check-in",
+  "weightChangeSummary": "{change} {unit} since last check-in",
+  "@weightChangeSummary": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "weightTrend": "Weight trend",
+  "lastWorkout": "Last workout",
+  "recentWorkout": "Recent workout",
+  "viewWeeklySummary": "Weekly summary",
+  "viewAll": "View all",
+  "quickStartTitle": "Quick start",
+  "chooseDay": "Choose a day",
+  "startTodayWorkout": "Start today's workout",
+  "inProgress": "In progress",
+  "elapsedTime": "Elapsed",
+  "sessionSummaryTitle": "Session summary",
+  "sessionTime": "Session time",
+  "exerciseTimeHint": "From the first to the last set in this exercise.",
+  "totalTime": "Total time",
+  "averageTime": "Average",
+  "showAll": "Show all",
+  "showLess": "Show less",
+  "rirInfoTitle": "What is RIR?",
+  "rirInfoDefinition": "RIR means Reps In Reserve: how many good reps you could still complete before failure.",
+  "rirInfoScaleTitle": "Reading the scale",
+  "rirInfoZero": "0 — no reps left; you reached failure.",
+  "rirInfoOne": "1 — one good rep left.",
+  "rirInfoTwoThree": "2–3 — typical working sets: hard, but technique stays clean.",
+  "rirInfoFourFive": "4–5+ — far from failure; useful for technique work or warm-ups.",
+  "rirInfoTip": "Keep 1–3 reps in reserve on most working sets to train productively without unnecessary fatigue.",
+  "rirInfoClose": "Got it",
+  "rirInfoButton": "About RIR",
+  "rirDescription": "{value, plural, =0{No reps in reserve} =1{1 rep in reserve} other{{value} reps in reserve}}",
+  "@rirDescription": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "rirFivePlusDescription": "5+ reps in reserve",
+  "loggedSets": "Logged sets",
+  "workingSets": "Working sets",
+  "warmupSets": "Warm-ups",
+  "setsPerMuscle": "Sets",
+  "openBodyWeight": "Open body weight",
+  "weeklyAverage": "Weekly average",
+  "notEnoughData": "Not enough data",
+  "workoutsStatLabel": "Workouts",
+  "setsStatLabel": "Sets",
+  "exerciseCount": "{count, plural, =1{1 exercise} other{{count} exercises}}",
+  "@exerciseCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setProgress": "{done} of {target} sets",
+  "rirHintShort": "Reps left before failure",
+  "@setProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "progressSummaryHint": "Best set and total time by exercise",
+  "thisMonth": "This month",
+  "trainingTotals": "Training totals",
+  "sessionsTitle": "Sessions",
+  "durationHoursShort": "{hours}h",
+  "durationMinutesShort": "{minutes}m",
+  "durationHoursMinutesShort": "{hours}h {minutes}m",
+  "durationUnderMinuteShort": "<1m",
+  "@durationHoursShort": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "@durationMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@durationHoursMinutesShort": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "goalWeeklyTitle": "Weekly goal",
+  "goalSessionsLabel": "Sessions",
+  "goalSetsLabel": "Working sets",
+  "goalProgressValue": "{done} of {target}",
+  "goalStreak": "{count, plural, =1{1 week in a row} other{{count} weeks in a row}}",
+  "goalSetCta": "Set a weekly goal",
+  "goalEdit": "Edit goal",
+  "goalSheetTitle": "Weekly goal",
+  "goalSheetBody": "Two numbers that tell you where this week stands. Pick a target you can repeat, not one you have to survive.",
+  "goalSessionTargetLabel": "Sessions per week",
+  "goalSetTargetLabel": "Working sets per week",
+  "goalRemove": "Remove goal",
+  "goalSaved": "Goal saved.",
+  "goalNotSet": "No goal set",
+  "goalRemainingSessions": "{count} sessions to go",
+  "goalRemainingSets": "{count} sets to go",
+  "programsSectionTitle": "Training programs",
+  "programDaysCount": "{count, plural, =1{1 day} other{{count} days}}",
+  "programExercisesCount": "{count, plural, =1{1 exercise} other{{count} exercises}}",
+  "programSetsCount": "{count, plural, =1{1 set} other{{count} sets}}",
+  "programEmptyBody": "Build a program, arrange its days, and start from the dashboard. Everything stays on this device.",
+  "programCardMeta": "{days} days · {exercises} exercises",
+  "programNeverTrained": "Not trained yet",
+  "exerciseLibraryTitle": "Exercise library",
+  "exerciseLibraryCount": "{count, plural, =1{1 exercise} other{{count} exercises}}",
+  "exerciseListMeta": "{sessions, plural, =1{1 session} other{{sessions} sessions}} · {sets, plural, =1{1 set} other{{sets} sets}}",
+  "exerciseNeverTrained": "Not logged yet",
+  "settingsAppearanceSection": "Language and display",
+  "settingsTrainingSection": "Training and equipment",
+  "settingsDataSection": "Data and backup",
+  "settingsGoalRow": "Weekly goal",
+  "settingsGoalValue": "{sessions, plural, =1{1 session} other{{sessions} sessions}} · {sets, plural, =1{1 set} other{{sets} sets}}",
+  "settingsNoGoal": "Not set",
+  "plateCalculatorTitle": "Plate calculator",
+  "plateCalculatorAction": "Plates and warm-up",
+  "plateTargetLabel": "Target weight",
+  "plateBarLabel": "Bar {weight}",
+  "platePerSide": "Each side",
+  "plateExact": "Exact load",
+  "plateRemainder": "{weight} short of target",
+  "plateBelowBar": "Lighter than the bar",
+  "plateEmpty": "No plates needed",
+  "plateWarmupTitle": "Warm-up ramp",
+  "plateWarmupBar": "Empty bar",
+  "plateWarmupNoSteps": "No warm-up steps for this weight.",
+  "plateAssumption": "Standard 20 kg bar and plates.",
+  "plateAssumptionPounds": "Standard 45 lb bar and plates.",
+  "summaryKicker": "Session closed",
+  "summaryHeadline": "Workout complete.",
+  "workoutDoneCat": "Workout done!",
+  "@workoutDoneCat": {
+    "description": "Speech-bubble line spoken by the cat mascot at the top of the post-workout summary."
+  },
+  "workoutDoneCatHint": "Meow! Time to rest and stretch.",
+  "@workoutDoneCatHint": {
+    "description": "Second line under the cat mascot's finish message. The meow is the mascot's playful voice."
+  },
+  "summaryVsLast": "vs last session",
+  "summaryNoPrevious": "No previous session to compare.",
+  "summaryRecordsTitle": "Today’s records",
+  "summaryNoRecords": "No new records today. The work still counts.",
+  "summaryBreakdownTitle": "Exercise breakdown",
+  "summaryBackHome": "Back to home",
+  "summaryViewSession": "View session",
+  "summaryRecordCount": "{count} records",
+  "summarySetLine": "{sets} sets · {volume}",
+  "summaryVolumeDelta": "{change} vs last session",
+  "summaryPrCountLabel": "{count, plural, =1{1 new record} other{{count} new records}}",
+  "summaryNewPr": "New record",
+  "summaryStreak": "Week {week}",
+  "summaryDurationLabel": "Duration",
+  "summaryExercisesLabel": "Exercises",
+  "summaryWorkingSetsLabel": "Working sets",
+  "summaryVolumeLabel": "Volume",
+  "dashboardToday": "Today",
+  "dashboardTitle": "Today’s training",
+  "dashboardReady": "Ready to train",
+  "dashboardWeekVolume": "Week volume",
+  "dashboardWeekKicker": "WEEKLY LOG",
+  "dashboardGoalKicker": "TARGET",
+  "plateInvalidWeight": "Enter a valid weight.",
+  "platePerSideCount": "{count} per side",
+  "plateClose": "Done",
+  "plateKicker": "PLATE MATH",
+  "summaryPrSetCount": "{count, plural, =1{1 PR set} other{{count} PR sets}}",
+  "goalSettingsSubtitle": "Set this week’s target.",
+  "goalEnabled": "Active"
 }

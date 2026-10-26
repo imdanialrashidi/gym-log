@@ -23,7 +23,9 @@ version (`1` today), independent of the internal app-document version.
     "digitStyle": "persian",
     "defaultIncrementGrams": 5000,
     "restTimerEnabled": false,
-    "restTimerDurationSeconds": 90
+    "restTimerDurationSeconds": 90,
+    "weeklySessionGoal": 3,
+    "weeklySetGoal": 12
   }
 }
 ```
@@ -31,19 +33,38 @@ version (`1` today), independent of the internal app-document version.
 Rules:
 
 - Stable UUID strings identify every exercise, program, day, plan item,
-  session, session exercise, and set. Array position is never identity.
+  session, session exercise, set, and body-weight check-in. Array position is
+  never identity.
+- `bodyWeights` is an optional additive array of
+  `{id, weightGrams, recordedAt}`. It is omitted while empty, so every
+  historical fixture keeps round-tripping byte-for-byte; older readers that do
+  not know the field ignore it. A check-in weight must be 20,000–500,000 g
+  (20–500 kg) and `recordedAt` is UTC ISO-8601. The app updates the current
+  week's reading in place, but import accepts any valid list and the weekly
+  series always picks the latest reading inside each local week.
+- The on-device document is currently schema **v4** (v3 plus optional
+  `weeklySessionGoal` / `weeklySetGoal` in settings). Versions 1–3 are read with
+  empty/default newer fields and written back as v4; no collection is
+  discarded. The backup `schemaVersion` stays `1` because this is additive.
 - Optional values are written explicitly as `null`:
   `searchTerm`, `muscleGroup`, `defaultRepMin`, `defaultRepMax`, `archivedAt`,
   `endedAt`, `programDayId`, `note`, `targetSets`, `repMin`, `repMax`, `rir`.
 - `exportedAt` is UTC ISO-8601 (`Z` or zero offset). Dates are never
   Jalali strings (`L10N-005`).
-- `digitStyle` (`persian`/`latin`) and `defaultIncrementGrams` are optional
-  settings; a file without them keeps the locale-derived digit default and the
-  unit default increment. They are display preferences and never change a
-  stored set.
+- `digitStyle` (`persian`/`latin`), `defaultIncrementGrams`, and the two
+  weekly-goal integers are optional settings; a file without them keeps the
+  locale-derived digit default, the unit default increment, and no goal. A
+  session target is 1–14, a working-set target is 1–200; both are coaching
+  targets, never stored training totals.
 - IDs are 1–128 characters from `A-Z a-z 0-9 . _ -`. `appVersion` and
   `generator` are 1–64 characters from `A-Z a-z 0-9 . + _ -`. Control and bidi
   characters are rejected so they cannot enter validation or preview copy.
+- Free text and ordering are bounded at import: exercise names, program names,
+  and day names are at most 120 characters, `searchTerm` is at most 200
+  characters, and every `sortOrder` (program day, plan item, session exercise)
+  is between 0 and 1,000,000. These are generous UI/import limits, not database
+  limits. A document already on the device with a longer name still loads; the
+  editor only enforces the bound for new edits, so the user can shorten it.
 - Unknown fields are ignored on import. Removing or changing the meaning of a
   field requires a new backup `schemaVersion`; additive fields may stay in the
   same version because older readers ignore them.
@@ -61,8 +82,9 @@ The parser rejects, with a typed error and a localized fa/en message:
 - unsupported or newer `schemaVersion`;
 - mistyped entity fields, duplicate IDs anywhere in the document, plan-item or
   session-exercise references to a missing exercise, multiple active sessions;
-- out-of-range numeric values (including increments above 1,000,000 g), note
-  length, and timestamps outside 1970–2200.
+- out-of-range numeric values (including increments above 1,000,000 g, and
+  body weights outside 20–500 kg), note length, and timestamps outside
+  1970–2200.
 
 Merge is the default and never overwrites. It restores settings only when the
 local database has no training data; otherwise local settings win. Replace

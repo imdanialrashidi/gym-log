@@ -29,13 +29,19 @@ class E1rmEstimate {
 }
 
 /// Returns the Epley estimate for [weightGrams] at [reps], or `null` when
-/// [reps] is outside [e1rmMinimumReps]–[e1rmLessReliableMaxReps].
+/// [reps] is outside [e1rmMinimumReps]–[e1rmLessReliableMaxReps] or there is no
+/// external load ([weightGrams] is zero, as stored for bodyweight sets).
 ///
 /// The result is rounded half away from zero to the nearest gram so both
 /// display units format from the same canonical value.
 E1rmEstimate? estimateOneRepMax({required int weightGrams, required int reps}) {
   if (weightGrams < 0) {
     throw ArgumentError.value(weightGrams, 'weightGrams');
+  }
+  if (weightGrams == 0) {
+    // No external load, so Epley's load-based estimate is undefined. The UI
+    // renders this as a gap, the same as reps outside the supported range.
+    return null;
   }
   if (reps < e1rmMinimumReps || reps > e1rmLessReliableMaxReps) {
     return null;

@@ -195,6 +195,43 @@ void main() {
       expect(countAppData(preview.data), preview.summary.added);
     });
 
+    test('merges body-weight check-ins by id and keeps local conflicts', () {
+      final BodyWeightEntry shared = BodyWeightEntry(
+        id: 'weight-1',
+        weightGrams: 80000,
+        recordedAt: DateTime.utc(2026, 10, 21, 7),
+      );
+      final BodyWeightEntry incomingOnly = BodyWeightEntry(
+        id: 'weight-2',
+        weightGrams: 79000,
+        recordedAt: DateTime.utc(2026, 10, 28, 7),
+      );
+      final AppData incoming = AppData(
+        bodyWeights: <BodyWeightEntry>[incomingOnly],
+      );
+      final MergeResult result = mergeAppData(
+        AppData(bodyWeights: <BodyWeightEntry>[shared]),
+        incoming,
+      );
+
+      expect(result.data.bodyWeights, hasLength(2));
+      expect(result.summary.added.bodyWeights, 1);
+      expect(result.summary.conflicts, 0);
+      expect(result.data.settings.weightUnit, WeightUnit.kilograms);
+
+      final BodyWeightEntry changed = BodyWeightEntry(
+        id: 'weight-1',
+        weightGrams: 81000,
+        recordedAt: DateTime.utc(2026, 10, 21, 7),
+      );
+      final MergeResult conflict = mergeAppData(
+        AppData(bodyWeights: <BodyWeightEntry>[shared]),
+        AppData(bodyWeights: <BodyWeightEntry>[changed]),
+      );
+      expect(conflict.data.bodyWeights.single.weightGrams, 80000);
+      expect(conflict.summary.conflicts, 1);
+    });
+
     test('Replace preview uses the incoming document and settings', () {
       final AppData incoming = sampleData();
       final BackupDocument document = parseBackup(

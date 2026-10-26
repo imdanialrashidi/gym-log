@@ -85,6 +85,35 @@ void main() {
     );
   });
 
+  testWidgets('clearing both rep fields blocks Save and writes nothing', (
+    WidgetTester tester,
+  ) async {
+    final MemoryAppDataStore store = MemoryAppDataStore(_seed());
+
+    await pumpGymLogApp(
+      tester,
+      store: store,
+      initialLocation: '/program-editor/program-1',
+    );
+    await tester.tap(find.text('Upper'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add-first-plan-item')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('choose-exercise')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bench Press'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('plan-rep-min-field')), '');
+    await tester.enterText(find.byKey(const Key('plan-rep-max-field')), '');
+    await tester.tap(find.byKey(const Key('save-plan-item')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a number.'), findsNWidgets(2));
+    expect(find.text('New plan item'), findsOneWidget);
+    expect(store.data.dayById('day-1')!.items, isEmpty);
+  });
+
   testWidgets('plan item saves with inline validation and persists', (
     WidgetTester tester,
   ) async {

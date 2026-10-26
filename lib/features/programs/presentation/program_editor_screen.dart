@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../app/document_gate.dart';
 import '../../../app/routes.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/action_runner.dart';
 import '../../../core/widgets/dialogs.dart';
 import '../../../core/widgets/reorder_handle.dart';
 import '../../../core/widgets/text_empty_state.dart';
@@ -29,22 +31,21 @@ class ProgramEditorScreen extends ConsumerWidget {
       context,
       title: l10n.newDayTitle,
       label: l10n.dayNameLabel,
+      maxLength: maximumDayNameLength,
     );
     if (name == null || !context.mounted) {
       return;
     }
-    try {
-      final ProgramDay day = await ref
+    ProgramDay? day;
+    final bool saved = await runDataAction(context, () async {
+      day = await ref
           .read(appDataControllerProvider.notifier)
           .addDay(program.id, name);
-      if (context.mounted) {
-        await context.push(AppRoutes.dayEditor(program.id, day.id));
-      }
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
+    });
+    if (!saved || day == null || !context.mounted) {
+      return;
     }
+    await context.push(AppRoutes.dayEditor(program.id, day!.id));
   }
 
   Future<void> _rename(
@@ -56,20 +57,18 @@ class ProgramEditorScreen extends ConsumerWidget {
       context,
       title: context.l10n.editProgramTitle,
       label: context.l10n.programNameLabel,
+      maxLength: maximumProgramNameLength,
       initialValue: program.name,
     );
     if (name == null || !context.mounted) {
       return;
     }
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .renameProgram(program.id, name);
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
-    }
+          .renameProgram(program.id, name),
+    );
   }
 
   Future<void> _delete(
@@ -86,17 +85,14 @@ class ProgramEditorScreen extends ConsumerWidget {
     if (!confirmed || !context.mounted) {
       return;
     }
-    try {
-      await ref
+    final bool saved = await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .deleteProgram(program.id);
-      if (context.mounted) {
-        context.pop();
-      }
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
+          .deleteProgram(program.id),
+    );
+    if (saved && context.mounted && context.canPop()) {
+      context.pop();
     }
   }
 
@@ -107,39 +103,21 @@ class ProgramEditorScreen extends ConsumerWidget {
     int oldIndex,
     int newIndex,
   ) async {
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .reorderDays(program.id, oldIndex, newIndex);
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
-    }
+          .reorderDays(program.id, oldIndex, newIndex),
+    );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
 
-    return asyncData.when(
-      loading: () => Scaffold(
-        appBar: AppBar(title: Text(l10n.programsTab)),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (Object error, StackTrace stack) => Scaffold(
-        appBar: AppBar(title: Text(l10n.programsTab)),
-        body: TextEmptyState(
-          message: l10n.loadFailed,
-          action: OutlinedButton.icon(
-            onPressed: () => ref.invalidate(appDataControllerProvider),
-            icon: const Icon(Icons.refresh),
-            label: Text(l10n.retry),
-          ),
-        ),
-      ),
-      data: (AppData data) {
+    return DocumentGate(
+      fallbackTitle: l10n.programsTab,
+      builder: (BuildContext context, AppData data) {
         final Program? program = data.programById(programId);
         if (program == null) {
           return Scaffold(
@@ -218,9 +196,4 @@ class ProgramEditorScreen extends ConsumerWidget {
       },
     );
   }
-}
-
-void _showSaveError(BuildContext context) {
-  ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
 }

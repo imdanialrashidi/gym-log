@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 
+import 'app_storage.dart';
 import 'photo_storage.dart';
 
 enum PhotoTargetKind { exercise, session }
@@ -147,10 +147,6 @@ class JsonPhotoPendingStore implements PhotoPendingStore {
 
 final Provider<PhotoPendingStore> photoPendingStoreProvider =
     Provider<PhotoPendingStore>((Ref ref) {
-      return JsonPhotoPendingStore(() async {
-        final Directory support = await getApplicationSupportDirectory();
-        return File(
-          '${support.path}${Platform.pathSeparator}photo_pending.json',
-        );
-      });
+      final Future<File> file = appSupportFile(ref, 'photo_pending.json');
+      return JsonPhotoPendingStore(() => file);
     });

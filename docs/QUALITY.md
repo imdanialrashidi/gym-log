@@ -29,7 +29,8 @@ suggestion with structured, localized reasons (ADR-0009). M6 adds full JSON
 export through the system save UI, validated import with a dry-run summary,
 Merge/Replace transactions with pre-Replace snapshots, round-trip and
 historical-fixture tests, and the in-app 30-day export reminder. The Drift
-database and background timer notifications do not exist yet.
+database, system notifications, and background timer notifications do not
+exist yet; the live workout bar is in-app only.
 Deloads, periodization, set-count changes, and the optional RIR gate remain
 out of scope.
 
@@ -54,12 +55,28 @@ reference-device runbook, secrets-only release signing with a certificate
 fingerprint check, checksum generation, the CHANGELOG/build/schema gate, and
 the tag-triggered release workflow. About links are covered by widget tests with
 a mocked launcher; `NFR-PERF-003` passes in CI, while device budgets and real
-signing/upgrade drill remain owner steps.
+signing/upgrade drill remain owner steps. The project is at M9; Drift
+persistence, schema-migration snapshots, and Safe Mode are not implemented.
+
+Post-M9 owner pass (2026-10-26) adds the pre-session dashboard, body-weight
+check-ins, the weekly summary, RIR explainer, a painted brand emblem, the
+refreshed palette, the post-workout summary and its cat mascot, optional weekly
+goals in document schema v4, the plate/warm-up calculator, and the night-session
+visual system.
+The new domain logic (weekly series, session/exercise stats, body-weight edits,
+goal progress/streak, plate math, session records) has lift_core tests; the
+document store has a v2→v3 test and a v3→v4 read/write test; body weight, weekly
+summary, session summary, dashboard goals, plate sheet, and the redesigned
+screens have widget and fa/en golden tests plus a 200% text sweep; and
+`CI-STATS-001` guards the one-pass weekly aggregation (1.529 ms median vs
+8.388 ms on the first measurement, floor 6 ms). The owner pass is a local
+working-tree implementation, not a released build.
 
 Device performance, process-death criteria, and the real Android system
 share/picker remain `UNPROVEN` on this workstation; the reload-from-file test
 is the available persistence proof, and the export codec is measured off the
-UI thread. Real camera/gallery flows, Android killing the activity mid-pick,
+UI thread. The body-weight chart's device paint time, dashboard cold start, and
+history scroll on a physical device also remain `UNPROVEN`. Real camera/gallery flows, Android killing the activity mid-pick,
 real signing/install-over-update, and real-device backup behavior are not
 simulated.
 
@@ -95,18 +112,18 @@ For accepted scope:
 - A new regression test should demonstrably fail on pre-fix behavior (or a safe focused mutation) when practical, then pass after the fix.
 - Generated checks must build, pass reliably, add a distinct behavioral signal, and isolate relevant state; line coverage alone is not acceptance evidence.
 
-`/skill:test-design` owns the Test Value Gate — apply it before adding or materially changing tests. `No new test` is acceptable for behavior-neutral changes or behavior the suite already proves.
+`test-design` owns test-value decisions — apply it before adding or materially changing tests. `No new test` is acceptable for behavior-neutral changes or behavior the suite already proves.
 
 ## Mandatory test scope (project)
 
-The project mandates automated tests in the areas below; the migration tests are spec-mandated, and all are acceptance evidence even where OMP's default would not require a new test:
+The project mandates automated tests in the areas below; the migration tests are spec-mandated, and all are acceptance evidence even where the workflow default would not require a new test:
 
-- **Migrations and update safety** (`DAT-001`–`DAT-003`, plus a project-level Safe Mode test for the `DAT-004` Recommendation): committed schema snapshots, generated migration tests, a failing-migration test that proves the snapshot exists and the original database is byte-identical, and no destructive-reset path.
+- **Migrations and update safety (when the Drift layer lands; target design)** (`DAT-001`–`DAT-003`, plus a project-level Safe Mode test for the `DAT-004` Recommendation): committed schema snapshots, generated migration tests, a failing-migration test that proves the snapshot exists and the original database is byte-identical, and no destructive-reset path. Until then the active mandatory evidence is JSON import/export and the pre-Replace data-snapshot tests.
 - **JSON import/export** (`IO-001`–`IO-006`, `DAT-006`): schema validation, round-trip equivalence, every historical fixture, truncated/corrupt/newer-version rejection, duplicate/orphan/absurd-value rejection, atomicity, and Merge/Replace behavior.
 - **`packages/lift_core` domain logic** (`INT-001`–`INT-003`, unit conversion, digit/decimal normalization, PR detection): table-driven unit tests for rules, boundaries, mixed units, warm-ups, ties, and deletion recalculation.
 - **Photo privacy and lifecycle** (`EXR-005`, `PHO-001`–`PHO-003`, `PHO-005`): a geotagged source verifies EXIF/GPS removal and downscaling, private-directory writes, the three-photo limit, no orphans after photo/exercise/session deletion and import prune, JSON/backup exclusion, no broad/storage/camera permission, cached-image eviction after replacement, and injected cancellation, unreadable, low-storage, write-failure, and lost-activity recovery paths.
 
-Outside those areas, apply `/skill:test-design` and the Test Value Gate. `No new test` remains valid for behavior-neutral changes, and no test is added merely to satisfy a process rule. Never weaken, skip, or delete a valid test or control to obtain green status.
+Outside those areas, apply `test-design` and its test-value checks. `No new test` remains valid for behavior-neutral changes, and no test is added merely to satisfy a process rule. Never weaken, skip, or delete a valid test or control to obtain green status.
 
 ## Security and data integrity
 
@@ -126,7 +143,7 @@ For this product there is no server: the equivalent trust boundary is the app sa
 
 Review only the accepted scope and actual diff. Trace changed trust boundaries, input-to-sink data flows, state transitions, public contracts, dependencies, and operational behavior; check the actual controls and checks before reporting a finding.
 
-Check only relevant failure paths: authorization/tenant isolation, injection and unsafe files/URLs, credential/session handling, payment/replay/idempotency, races and partial writes, timeout/cancellation/recovery, unbounded work, inaccessible/error states, dependency/CI mismatch, migration rollback. For High-risk scopes prefer a `/review` reviewer pass (plus `/advisor on` — second model, extra cost); otherwise a direct evidence-focused pass.
+Check only relevant failure paths: authorization/tenant isolation, injection and unsafe files/URLs, credential/session handling, payment/replay/idempotency, races and partial writes, timeout/cancellation/recovery, unbounded work, inaccessible/error states, dependency/CI mismatch, migration rollback. For High-risk scopes prefer a `/review` pass and, when the runtime exposes a fresh-context `subagent`, independent review; otherwise perform a direct evidence-focused pass and report independent review as unexecuted.
 
 For each evidence-backed finding give severity, exact `file:line` or symbol, a concrete failure/attack scenario, the impact if triggered, why the current control is insufficient, whether it is a regression introduced by this diff or `Pre-existing`, the smallest safe fix, and a proof check. Suppress speculative findings (no concrete scenario), duplicates, and purely stylistic findings. Prefer a few actionable findings over speculative checklist output.
 
@@ -141,7 +158,7 @@ Return the acceptance evidence and one verdict: `PASS`, `PASS WITH FIXES`, or `B
 
 For rendered interfaces:
 
-- exercise the critical journey in the real application with the `browser` tool when browser behavior matters;
+- exercise the critical journey in the real application, or with a browser tool when the runtime exposes one and browser behavior matters; otherwise use widget/golden evidence and mark browser-dependent criteria `UNPROVEN`;
 - preserve keyboard access, visible focus, semantic controls, labels, contrast, touch targets, and reduced-motion behavior;
 - check realistic data, long text, localization/RTL when relevant, and at least one narrow viewport for mobile-facing surfaces;
 - follow the accepted `docs/DESIGN.md`; reuse existing design tokens/components when sound, change deliberately when the direction requires it;
@@ -168,7 +185,7 @@ For production web surfaces without accepted product-specific field budgets, tar
 - Keep public interfaces small and backward-compatible unless a breaking change is accepted.
 - Keep business rules separable from presentation/transport when the existing architecture supports it.
 - New abstractions should solve more than one real current use case or remove a demonstrated risk/duplication.
-- New dependencies require a concrete benefit over existing/platform capabilities — omp already ships LSP, eval runtimes, browser, search, and subagents; adding a package that duplicates them needs justification.
+- New dependencies require a concrete benefit over existing/platform capabilities — the runtime already provides filesystem, shell, search, web, and optional subagents; adding a package that duplicates them needs justification.
 - Architecture invariants that matter repeatedly should be enforced mechanically with types, lint rules, structural tests, schemas, or CI rather than prose alone.
 
 ## Evidence hierarchy
@@ -176,8 +193,8 @@ For production web surfaces without accepted product-specific field budgets, tar
 Prefer stronger evidence when practical:
 
 1. deterministic automated check of the accepted behavior;
-2. real `eval`/`bash` run or `browser`-tool exercise of the relevant journey;
-3. `lsp` diagnostics/references, type/lint/structural analysis for invariant classes;
+2. real `bash` run or browser-tool exercise of the relevant journey when available;
+3. analyzer/type/lint/structural analysis for invariant classes;
 4. reproducible measurement for performance/reliability claims;
 5. focused independent-evaluator inspection (`/review`) for aspects that cannot be automated economically.
 
@@ -204,7 +221,7 @@ The overall task cannot be called complete while a required criterion is `FAIL` 
 | **Full** | High-risk or release-bound work | `bash scripts/verify.sh` (template checks + `scripts/project-verify.sh` + debug APK) and the existing CI workflow. Never a parallel verification system. |
 | **Device** | Performance, accessibility, backup, signing, camera/gallery | Profile-mode run on the owner-selected reference device; upgrade drill on a real device. `UNPROVEN` until selected and measured. |
 
-### Canonical M0 commands
+### Canonical project commands
 
 `scripts/project-verify.sh` runs, in order:
 
@@ -225,6 +242,8 @@ dart run tool/guards/check_calendar_boundary.dart
 dart run tool/guards/check_no_destructive_reset.dart
 dart run tool/guards/check_changelog.dart
 dart run tool/guards/check_no_signing_material.dart
+dart run tool/guards/check_workflow_pins.dart
+tool/guards/selfcheck.sh
 (cd packages/lift_core && dart test)
 flutter test
 dart run tool/benchmarks/run_benchmarks.dart
@@ -249,16 +268,20 @@ template self-checks. The Flutter archive and version are pinned in
 | Calendar boundary (`L10N-005`) | `dart run tool/guards/check_calendar_boundary.dart` | any file except `lib/core/calendar/calendar_service.dart` imports `shamsi_date` |
 | Pure domain package (`NFR-MNT-001`) | `(cd packages/lift_core && dart test)` | `lift_core` imports Flutter, database, platform, UI, or another package |
 | No destructive reset (`DAT-002`) | `dart run tool/guards/check_no_destructive_reset.dart` | `deleteDatabase`, `DROP TABLE`/`DROP DATABASE`, or `PRAGMA writable_schema` appears in app/domain source |
-| Performance budgets (`NFR-PERF-003`, proxies for `005`/`006`) | `dart run tool/benchmarks/run_benchmarks.dart` | a median on the 10,000-set fixture exceeds its threshold in `tool/benchmarks/thresholds.json` |
+| Performance budgets and floors (`NFR-PERF-003`, proxies for `005`/`006`) | `dart run tool/benchmarks/run_benchmarks.dart` | an expected benchmark ID is missing or duplicated, or a median on the 10,000-set fixture exceeds either its spec budget or its regression floor in `tool/benchmarks/thresholds.json` |
+| Workflow pinning and toolchain (`NFR-MNT-002`) | `dart run tool/guards/check_workflow_pins.dart` | a workflow action uses a movable tag instead of a 40-hex commit SHA, or a workflow's Flutter version/archive/SHA-256 drifts from `tool/toolchain.env` |
 | Changelog and version discipline (`DAT-008`) | `dart run tool/guards/check_changelog.dart` | a release entry lacks `Build:`/`Schema:`, build numbers do not increase, or the newest entry does not match `pubspec.yaml` |
-| No signing material in the tree (`DAT-005`) | `dart run tool/guards/check_no_signing_material.dart` | a keystore/base64 keystore/`key.properties` exists, a private-key block appears, or Gradle contains a literal signing password |
+| No signing material in the tree (`DAT-005`) | `dart run tool/guards/check_no_signing_material.dart` | a keystore/base64 keystore/`.pem`/`.key`/`.p8` file, `key.properties`, `signing.properties`, or `keystore.properties` exists; a private-key block appears; or a properties/env/shell file contains a literal signing password (placeholders starting with `$` or `<` are allowed) |
 | Signing secrets only (`DAT-005`) | `(cd android && ./gradlew :app:verifyReleaseSigning)` | `GYM_LOG_*` signing values are missing, the keystore file is absent, or the keystore sits inside the repository |
 | Release packaging tools | `tool/release/selfcheck.sh` | certificate-mismatch or checksum-mismatch detection stops working, or naming/checksum generation fails |
 
-Each guard is proven by temporarily introducing the violation and observing a
-failure, then reverting. The release identity guard and release signing gate are
-intentionally red until the owner supplies the permanent identity and secrets;
-the other guards are green in `scripts/project-verify.sh`.
+`tool/guards/selfcheck.sh` proves detection, not only a clean run: it copies the
+guard-relevant tree to a temporary directory, runs every guard on the clean
+copy, then introduces one known violation per guard and requires a non-zero
+exit. It mutates nothing in the repository and runs in the project lane. The
+release identity guard and release signing gate are intentionally red until the
+owner supplies the permanent identity and secrets; the other guards are green
+in `scripts/project-verify.sh`.
 
 ### Criteria that require a physical device
 
@@ -275,7 +298,7 @@ widget tests, goldens, an emulator, or a debug build:
 | `DAT-005` / `DAT-008` | Owner signing, install-over-update, and upgrade drill on a real device. |
 | Photos, camera/gallery, share/import (`PHO-*`, `IO-*`) | Real system picker/share behavior; real Android activity death and lost-data recovery; real Auto Backup behavior. Injected-failure and directory tests are the workstation proof. |
 
-Risk tiers: data layer, migrations, import/export, photos, signing, and release workflow are **High** and require a reviewer pass, the full gate, and a named human owner. Ordinary feature slices are **Medium**; docs/copy-only work is **Low** with the documentation lane.
+Risk tiers: data layer, migrations, import/export, photos, signing, and release workflow are **High** and require a reviewer pass (fresh-context `subagent` when available), the full gate, and a named human owner. Ordinary feature slices are **Medium**; docs/copy-only work is **Low** with the documentation lane.
 
 ## Project-specific quality invariants
 

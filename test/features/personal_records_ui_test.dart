@@ -47,11 +47,42 @@ AppData _seed({bool withHistory = true}) {
 }
 
 Future<void> _startAndAddExercise(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.byKey(const Key('start-empty-workout')),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await Scrollable.ensureVisible(
+    tester.element(find.byKey(const Key('start-empty-workout'))),
+    alignment: 0.5,
+  );
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('start-empty-workout')));
+  await tester.pumpAndSettle();
+  await tester.scrollUntilVisible(
+    find.byKey(const Key('session-add-exercise')),
+    220,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await Scrollable.ensureVisible(
+    tester.element(find.byKey(const Key('session-add-exercise'))),
+    alignment: 0.5,
+  );
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('session-add-exercise')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Bench Press'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _reveal(WidgetTester tester, String key) async {
+  final Finder finder = find.byKey(Key(key));
+  await tester.scrollUntilVisible(
+    finder,
+    160,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
   await tester.pumpAndSettle();
 }
 
@@ -62,14 +93,17 @@ Future<void> _logSet(
   bool warmup = false,
 }) async {
   if (warmup) {
+    await _reveal(tester, 'set-0-0-warmup');
     await tester.tap(find.byKey(const Key('set-0-0-warmup')));
     await tester.pumpAndSettle();
   }
+  await _reveal(tester, 'set-0-0-weight');
   await tester.enterText(find.byKey(const Key('set-0-0-weight')), weight);
   await tester.enterText(
     find.byKey(const Key('set-0-0-reps')),
     reps.toString(),
   );
+  await _reveal(tester, 'set-0-0-check');
   await tester.tap(find.byKey(const Key('set-0-0-check')));
   await tester.pumpAndSettle();
 }

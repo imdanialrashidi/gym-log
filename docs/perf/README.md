@@ -21,11 +21,27 @@ dart run tool/benchmarks/run_benchmarks.dart
   10 sets each, one exercise (10,000 logged sets), 1,000 chart points. It is
   deterministic; no random values or clock reads.
 - Measurement: 3 warm-up runs, then 15 measured runs; the **median** is
-  compared with the budget. The harness exits non-zero when any median exceeds
-  its budget (`tool/benchmarks/thresholds.json`).
+  compared with both the spec budget and a regression floor. The harness exits
+  non-zero when an expected benchmark is missing from
+  `tool/benchmarks/thresholds.json` or any median exceeds either number.
+- Regression floors are `max(1, ceil(baseline p90 × 3))` in whole milliseconds,
+  derived from the committed `benchmark-baseline.json`. They catch a large
+  slowdown that still sits under the generous spec budgets; they are not the
+  spec budgets and they are not device measurements. Refresh the baseline and
+  the floors together after an intentional optimization.
 - Budgets: prefill ≤ 50 ms (`NFR-PERF-003`), chart aggregation ≤ 200 ms
   (`NFR-PERF-005`, aggregation proxy only), JSON export ≤ 3000 ms
-  (`NFR-PERF-006`, codec proxy only).
+  (`NFR-PERF-006`, codec proxy only), and weekly overview ≤ 100 ms
+  (`CI-STATS-001`; 8 weeks + body-weight trend over the same fixture).
+- Tap-path proxies added with the single-set PR work: `single_set_pr` for one
+  confirmed set, `full_pr_map` as its whole-scan baseline, and
+  `document_validation` for the whole-document check every mutation performs.
+  Each uses a generous 100 ms budget; **none of these is `NFR-PERF-002`**, whose
+  tap-to-visible-confirmation budget stays `UNPROVEN` until the reference-device
+  run. `weekly_stats` (`CI-STATS-001`) covers the memoized dashboard/weekly
+  derivation; it was 8.388 ms median before the early-cutoff optimization and
+  1.529 ms after it on the same fixture. The `export_json` median stays below 50 ms, so JSON encoding remains on
+  the UI isolate and is not treated as the dominant tap cost.
 - Record a baseline on the same pinned Dart/Flutter and fixture:
 
   ```sh

@@ -92,6 +92,7 @@ String _text(WidgetTester tester, String key) {
 }
 
 Future<void> _startDay(WidgetTester tester) async {
+  await _reveal(tester, 'start-day-day-1');
   await tester.tap(find.byKey(const Key('start-day-day-1')));
   await tester.pumpAndSettle();
 }
@@ -207,11 +208,11 @@ void main() {
 
     expect(
       _text(tester, 'set-0-0-suggestion-reason'),
-      'دفعه قبل هر ۳ ست به ۱۲ تکرار رسید؛ ۲.۵ کیلوگرم اضافه کنید.',
+      'دفعه قبل هر ۳ ست به ۱۲ تکرار رسیدی؛ ۲.۵ کیلوگرم اضافه کن.',
     );
     expect(_text(tester, 'set-0-0-suggestion-last'), 'دفعه قبل: ۱۰۰ × ۱۲');
     expect(find.text('پیشنهاد'), findsWidgets);
-    expect(find.text('استفاده از دفعه قبل'), findsWidgets);
+    expect(find.text('همان دفعه قبل'), findsWidgets);
     expect(_fieldText(tester, 'set-0-0-weight'), '۱۰۲.۵');
     expect(_fieldText(tester, 'set-0-0-reps'), '۸');
   });
@@ -229,6 +230,7 @@ void main() {
     await _startDay(tester);
 
     expect(tester.takeException(), isNull);
+    await _reveal(tester, 'set-0-0-suggestion');
     expect(find.byKey(const Key('set-0-0-suggestion')), findsOneWidget);
     await _tap(tester, 'set-0-0-suggestion-revert');
     expect(tester.takeException(), isNull);
@@ -268,13 +270,11 @@ void main() {
         .updateSet(
           sessionId: 'prior-session',
           sessionExerciseId: 'prior-session-exercise',
-          set: SetLog(
-            id: priorSet.id,
+          setId: priorSet.id,
+          entry: SetEntry(
             weightGrams: priorSet.weightGrams,
             reps: 11,
             rir: priorSet.rir,
-            setIndex: priorSet.setIndex,
-            loggedAt: priorSet.loggedAt,
           ),
         );
     expect(

@@ -73,24 +73,19 @@ void main() {
       sessionId: started.id,
       sessionExerciseId: exercise.id,
       setIndex: 0,
-      weightGrams: 100000,
-      reps: 8,
-      rir: 2,
+      entry: SetEntry(weightGrams: 100000, reps: 8, rir: 2),
     );
     await seeded.controller.logSet(
       sessionId: started.id,
       sessionExerciseId: exercise.id,
       setIndex: 1,
-      weightGrams: 20412,
-      reps: 7,
+      entry: SetEntry(weightGrams: 20412, reps: 7),
     );
     await seeded.controller.logSet(
       sessionId: started.id,
       sessionExerciseId: exercise.id,
       setIndex: 2,
-      weightGrams: 60000,
-      reps: 10,
-      isWarmup: true,
+      entry: SetEntry(weightGrams: 60000, reps: 10, isWarmup: true),
     );
 
     final AppData reloaded = await _container(file)
@@ -130,8 +125,7 @@ void main() {
       sessionId: started.id,
       sessionExerciseId: sessionExercise.id,
       setIndex: 0,
-      weightGrams: 80500,
-      reps: 8,
+      entry: SetEntry(weightGrams: 80500, reps: 8),
     );
 
     final AppData onDisk = await JsonAppDataStore(Future<File>.value(file))
@@ -154,15 +148,13 @@ void main() {
       sessionId: started.id,
       sessionExerciseId: exercise.id,
       setIndex: 2,
-      weightGrams: 90000,
-      reps: 6,
+      entry: SetEntry(weightGrams: 90000, reps: 6),
     );
     await seeded.controller.logSet(
       sessionId: started.id,
       sessionExerciseId: exercise.id,
       setIndex: 0,
-      weightGrams: 100000,
-      reps: 8,
+      entry: SetEntry(weightGrams: 100000, reps: 8),
     );
 
     final AppData reloaded = await _container(file)
@@ -187,16 +179,14 @@ void main() {
       sessionId: started.id,
       sessionExerciseId: exercise.id,
       setIndex: 0,
-      weightGrams: 100000,
-      reps: 8,
+      entry: SetEntry(weightGrams: 100000, reps: 8),
     );
     await expectLater(
       seeded.controller.logSet(
         sessionId: started.id,
         sessionExerciseId: exercise.id,
         setIndex: 0,
-        weightGrams: 100000,
-        reps: 8,
+        entry: SetEntry(weightGrams: 100000, reps: 8),
       ),
       throwsStateError,
     );
@@ -212,8 +202,7 @@ void main() {
       sessionId: started.id,
       sessionExerciseId: started.exercises.single.id,
       setIndex: 0,
-      weightGrams: 20412,
-      reps: 8,
+      entry: SetEntry(weightGrams: 20412, reps: 8),
     );
 
     final AppData before = await _container(file)
@@ -253,8 +242,7 @@ void main() {
       sessionId: started.id,
       sessionExerciseId: started.exercises.single.id,
       setIndex: 0,
-      weightGrams: 100000,
-      reps: 8,
+      entry: SetEntry(weightGrams: 100000, reps: 8),
     );
 
     final Session finished = await seeded.controller.finishSession(started.id);

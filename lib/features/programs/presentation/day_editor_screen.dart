@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../app/document_gate.dart';
 import '../../../app/routes.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/action_runner.dart';
 import '../../../core/widgets/dialogs.dart';
 import '../../../core/widgets/reorder_handle.dart';
 import '../../../core/widgets/text_empty_state.dart';
@@ -43,20 +45,18 @@ class DayEditorScreen extends ConsumerWidget {
       context,
       title: context.l10n.editDayTitle,
       label: context.l10n.dayNameLabel,
+      maxLength: maximumDayNameLength,
       initialValue: day.name,
     );
     if (name == null || !context.mounted) {
       return;
     }
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .renameDay(program.id, day.id, name);
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
-    }
+          .renameDay(program.id, day.id, name),
+    );
   }
 
   Future<void> _delete(
@@ -74,17 +74,14 @@ class DayEditorScreen extends ConsumerWidget {
     if (!confirmed || !context.mounted) {
       return;
     }
-    try {
-      await ref
+    final bool saved = await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .deleteDay(program.id, day.id);
-      if (context.mounted) {
-        context.pop();
-      }
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
+          .deleteDay(program.id, day.id),
+    );
+    if (saved && context.mounted && context.canPop()) {
+      context.pop();
     }
   }
 
@@ -95,39 +92,21 @@ class DayEditorScreen extends ConsumerWidget {
     int oldIndex,
     int newIndex,
   ) async {
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .reorderPlanItems(day.id, oldIndex, newIndex);
-    } catch (_) {
-      if (context.mounted) {
-        _showSaveError(context);
-      }
-    }
+          .reorderPlanItems(day.id, oldIndex, newIndex),
+    );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
 
-    return asyncData.when(
-      loading: () => Scaffold(
-        appBar: AppBar(title: Text(l10n.programsTab)),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (Object error, StackTrace stack) => Scaffold(
-        appBar: AppBar(title: Text(l10n.programsTab)),
-        body: TextEmptyState(
-          message: l10n.loadFailed,
-          action: OutlinedButton.icon(
-            onPressed: () => ref.invalidate(appDataControllerProvider),
-            icon: const Icon(Icons.refresh),
-            label: Text(l10n.retry),
-          ),
-        ),
-      ),
-      data: (AppData data) {
+    return DocumentGate(
+      fallbackTitle: l10n.programsTab,
+      builder: (BuildContext context, AppData data) {
         final Program? program = data.programById(programId);
         ProgramDay? day;
         if (program != null) {
@@ -228,9 +207,4 @@ class DayEditorScreen extends ConsumerWidget {
       },
     );
   }
-}
-
-void _showSaveError(BuildContext context) {
-  ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
 }

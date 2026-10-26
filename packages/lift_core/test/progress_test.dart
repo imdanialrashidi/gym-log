@@ -56,6 +56,27 @@ ExerciseProgress _progress(
   );
 }
 
+void _expectSameProgress(ExerciseProgress actual, ExerciseProgress expected) {
+  expect(actual.hasHistory, expected.hasHistory);
+  expect(actual.sessionCount, expected.sessionCount);
+  for (final (List<ProgressPoint> a, List<ProgressPoint> b)
+      in <(List<ProgressPoint>, List<ProgressPoint>)>[
+        (actual.bestWeightSeries, expected.bestWeightSeries),
+        (actual.estimatedOneRepMaxSeries, expected.estimatedOneRepMaxSeries),
+        (actual.repsSeries, expected.repsSeries),
+        (actual.rirSeries, expected.rirSeries),
+      ]) {
+    expect(a.length, b.length);
+    for (int index = 0; index < a.length; index++) {
+      expect(a[index].date, b[index].date, reason: 'point $index');
+      expect(a[index].value, b[index].value, reason: 'point $index');
+    }
+  }
+  expect(actual.bestWeightGrams, expected.bestWeightGrams);
+  expect(actual.bestOneRepMaxGrams, expected.bestOneRepMaxGrams);
+  expect(actual.bestOneRepMaxConfidence, expected.bestOneRepMaxConfidence);
+}
+
 void main() {
   group('progress series', () {
     test('uses the best working set of each finished session', () {
@@ -276,6 +297,95 @@ void main() {
       expect(hidden.bestOneRepMaxGrams, isNull);
       expect(hidden.bestOneRepMaxConfidence, isNull);
       expect(hidden.bestOneRepMaxLessReliable, isFalse);
+    });
+
+    test('the grouped pass equals the individual pass for every range', () {
+      final DateTime now = DateTime.utc(2026, 10, 21, 12);
+      final List<Session> sessions = <Session>[
+        _session(
+          'bench-recent',
+          now.subtract(const Duration(days: 2)),
+          <SetLog>[
+            _set('bench-warmup', 150000, 5, warmup: true),
+            _set('bench-1', 100000, 8, rir: 2, index: 1),
+            _set('bench-2', 110000, 5, rir: 3, index: 2),
+          ],
+        ),
+        _session('bench-mid', now.subtract(const Duration(days: 40)), <SetLog>[
+          _set('bench-mid-1', 105000, 6),
+        ]),
+        _session('bench-old', now.subtract(const Duration(days: 200)), <SetLog>[
+          _set('bench-old-1', 95000, 10),
+        ]),
+        _session(
+          'bench-active',
+          now.subtract(const Duration(days: 1)),
+          <SetLog>[_set('bench-active-1', 200000, 5)],
+          active: true,
+        ),
+        _session(
+          'squat-recent',
+          now.subtract(const Duration(days: 1)),
+          <SetLog>[
+            _set('squat-warmup', 60000, 5, warmup: true),
+            _set('squat-1', 80000, 5, index: 1),
+          ],
+          exerciseId: 'squat',
+        ),
+        _session('squat-empty', now.subtract(const Duration(days: 3)), <SetLog>[
+          _set('squat-warmup-2', 50000, 5, warmup: true),
+        ], exerciseId: 'squat'),
+      ];
+      const List<String> ids = <String>[
+        'bench',
+        'squat',
+        'never-trained',
+        'unknown',
+      ];
+
+      for (final ProgressRange range in ProgressRange.values) {
+        final Map<String, ExerciseProgress> grouped =
+            prepareExerciseProgressMap(
+              sessions: sessions,
+              exerciseIds: ids,
+              now: now,
+              range: range,
+            );
+        expect(grouped.keys.toSet(), ids.toSet());
+        for (final String id in ids) {
+          _expectSameProgress(
+            grouped[id]!,
+            prepareExerciseProgress(
+              sessions: sessions,
+              exerciseId: id,
+              now: now,
+              range: range,
+            ),
+          );
+        }
+        expect(grouped['never-trained']!.hasHistory, isFalse);
+        expect(grouped['never-trained']!.hasData, isFalse);
+        expect(grouped['squat']!.hasHistory, isTrue);
+      }
+    });
+
+    test('bodyweight sets have no e1RM but keep weight and reps', () {
+      final ExerciseProgress progress = _progress(<Session>[
+        _session('bodyweight', DateTime.utc(2026, 10, 1), <SetLog>[
+          _set('bw-set', 0, 5, rir: 0),
+        ]),
+      ]);
+
+      expect(progress.sessionCount, 1);
+      expect(progress.estimatedOneRepMaxSeries, hasLength(1));
+      expect(progress.estimatedOneRepMaxSeries.single.value, isNull);
+      expect(progress.bestOneRepMaxGrams, isNull);
+      expect(progress.bestOneRepMaxConfidence, isNull);
+      expect(progress.bestOneRepMaxLessReliable, isFalse);
+      expect(progress.bestWeightGrams, 0.0);
+      expect(progress.bestWeightSeries.single.value, 0.0);
+      expect(progress.repsSeries.single.value, 5.0);
+      expect(progress.rirSeries.single.value, 0.0);
     });
 
     test('an exercise without history has empty series and no bests', () {

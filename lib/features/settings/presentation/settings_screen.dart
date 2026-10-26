@@ -6,14 +6,19 @@ import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../app/document_gate.dart';
 import '../../../app/locale_override.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/action_runner.dart';
+import '../../../core/widgets/app_backdrop.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_formats.dart';
 import '../../../core/widgets/number_input.dart';
 import '../../../data/app_data_controller.dart';
+import '../../goals/presentation/weekly_goal_sheet.dart';
 import 'backup_section.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -24,280 +29,253 @@ class SettingsScreen extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final String languageCode = Localizations.localeOf(context).languageCode;
     final String selectedLanguage = languageCode == 'fa' ? 'fa' : 'en';
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
+    // The digit style is persisted, so the control stays disabled until the
+    // document loads; the gate below owns the failure surface.
+    final bool dataLoaded = ref.watch(appDataControllerProvider).hasValue;
+    final double padding = AppTokens.pagePadding(
+      MediaQuery.sizeOf(context).width,
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
-      body: ListView(
-        padding: const EdgeInsetsDirectional.all(AppTokens.space2),
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-            child: Text(
-              l10n.languageLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+      body: AppBackdrop(
+        child: ListView(
+          key: const Key('settings-list'),
+          padding: EdgeInsetsDirectional.fromSTEB(
+            padding,
+            AppTokens.space2,
+            padding,
+            AppTokens.space4,
           ),
-          Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-            child: SegmentedButton<String>(
-              segments: <ButtonSegment<String>>[
-                ButtonSegment<String>(
-                  value: 'fa',
-                  label: Text(l10n.languagePersian),
-                ),
-                ButtonSegment<String>(
-                  value: 'en',
-                  label: Text(l10n.languageEnglish),
-                ),
-              ],
-              selected: <String>{selectedLanguage},
-              onSelectionChanged: (Set<String> selection) {
-                ref
-                    .read(localeOverrideProvider.notifier)
-                    .select(Locale(selection.single));
-              },
-            ),
-          ),
-          const SizedBox(height: AppTokens.space2),
-          Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-            child: Text(
-              l10n.digitStyleLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-            child: SegmentedButton<DigitStyle>(
-              key: const Key('digit-style-control'),
-              segments: <ButtonSegment<DigitStyle>>[
-                ButtonSegment<DigitStyle>(
-                  value: DigitStyle.persian,
-                  label: Text(l10n.digitStylePersian),
-                ),
-                ButtonSegment<DigitStyle>(
-                  value: DigitStyle.latin,
-                  label: Text(l10n.digitStyleLatin),
-                ),
-              ],
-              selected: <DigitStyle>{DigitStyleScope.of(context)},
-              onSelectionChanged: asyncData.hasValue
-                  ? (Set<DigitStyle> selection) {
-                      unawaited(_setDigitStyle(context, ref, selection.single));
-                    }
-                  : null,
-            ),
-          ),
-          const SizedBox(height: AppTokens.space2),
-          Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-            child: Text(
-              l10n.weightUnitLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-            child: asyncData.when(
-              loading: () => const Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-              error: (Object error, StackTrace stack) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    l10n.loadFailed,
-                    style: const TextStyle(color: AppTokens.danger),
-                  ),
-                  const SizedBox(height: AppTokens.space1),
-                  TextButton.icon(
-                    onPressed: () => ref.invalidate(appDataControllerProvider),
-                    icon: const Icon(Icons.refresh),
-                    label: Text(l10n.retry),
-                  ),
-                ],
-              ),
-              data: (AppData data) => SegmentedButton<WeightUnit>(
-                key: const Key('weight-unit-control'),
-                segments: <ButtonSegment<WeightUnit>>[
-                  ButtonSegment<WeightUnit>(
-                    value: WeightUnit.kilograms,
-                    label: Text(l10n.unitKilograms),
-                  ),
-                  ButtonSegment<WeightUnit>(
-                    value: WeightUnit.pounds,
-                    label: Text(l10n.unitPounds),
-                  ),
-                ],
-                selected: <WeightUnit>{data.settings.weightUnit},
-                onSelectionChanged: (Set<WeightUnit> selection) {
-                  unawaited(_setUnit(context, ref, selection.single));
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: AppTokens.space2),
-          Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-            child: Text(
-              l10n.defaultIncrementLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          asyncData.when(
-            loading: () => const Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-            error: (Object error, StackTrace stack) => Padding(
-              padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-              child: Text(
-                l10n.loadFailed,
-                style: const TextStyle(color: AppTokens.danger),
-              ),
-            ),
-            data: (AppData data) {
-              final WeightUnit unit = data.settings.weightUnit;
-              final int grams = data.settings.incrementFor(unit);
-              final String unitLabel = switch (unit) {
-                WeightUnit.kilograms => l10n.unitKilograms,
-                WeightUnit.pounds => l10n.unitPounds,
-              };
-              return ListTile(
-                key: const Key('default-increment-row'),
-                contentPadding: const EdgeInsetsDirectional.symmetric(
-                  horizontal: AppTokens.space1,
-                ),
-                title: Text(
-                  '${context.digits(formatWeight(grams, unit))} $unitLabel',
-                ),
-                subtitle: Text(l10n.defaultIncrementHint),
-                trailing: const Icon(Icons.edit_outlined),
-                onTap: () =>
-                    unawaited(_editDefaultIncrement(context, ref, unit, grams)),
-              );
-            },
-          ),
-          const SizedBox(height: AppTokens.space2),
-          Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-            child: Text(
-              l10n.restTimerLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          asyncData.when(
-            loading: () => const Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-            error: (Object error, StackTrace stack) => Padding(
-              padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-              child: Text(
-                l10n.loadFailed,
-                style: const TextStyle(color: AppTokens.danger),
-              ),
-            ),
-            data: (AppData data) => Column(
+          children: <Widget>[
+            _SettingsGroup(
+              title: l10n.settingsAppearanceSection,
               children: <Widget>[
-                SwitchListTile(
-                  key: const Key('rest-timer-enabled'),
-                  contentPadding: const EdgeInsetsDirectional.symmetric(
-                    horizontal: AppTokens.space1,
+                _ControlRow(
+                  title: l10n.languageLabel,
+                  child: SegmentedButton<String>(
+                    segments: <ButtonSegment<String>>[
+                      ButtonSegment<String>(
+                        value: 'fa',
+                        label: Text(l10n.languagePersian),
+                      ),
+                      ButtonSegment<String>(
+                        value: 'en',
+                        label: Text(l10n.languageEnglish),
+                      ),
+                    ],
+                    selected: <String>{selectedLanguage},
+                    onSelectionChanged: (Set<String> selection) {
+                      ref
+                          .read(localeOverrideProvider.notifier)
+                          .select(Locale(selection.single));
+                    },
                   ),
-                  title: Text(l10n.restTimerEnabled),
-                  subtitle: Text(l10n.restTimerHint),
-                  value: data.settings.restTimerEnabled,
-                  onChanged: (bool enabled) =>
-                      unawaited(_setRestTimerEnabled(context, ref, enabled)),
                 ),
-                Row(
-                  children: <Widget>[
-                    const SizedBox(width: AppTokens.space1),
-                    Text(l10n.restTimerDuration),
-                    const Spacer(),
-                    IconButton(
-                      key: const Key('rest-timer-duration-minus'),
-                      tooltip: l10n.decreaseRestTimer,
-                      onPressed:
-                          data.settings.restTimerDurationSeconds >
-                              minimumRestTimerSeconds
-                          ? () => unawaited(
-                              _setRestTimerDuration(
-                                context,
-                                ref,
-                                data.settings.restTimerDurationSeconds - 15,
-                              ),
-                            )
-                          : null,
-                      icon: const Icon(Icons.remove),
-                    ),
-                    Text(
-                      context.digits(
-                        formatRestDuration(
-                          Duration(
-                            seconds: data.settings.restTimerDurationSeconds,
+                _ControlRow(
+                  title: l10n.digitStyleLabel,
+                  child: SegmentedButton<DigitStyle>(
+                    key: const Key('digit-style-control'),
+                    segments: <ButtonSegment<DigitStyle>>[
+                      ButtonSegment<DigitStyle>(
+                        value: DigitStyle.persian,
+                        label: Text(l10n.digitStylePersian),
+                      ),
+                      ButtonSegment<DigitStyle>(
+                        value: DigitStyle.latin,
+                        label: Text(l10n.digitStyleLatin),
+                      ),
+                    ],
+                    selected: <DigitStyle>{DigitStyleScope.of(context)},
+                    onSelectionChanged: dataLoaded
+                        ? (Set<DigitStyle> selection) {
+                            unawaited(
+                              _setDigitStyle(context, ref, selection.single),
+                            );
+                          }
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppTokens.space2),
+            DocumentGate(
+              builder: (BuildContext context, AppData data) => Column(
+                children: <Widget>[
+                  _SettingsGroup(
+                    title: l10n.settingsTrainingSection,
+                    children: <Widget>[
+                      _ControlRow(
+                        title: l10n.weightUnitLabel,
+                        child: SegmentedButton<WeightUnit>(
+                          key: const Key('weight-unit-control'),
+                          segments: <ButtonSegment<WeightUnit>>[
+                            ButtonSegment<WeightUnit>(
+                              value: WeightUnit.kilograms,
+                              label: Text(l10n.unitKilograms),
+                            ),
+                            ButtonSegment<WeightUnit>(
+                              value: WeightUnit.pounds,
+                              label: Text(l10n.unitPounds),
+                            ),
+                          ],
+                          selected: <WeightUnit>{data.settings.weightUnit},
+                          onSelectionChanged: (Set<WeightUnit> selection) {
+                            unawaited(_setUnit(context, ref, selection.single));
+                          },
+                        ),
+                      ),
+                      _LinkRow(
+                        key: const Key('default-increment-row'),
+                        icon: Icons.straighten,
+                        title: l10n.defaultIncrementLabel,
+                        value:
+                            '${context.digits(formatWeight(data.settings.incrementFor(data.settings.weightUnit), data.settings.weightUnit))} '
+                            '${switch (data.settings.weightUnit) {
+                              WeightUnit.kilograms => l10n.unitKilograms,
+                              WeightUnit.pounds => l10n.unitPounds,
+                            }}',
+                        subtitle: l10n.defaultIncrementHint,
+                        onTap: () => unawaited(
+                          _editDefaultIncrement(
+                            context,
+                            ref,
+                            data.settings.weightUnit,
+                            data.settings.incrementFor(
+                              data.settings.weightUnit,
+                            ),
                           ),
                         ),
                       ),
-                      key: const Key('rest-timer-duration-value'),
+                      _SwitchRow(
+                        icon: Icons.timer_outlined,
+                        title: l10n.restTimerEnabled,
+                        subtitle: l10n.restTimerHint,
+                        value: data.settings.restTimerEnabled,
+                        onChanged: (bool enabled) => unawaited(
+                          _setRestTimerEnabled(context, ref, enabled),
+                        ),
+                      ),
+                      _DurationRow(
+                        title: l10n.restTimerDuration,
+                        value: context.digits(
+                          formatRestDuration(
+                            Duration(
+                              seconds: data.settings.restTimerDurationSeconds,
+                            ),
+                          ),
+                        ),
+                        onMinus:
+                            data.settings.restTimerDurationSeconds >
+                                minimumRestTimerSeconds
+                            ? () => unawaited(
+                                _adjustRestTimerDuration(context, ref, -15),
+                              )
+                            : null,
+                        onPlus:
+                            data.settings.restTimerDurationSeconds <
+                                maximumRestTimerSeconds
+                            ? () => unawaited(
+                                _adjustRestTimerDuration(context, ref, 15),
+                              )
+                            : null,
+                      ),
+                      _LinkRow(
+                        key: const Key('weekly-goal-row'),
+                        icon: Icons.flag_outlined,
+                        title: l10n.goalWeeklyTitle,
+                        value: _goalValue(context, l10n, data.settings),
+                        subtitle: l10n.goalSettingsSubtitle,
+                        onTap: () =>
+                            unawaited(_editGoal(context, ref, data.settings)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTokens.space2),
+                  _SettingsGroup(
+                    title: l10n.settingsDataSection,
+                    children: <Widget>[
+                      BackupSection(data: data, showHeading: false),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppTokens.space2),
+            AppCard(
+              key: const Key('open-about'),
+              onTap: () => unawaited(context.push(AppRoutes.about)),
+              child: Row(
+                children: <Widget>[
+                  const Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: AppTokens.textSecondary,
+                  ),
+                  const SizedBox(width: AppTokens.space2),
+                  Expanded(
+                    child: Text(
+                      l10n.aboutTitle,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    IconButton(
-                      key: const Key('rest-timer-duration-plus'),
-                      tooltip: l10n.increaseRestTimer,
-                      onPressed:
-                          data.settings.restTimerDurationSeconds <
-                              maximumRestTimerSeconds
-                          ? () => unawaited(
-                              _setRestTimerDuration(
-                                context,
-                                ref,
-                                data.settings.restTimerDurationSeconds + 15,
-                              ),
-                            )
-                          : null,
-                      icon: const Icon(Icons.add),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                  const Icon(Icons.chevron_right, size: 20),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: AppTokens.space2),
-          asyncData.when(
-            loading: () => const SizedBox.shrink(),
-            error: (Object error, StackTrace stack) => const SizedBox.shrink(),
-            data: (AppData data) => BackupSection(data: data),
-          ),
-          const SizedBox(height: AppTokens.space2),
-          ListTile(
-            key: const Key('open-about'),
-            contentPadding: const EdgeInsetsDirectional.symmetric(
-              horizontal: AppTokens.space1,
-            ),
-            leading: const Icon(Icons.info_outline),
-            title: Text(l10n.aboutTitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => unawaited(context.push(AppRoutes.about)),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  String _goalValue(
+    BuildContext context,
+    AppLocalizations l10n,
+    AppSettings settings,
+  ) {
+    if (!settings.hasWeeklyGoal) {
+      return l10n.settingsNoGoal;
+    }
+    final int? sessions = settings.weeklySessionGoal;
+    final int? sets = settings.weeklySetGoal;
+    if (sessions != null && sets != null) {
+      return context.digits(l10n.settingsGoalValue(sessions, sets));
+    }
+    if (sessions != null) {
+      return context.digits('$sessions ${l10n.goalSessionsLabel}');
+    }
+    return context.digits('$sets ${l10n.goalSetsLabel}');
+  }
+
+  Future<void> _editGoal(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettings settings,
+  ) async {
+    final WeeklyGoalDraft? draft = await showWeeklyGoalSheet(
+      context,
+      settings: settings,
+    );
+    if (draft == null || !context.mounted) {
+      return;
+    }
+    final AppDataController controller = ref.read(
+      appDataControllerProvider.notifier,
+    );
+    final bool saved = await runDataAction(context, () {
+      if (draft.isEmpty) {
+        return controller.clearWeeklyGoals();
+      }
+      return controller.setWeeklyGoals(
+        sessionGoal: draft.sessionGoal,
+        setGoal: draft.setGoal,
+      );
+    });
+    if (saved && context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.goalSaved)));
+    }
   }
 
   Future<void> _setUnit(
@@ -305,14 +283,10 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     WeightUnit unit,
   ) async {
-    try {
-      await ref.read(appDataControllerProvider.notifier).setWeightUnit(unit);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
-      }
-    }
+    await runDataAction(
+      context,
+      () => ref.read(appDataControllerProvider.notifier).setWeightUnit(unit),
+    );
   }
 
   Future<void> _setDigitStyle(
@@ -320,14 +294,10 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     DigitStyle style,
   ) async {
-    try {
-      await ref.read(appDataControllerProvider.notifier).setDigitStyle(style);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
-      }
-    }
+    await runDataAction(
+      context,
+      () => ref.read(appDataControllerProvider.notifier).setDigitStyle(style),
+    );
   }
 
   Future<void> _editDefaultIncrement(
@@ -344,16 +314,20 @@ class SettingsScreen extends ConsumerWidget {
     if (grams == null || !context.mounted) {
       return;
     }
-    try {
-      await ref
-          .read(appDataControllerProvider.notifier)
-          .setDefaultIncrementGrams(grams);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
-      }
+    final int? explicit = ref
+        .read(appDataControllerProvider)
+        .requireValue
+        .settings
+        .defaultIncrementGrams;
+    if (grams == currentGrams && explicit == null) {
+      return;
     }
+    await runDataAction(
+      context,
+      () => ref
+          .read(appDataControllerProvider.notifier)
+          .setDefaultIncrementGrams(grams),
+    );
   }
 
   Future<void> _setRestTimerEnabled(
@@ -361,37 +335,283 @@ class SettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     bool enabled,
   ) async {
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .setRestTimerEnabled(enabled);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
-      }
-    }
+          .setRestTimerEnabled(enabled),
+    );
   }
 
-  Future<void> _setRestTimerDuration(
+  Future<void> _adjustRestTimerDuration(
     BuildContext context,
     WidgetRef ref,
-    int seconds,
+    int delta,
   ) async {
-    final int clamped = seconds.clamp(
-      minimumRestTimerSeconds,
-      maximumRestTimerSeconds,
-    );
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .setRestTimerDurationSeconds(clamped);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
-      }
-    }
+          .adjustRestTimerDurationSeconds(delta),
+    );
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              AppTokens.space2,
+              AppTokens.space2,
+              AppTokens.space2,
+              AppTokens.space1,
+            ),
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          for (int index = 0; index < children.length; index += 1) ...<Widget>[
+            if (index > 0)
+              const Divider(
+                height: 1,
+                indent: AppTokens.space2,
+                endIndent: AppTokens.space2,
+              ),
+            children[index],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ControlRow extends StatelessWidget {
+  const _ControlRow({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        AppTokens.space2,
+        AppTokens.space2,
+        AppTokens.space2,
+        AppTokens.space2,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(title, style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: AppTokens.space1),
+          SizedBox(width: double.infinity, child: child),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onTap,
+    super.key,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          AppTokens.space2,
+          AppTokens.space2,
+          AppTokens.space2,
+          AppTokens.space2,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(icon, size: 20, color: AppTokens.textSecondary),
+            const SizedBox(width: AppTokens.space2),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (subtitle != null) ...<Widget>[
+                    const SizedBox(height: 2),
+                    Text(subtitle!, style: theme.textTheme.bodySmall),
+                  ],
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: AppTokens.accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppTokens.space1),
+            const Icon(Icons.chevron_right, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        AppTokens.space2,
+        AppTokens.space1,
+        AppTokens.space1,
+        AppTokens.space1,
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: 20, color: AppTokens.textSecondary),
+          const SizedBox(width: AppTokens.space2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(subtitle, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+          Switch(
+            key: const Key('rest-timer-enabled'),
+            value: value,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DurationRow extends StatelessWidget {
+  const _DurationRow({
+    required this.title,
+    required this.value,
+    required this.onMinus,
+    required this.onPlus,
+  });
+
+  final String title;
+  final String value;
+  final VoidCallback? onMinus;
+  final VoidCallback? onPlus;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        AppTokens.space2,
+        AppTokens.space1,
+        AppTokens.space1,
+        AppTokens.space1,
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(
+            Icons.hourglass_empty,
+            size: 20,
+            color: AppTokens.textSecondary,
+          ),
+          const SizedBox(width: AppTokens.space2),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+          IconButton(
+            key: const Key('rest-timer-duration-minus'),
+            tooltip: context.l10n.decreaseRestTimer,
+            onPressed: onMinus,
+            icon: const Icon(Icons.remove, size: 20),
+          ),
+          Text(
+            value,
+            key: const Key('rest-timer-duration-value'),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          IconButton(
+            key: const Key('rest-timer-duration-plus'),
+            tooltip: context.l10n.increaseRestTimer,
+            onPressed: onPlus,
+            icon: const Icon(Icons.add, size: 20),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -422,7 +642,11 @@ class _DefaultIncrementDialogState extends State<_DefaultIncrementDialog> {
   }
 
   void _save() {
-    final WeightParseResult parsed = parseWeightInput(_value.text, widget.unit);
+    final WeightParseResult parsed = parseWeightField(
+      _value.text,
+      unit: widget.unit,
+      originalGrams: widget.initialGrams,
+    );
     if (!parsed.isValid || parsed.grams! <= 0) {
       setState(() => _error = context.l10n.errorIncrement);
       return;

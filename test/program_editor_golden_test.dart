@@ -168,7 +168,7 @@ void main() {
     await tester.tap(find.byKey(const Key('save-plan-item')));
     await tester.pumpAndSettle();
 
-    expect(find.text('یک تمرین انتخاب کنید.'), findsOneWidget);
+    expect(find.text('یک حرکت انتخاب کن.'), findsOneWidget);
     await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/plan_item_validation_fa.png'),

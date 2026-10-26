@@ -1,7 +1,7 @@
 <!--
 Spec source: Workout_Log_App_Business_and_Product_Specification_v1.0.md, section 24.
-SUPERSEDED by the OMP workflow (AGENTS.md, docs/HARNESS.md, docs/QUALITY.md).
-Kept verbatim for traceability; conflict resolution is in 91-omp-reconciliation.md.
+SUPERSEDED by the DSH Workflow (AGENTS.md, docs/HARNESS.md, docs/QUALITY.md, .dsh/skills/).
+Kept verbatim for traceability; conflict resolution is in 91-workflow-reconciliation.md.
 -->
 
 ## 24. Agent Operating Model (placeholder pending your Workflow Guide)

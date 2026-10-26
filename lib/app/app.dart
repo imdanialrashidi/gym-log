@@ -14,9 +14,6 @@ class GymLogApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final Locale? localeOverride = ref.watch(localeOverrideProvider);
-    // Drains image_picker's lost-data cache on every start. Recovery attaches
-    // a file only when a pending target survived (`PHO-001`).
-    ref.listen(photoRecoveryProvider, (_, _) {});
 
     return MaterialApp.router(
       onGenerateTitle: (context) => context.l10n.appTitle,
@@ -31,8 +28,9 @@ class GymLogApp extends ConsumerWidget {
       theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
-      builder: (BuildContext context, Widget? child) =>
-          AppDigitStyleScope(child: child ?? const SizedBox.shrink()),
+      builder: (BuildContext context, Widget? child) => _StartupTasks(
+        child: AppDigitStyleScope(child: child ?? const SizedBox.shrink()),
+      ),
       routerConfig: ref.watch(routerProvider),
     );
   }
@@ -48,4 +46,38 @@ class GymLogApp extends ConsumerWidget {
     }
     return const Locale('en');
   }
+}
+
+/// Starts background recovery after the first frame.
+///
+/// Photo recovery drains image_picker's lost-data cache and prunes orphan
+/// files. It must still run on every start (`PHO-001`), but it is not needed
+/// for the first paint, so it no longer competes with the document load and
+/// the initial frame.
+class _StartupTasks extends ConsumerStatefulWidget {
+  const _StartupTasks({required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<_StartupTasks> createState() => _StartupTasksState();
+}
+
+class _StartupTasksState extends ConsumerState<_StartupTasks> {
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _started) {
+        return;
+      }
+      _started = true;
+      ref.read(photoRecoveryProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

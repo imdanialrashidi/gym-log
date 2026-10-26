@@ -15,6 +15,9 @@ void main() {
 
   for (final Directory root in roots) {
     if (!root.existsSync()) {
+      // A missing root means the guard cannot prove the invariant; fail
+      // closed instead of scanning nothing and reporting success.
+      violations.add('required scan root is missing: ${root.path}');
       continue;
     }
     for (final File file
@@ -39,7 +42,8 @@ void main() {
   if (violations.isNotEmpty) {
     stderr.writeln(
       'Destructive-reset guard failed (DAT-002 forbids deleting and recreating '
-      'the database):',
+      'the database). A missing scan root also fails: the guard cannot prove '
+      'the invariant without the source:',
     );
     for (final String violation in violations) {
       stderr.writeln('  - $violation');

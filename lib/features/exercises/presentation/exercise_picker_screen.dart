@@ -3,11 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../app/document_gate.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/l10n.dart';
 import '../../../core/widgets/text_empty_state.dart';
-import '../../../data/app_data_controller.dart';
 import '../../../data/photo_index_controller.dart';
 import '../../../data/photo_storage.dart';
 import '../../photos/presentation/photo_thumbnail.dart';
@@ -65,130 +65,116 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
           ),
         ],
       ),
-      body: ref
-          .watch(appDataControllerProvider)
-          .when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (Object error, StackTrace stack) => TextEmptyState(
-              message: l10n.loadFailed,
-              action: OutlinedButton.icon(
-                onPressed: () => ref.invalidate(appDataControllerProvider),
-                icon: const Icon(Icons.refresh),
-                label: Text(l10n.retry),
+      body: DocumentGate(
+        builder: (BuildContext context, AppData data) {
+          if (data.activeExercises.isEmpty) {
+            final bool hasArchived = data.exercises.isNotEmpty;
+            return TextEmptyState(
+              message: hasArchived
+                  ? l10n.noActiveExercisesPicker
+                  : l10n.exercisesEmpty,
+              action: FilledButton.icon(
+                key: const Key('picker-add-first-exercise'),
+                onPressed: _openCreate,
+                icon: const Icon(Icons.add),
+                label: Text(
+                  hasArchived ? l10n.addExercise : l10n.addFirstExercise,
+                ),
               ),
-            ),
-            data: (AppData data) {
-              if (data.activeExercises.isEmpty) {
-                final bool hasArchived = data.exercises.isNotEmpty;
-                return TextEmptyState(
-                  message: hasArchived
-                      ? l10n.noActiveExercisesPicker
-                      : l10n.exercisesEmpty,
-                  action: FilledButton.icon(
-                    key: const Key('picker-add-first-exercise'),
-                    onPressed: _openCreate,
-                    icon: const Icon(Icons.add),
-                    label: Text(
-                      hasArchived ? l10n.addExercise : l10n.addFirstExercise,
-                    ),
-                  ),
-                );
-              }
-              final List<Exercise> available = data.activeExercises
-                  .where(
-                    (Exercise exercise) =>
-                        !widget.excludedExerciseIds.contains(exercise.id),
-                  )
-                  .toList();
-              if (available.isEmpty) {
-                return TextEmptyState(
-                  message: l10n.noExercisesAvailableForSession,
-                  action: FilledButton.icon(
-                    key: const Key('picker-add-exercise'),
-                    onPressed: _openCreate,
-                    icon: const Icon(Icons.add),
-                    label: Text(l10n.addExercise),
-                  ),
-                );
-              }
-              final List<Exercise> visible = available
-                  .where(
-                    (Exercise exercise) =>
-                        matchesSearchQuery(exercise.name, _query),
-                  )
-                  .toList();
-              return Column(
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(
-                      AppTokens.space2,
-                      AppTokens.space1,
-                      AppTokens.space2,
-                      0,
-                    ),
-                    child: TextField(
-                      key: const Key('exercise-picker-search'),
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: l10n.searchExercisesHint,
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _query.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: l10n.clearSearch,
-                                icon: const Icon(Icons.close),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() => _query = '');
-                                },
-                              ),
-                        border: const OutlineInputBorder(),
-                      ),
-                      onChanged: (String value) =>
-                          setState(() => _query = value),
-                    ),
-                  ),
-                  Expanded(
-                    child: visible.isEmpty
-                        ? TextEmptyState(message: l10n.noSearchResults)
-                        : ListView.separated(
-                            itemCount: visible.length,
-                            separatorBuilder: (_, _) =>
-                                const Divider(height: 1),
-                            itemBuilder: (BuildContext context, int index) {
-                              final Exercise exercise = visible[index];
-                              final String? photoName = photoIndex
-                                  ?.exerciseFileName(exercise.id);
-                              return ListTile(
-                                key: ValueKey<String>('picker-${exercise.id}'),
-                                leading: photoName == null
-                                    ? null
-                                    : PhotoThumbnail(
-                                        key: ValueKey<String>(
-                                          'picker-photo-${exercise.id}',
-                                        ),
-                                        file: photoIndex!.file(photoName),
-                                        label: l10n.exercisePhotoLabel,
-                                        size: 48,
-                                      ),
-                                title: Text(exercise.name),
-                                subtitle: exercise.muscleGroup == null
-                                    ? null
-                                    : Text(
-                                        muscleGroupLabel(
-                                          l10n,
-                                          exercise.muscleGroup!,
-                                        ),
-                                      ),
-                                onTap: () => context.pop<Exercise>(exercise),
-                              );
+            );
+          }
+          final List<Exercise> available = data.activeExercises
+              .where(
+                (Exercise exercise) =>
+                    !widget.excludedExerciseIds.contains(exercise.id),
+              )
+              .toList();
+          if (available.isEmpty) {
+            return TextEmptyState(
+              message: l10n.noExercisesAvailableForSession,
+              action: FilledButton.icon(
+                key: const Key('picker-add-exercise'),
+                onPressed: _openCreate,
+                icon: const Icon(Icons.add),
+                label: Text(l10n.addExercise),
+              ),
+            );
+          }
+          final List<Exercise> visible = available
+              .where(
+                (Exercise exercise) =>
+                    matchesSearchQuery(exercise.name, _query),
+              )
+              .toList();
+          return Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(
+                  AppTokens.space2,
+                  AppTokens.space1,
+                  AppTokens.space2,
+                  0,
+                ),
+                child: TextField(
+                  key: const Key('exercise-picker-search'),
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: l10n.searchExercisesHint,
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: l10n.clearSearch,
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _query = '');
                             },
                           ),
                   ),
-                ],
-              );
-            },
-          ),
+                  onChanged: (String value) => setState(() => _query = value),
+                ),
+              ),
+              Expanded(
+                child: visible.isEmpty
+                    ? TextEmptyState(message: l10n.noSearchResults)
+                    : ListView.separated(
+                        itemCount: visible.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (BuildContext context, int index) {
+                          final Exercise exercise = visible[index];
+                          final String? photoName = photoIndex
+                              ?.exerciseFileName(exercise.id);
+                          return ListTile(
+                            key: ValueKey<String>('picker-${exercise.id}'),
+                            leading: photoName == null
+                                ? null
+                                : PhotoThumbnail(
+                                    key: ValueKey<String>(
+                                      'picker-photo-${exercise.id}',
+                                    ),
+                                    file: photoIndex!.file(photoName),
+                                    label: l10n.exercisePhotoLabel,
+                                    size: 48,
+                                  ),
+                            title: Text(exercise.name),
+                            subtitle: exercise.muscleGroup == null
+                                ? null
+                                : Text(
+                                    muscleGroupLabel(
+                                      l10n,
+                                      exercise.muscleGroup!,
+                                    ),
+                                  ),
+                            onTap: () => context.pop<Exercise>(exercise),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

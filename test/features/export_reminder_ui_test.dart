@@ -160,7 +160,7 @@ void main() {
       reminderStore: MemoryExportReminderStore(),
     );
 
-    expect(find.text('از داده‌های خود پشتیبان بگیرید'), findsOneWidget);
+    expect(find.text('از داده‌هایت پشتیبان بگیر'), findsOneWidget);
     expect(find.text('بعداً'), findsOneWidget);
     expect(find.text('همین حالا خروجی بگیر'), findsOneWidget);
   });

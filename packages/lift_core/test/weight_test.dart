@@ -261,6 +261,88 @@ void main() {
     });
   });
 
+  group('parseWeightField', () {
+    const List<int> canonicalGrams = <int>[
+      0,
+      1,
+      2500,
+      99999,
+      100000,
+      80500,
+      453592,
+      1000000,
+    ];
+
+    for (final WeightUnit unit in WeightUnit.values) {
+      for (final int grams in canonicalGrams) {
+        test('unchanged ${unit.name} display keeps $grams g', () {
+          final String display = formatWeight(grams, unit);
+          final WeightParseResult result = parseWeightField(
+            display,
+            unit: unit,
+            originalGrams: grams,
+          );
+          expect(result.grams, grams);
+          expect(result.problem, isNull);
+        });
+
+        test('unchanged Persian-digit ${unit.name} display keeps $grams g', () {
+          final String display = applyDigitStyle(
+            formatWeight(grams, unit),
+            DigitStyle.persian,
+          );
+          final WeightParseResult result = parseWeightField(
+            display,
+            unit: unit,
+            originalGrams: grams,
+          );
+          expect(result.grams, grams);
+        });
+      }
+    }
+
+    test('a changed lb value parses the typed value', () {
+      final WeightParseResult result = parseWeightField(
+        '5.52',
+        unit: WeightUnit.pounds,
+        originalGrams: 2500,
+      );
+      expect(result.grams, 2504);
+      expect(result.grams, isNot(2500));
+    });
+
+    test('an invalid typed value reports the parseWeightInput problem', () {
+      for (final String input in <String>['', '-1', '1.234', 'abc']) {
+        final WeightParseResult helper = parseWeightField(
+          input,
+          unit: WeightUnit.kilograms,
+          originalGrams: 2500,
+        );
+        final WeightParseResult parser = parseWeightInput(
+          input,
+          WeightUnit.kilograms,
+        );
+        expect(helper.grams, isNull, reason: 'Unexpected grams for "$input"');
+        expect(helper.problem, parser.problem);
+      }
+    });
+
+    test('a null original behaves exactly like parseWeightInput', () {
+      for (final String input in <String>['5.51', '۱۰', '0', 'abc']) {
+        final WeightParseResult helper = parseWeightField(
+          input,
+          unit: WeightUnit.pounds,
+        );
+        final WeightParseResult parser = parseWeightInput(
+          input,
+          WeightUnit.pounds,
+        );
+        expect(helper.grams, parser.grams);
+        expect(helper.problem, parser.problem);
+      }
+    });
+  });
+
   group('parseRepsInput', () {
     final List<({String input, int? reps, NumberProblem? problem})> cases =
         <({String input, int? reps, NumberProblem? problem})>[

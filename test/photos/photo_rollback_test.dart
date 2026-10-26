@@ -37,6 +37,12 @@ class _DelayedFailingStore implements AppDataStore {
     await _gate.future;
     throw const DataStoreException('injected delayed save failure');
   }
+
+  @override
+  Future<List<DataSnapshotInfo>> listSnapshots() => inner.listSnapshots();
+
+  @override
+  Future<AppData> loadSnapshot(String fileName) => inner.loadSnapshot(fileName);
 }
 
 Future<Directory> _tempDirectory() async {

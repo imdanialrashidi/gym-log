@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_log/app/app.dart';
+import 'package:gym_log/app/app_clock.dart';
 import 'package:gym_log/data/app_data_controller.dart';
 import 'package:gym_log/data/export_reminder.dart';
 import 'package:material_ui/material_ui.dart';
@@ -46,6 +47,9 @@ Future<void> _pumpAt(WidgetTester tester, Locale locale) async {
     ProviderScope(
       overrides: [
         appDataStoreProvider.overrideWithValue(MemoryAppDataStore()),
+        appClockProvider.overrideWithValue(
+          () => DateTime.utc(2026, 10, 21, 12),
+        ),
         exportReminderStoreProvider.overrideWithValue(
           MemoryExportReminderStore(
             ExportReminderState(lastExportedAt: DateTime.now()),

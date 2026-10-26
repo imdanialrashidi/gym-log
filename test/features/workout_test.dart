@@ -113,12 +113,27 @@ String _fieldText(WidgetTester tester, String key) {
   return tester.widget<TextField>(find.byKey(Key(key))).controller!.text;
 }
 
+String _textAt(WidgetTester tester, String key) {
+  return tester.widget<Text>(find.byKey(Key(key))).data!;
+}
+
+bool _rirSelected(WidgetTester tester, String key) {
+  final Semantics semantics = tester.widget<Semantics>(
+    find
+        .descendant(of: find.byKey(Key(key)), matching: find.byType(Semantics))
+        .first,
+  );
+  return semantics.properties.selected ?? false;
+}
+
 Future<void> _startDay(WidgetTester tester) async {
+  await _reveal(tester, 'start-day-day-1');
   await tester.tap(find.byKey(const Key('start-day-day-1')));
   await tester.pumpAndSettle();
 }
 
 Future<void> _startEmpty(WidgetTester tester) async {
+  await _reveal(tester, 'start-empty-workout');
   await tester.tap(find.byKey(const Key('start-empty-workout')));
   await tester.pumpAndSettle();
 }
@@ -164,12 +179,7 @@ void main() {
     expect(_fieldText(tester, 'set-0-0-reps'), '8');
     expect(_fieldText(tester, 'set-0-1-weight'), '100');
     expect(_fieldText(tester, 'set-0-2-weight'), '97.5');
-    expect(
-      tester
-          .widget<ChoiceChip>(find.byKey(const Key('set-0-0-rir-2')))
-          .selected,
-      isTrue,
-    );
+    expect(_rirSelected(tester, 'set-0-0-rir-2'), isTrue);
 
     // One tap: check.
     await _tap(tester, 'set-0-0-check');
@@ -181,6 +191,50 @@ void main() {
     expect(sets.single.rir, 2);
     expect(sets.single.isWarmup, isFalse);
     expect(find.byKey(const Key('set-0-0-saved')), findsOneWidget);
+    expect(find.byKey(const Key('set-0-0-summary-rir')), findsOneWidget);
+  });
+
+  testWidgets('confirming an unchanged prefilled lb row keeps 100000 g', (
+    WidgetTester tester,
+  ) async {
+    final MemoryAppDataStore store = MemoryAppDataStore(
+      _seed(unit: WeightUnit.pounds),
+    );
+
+    await pumpGymLogApp(tester, store: store, initialLocation: '/workout');
+    await _startDay(tester);
+
+    // 100000 g is 220.46 lb; reparsing that display would store 99999 g.
+    expect(_fieldText(tester, 'set-0-0-weight'), '220.46');
+    await _tap(tester, 'set-0-0-check');
+
+    final List<SetLog> sets = store.data.activeSession!.exercises.single.sets;
+    expect(sets.single.weightGrams, 100000);
+  });
+
+  testWidgets('a set-row error follows a language switch', (
+    WidgetTester tester,
+  ) async {
+    final MemoryAppDataStore store = MemoryAppDataStore(_seed());
+
+    await pumpGymLogApp(tester, store: store, initialLocation: '/workout');
+    await _startDay(tester);
+
+    await tester.enterText(find.byKey(const Key('set-0-0-weight')), 'abc');
+    await _tap(tester, 'set-0-0-check');
+    expect(find.text('Use digits only.'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Persian'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    // The same stored problem is rendered in the new language without another
+    // failed submit.
+    expect(find.text('فقط رقم وارد کن.'), findsOneWidget);
+    expect(find.text('Use digits only.'), findsNothing);
   });
 
   testWidgets('interactive set-row controls meet the 48 dp target', (
@@ -418,7 +472,8 @@ void main() {
     expect(store.data.settings.weightUnit, WeightUnit.kilograms);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
-    expect(_fieldText(tester, 'set-0-0-weight'), '20.41');
+    await _reveal(tester, 'set-0-0-summary-weight');
+    expect(_textAt(tester, 'set-0-0-summary-weight'), '20.41');
     await _reveal(tester, 'set-0-1-weight');
     expect(_fieldText(tester, 'set-0-1-weight'), '20.41');
 
@@ -429,6 +484,9 @@ void main() {
     expect(store.data.settings.weightUnit, WeightUnit.pounds);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
+    await _reveal(tester, 'set-0-0-summary-weight');
+    expect(_textAt(tester, 'set-0-0-summary-weight'), '45');
+    await _reveal(tester, 'set-0-1-weight');
     expect(_fieldText(tester, 'set-0-1-weight'), '45');
     expect(
       store.data.activeSession!.exercises.single.sets.single.weightGrams,
@@ -454,6 +512,18 @@ void main() {
     expect(store.data.activeSession, isNull);
     expect(store.data.sessions.last.endedAt, isNotNull);
     expect(store.data.sessions.last.exercises.single.sets, hasLength(1));
+    expect(find.byKey(const Key('session-summary-screen')), findsOneWidget);
+    expect(find.byKey(const Key('workout-done-cat')), findsOneWidget);
+    expect(find.text('Workout done!'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('summary-back-home')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('summary-back-home')));
+    await tester.pumpAndSettle();
     expect(find.text('No active workout.'), findsOneWidget);
   });
 
@@ -490,9 +560,10 @@ void main() {
     await _startDay(tester);
 
     expect(tester.takeException(), isNull);
-    expect(find.byKey(const Key('set-0-0-weight')), findsOneWidget);
+    await _reveal(tester, 'set-0-0-weight');
     await _tap(tester, 'set-0-0-check');
     expect(tester.takeException(), isNull);
+    await _reveal(tester, 'set-0-0-saved');
     expect(find.byKey(const Key('set-0-0-saved')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await _reveal(tester, 'session-add-exercise');
@@ -509,7 +580,7 @@ void main() {
     await pumpGymLogApp(tester, store: store, initialLocation: '/workout');
     await _startDay(tester);
 
-    expect(find.text('Bench Press'), findsOneWidget);
+    expect(find.text('Bench Press'), findsWidgets);
     expect(_fieldText(tester, 'set-0-0-weight'), '100');
     expect(_fieldText(tester, 'set-0-0-reps'), '8');
   });
@@ -521,24 +592,14 @@ void main() {
     await pumpGymLogApp(tester, store: store, initialLocation: '/workout');
     await _startDay(tester);
 
-    expect(
-      tester
-          .widget<ChoiceChip>(find.byKey(const Key('set-0-0-rir-2')))
-          .selected,
-      isTrue,
-    );
+    expect(_rirSelected(tester, 'set-0-0-rir-2'), isTrue);
     await _tap(tester, 'set-0-0-rir-2');
     await _tap(tester, 'set-0-0-check');
 
     final SetLog logged =
         store.data.activeSession!.exercises.single.sets.single;
     expect(logged.rir, isNull);
-    expect(
-      tester
-          .widget<ChoiceChip>(find.byKey(const Key('set-0-0-rir-2')))
-          .selected,
-      isFalse,
-    );
+    expect(find.byKey(const Key('set-0-0-summary-rir')), findsNothing);
   });
 
   testWidgets('re-logging a deleted row dismisses stale Undo', (

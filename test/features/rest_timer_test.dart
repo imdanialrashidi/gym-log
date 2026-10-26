@@ -106,6 +106,11 @@ void main() {
       expect(find.text('Rest 01:00'), findsOneWidget);
 
       // The timer is only visual state; logging the next row still works.
+      await Scrollable.ensureVisible(
+        tester.element(find.byKey(const Key('set-0-1-check'))),
+        alignment: 0.5,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('set-0-1-check')));
       await tester.pumpAndSettle();
       expect(store.data.activeSession!.exercises.single.sets, hasLength(2));
@@ -130,6 +135,41 @@ void main() {
       );
     },
   );
+
+  testWidgets('only the finished rest state is a live region', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    DateTime now = DateTime(2026, 10, 21, 11);
+
+    await pumpGymLogApp(
+      tester,
+      store: MemoryAppDataStore(_seed()),
+      initialLocation: '/workout',
+      clock: () => now,
+    );
+    await tester.tap(find.byKey(const Key('set-0-0-check')));
+    await tester.pumpAndSettle();
+
+    final running = tester
+        .getSemantics(find.byKey(const Key('rest-timer-banner')))
+        .getSemanticsData();
+    expect(running.flagsCollection.isLiveRegion, isFalse);
+    expect(running.label, contains('Rest timer running'));
+    expect(running.label, isNot(contains('00:')));
+
+    now = now.add(const Duration(seconds: 61));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    final finished = tester
+        .getSemantics(find.byKey(const Key('rest-timer-banner')))
+        .getSemanticsData();
+    expect(finished.flagsCollection.isLiveRegion, isTrue);
+    expect(finished.label, contains('Rest complete'));
+    expect(find.text('Rest complete'), findsOneWidget);
+    semantics.dispose();
+  });
 
   testWidgets('disabled timer never starts', (WidgetTester tester) async {
     final DateTime now = DateTime(2026, 10, 21, 11);

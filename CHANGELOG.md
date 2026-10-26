@@ -8,6 +8,77 @@ as pre-release; see `docs/RELEASE.md`.
 
 ## [Unreleased]
 
+Schema change: v4 adds optional weekly goals (`weeklySessionGoal` /
+`weeklySetGoal`) inside settings, on top of v3 body-weight check-ins. Older
+v1–v3 documents are read with empty/default newer fields and rewritten as v4;
+nothing is discarded. The backup format stays `schemaVersion: 1`; additive
+fields are omitted while absent so historical fixtures keep round-tripping.
+
+### Added
+
+- Weekly body-weight check-in with a 12-week trend chart, latest change, and
+  delete/Undo. One reading per week is updated in place.
+- Weekly summary screen: sessions, volume, working sets, time, weight change,
+  sets per muscle group, and previous weeks.
+- Statistical Workout dashboard: this-week hero, seven-day activity strip,
+  quick-start day cards, weight card, muscle split, and the last workout.
+- Per-exercise set/volume/time meta in active logging, session detail, and the
+  progress overview; session and exercise totals.
+- Plain-language RIR explainer in the set row and on the RIR progress chart.
+- Painted brand emblem and launcher icon; refreshed dark palette with a
+  lavender body-weight series; redesigned cards, charts, calendar, and shell.
+- Post-workout summary: volume hero, grouped records, muscle split, exercise
+  breakdown, comparison with the previous session, and a way home.
+- Post-workout cat mascot that says `تمرین تموم شد!` / “Workout done!” and a
+  meow hint, with a reduced-motion-safe entrance.
+- Optional weekly session and working-set goals with current-week progress,
+  a calm streak, a dashboard block, and one editor sheet shared with Settings.
+- Plate calculator and bar-first warm-up ramp for standard 20 kg/45 lb bars,
+  launched per exercise with exact/remainder feedback.
+- `CI-STATS-001` weekly-overview micro-benchmark.
+- In-app live workout notification: a sticky bar across the four tabs names the
+  current exercise, follows set progress, becomes the rest countdown, announces
+  completion, and shows the next set.
+- A running rest countdown now survives process death through a small local
+  marker; it is cleared on dismiss, completion, finish, or a new session.
+- Compact saved-set rows with weight × reps, RIR, warm-up, and PR badges, plus
+  a per-exercise set-progress bar.
+- A standalone palette handoff in `docs/PALETTE.md`.
+
+### Changed
+
+- The visual system is now a night session: near-black navy canvas, soft blue
+  backdrop glow, electric-blue action color, 20 dp rounded panels, pill chips
+  and nav indicators, a weekly progress ring, and the post-workout seal. The
+  cut-corner ledger language is removed from every screen, including Settings
+  and Programs/Exercises.
+- Persian copy now separates `حرکت` (exercise) from `تمرین`/`جلسه`
+  (workout/session), uses `ثبت` for set logging, and explains RIR in plain
+  language; the native-speaker review sheet is regenerated.
+- The live workout bar is sticky above every tab; the session clock now ticks
+  once per second in a scoped label, so the hero, stats, and set rows are not
+  rebuilt per second.
+- A committed set rebuilds only its row and that exercise's stat strip; the PR
+  map is computed once per session instead of once per exercise card.
+- The active-workout list is lazy, unsaved drafts are kept alive across
+  scrolling, and saved rows collapse to a compact summary.
+- Startup resolves the support directory once, preloads the document alongside
+  engine startup, caches the theme, and defers photo recovery to after the
+  first frame.
+- The first document load uses a static skeleton instead of a continuously
+  repainting spinner.
+- History calendar day cells are 48 dp at 360 dp width and session rows show
+  duration/volume; the month summary shows sessions, volume, working sets, and
+  time.
+
+### Fixed
+
+- The active-session elapsed clock no longer freezes until the next document
+  change; it advances on its own while the set rows stay still.
+- Reopening the app mid-workout restores the active session, logged sets, and a
+  still-running rest countdown.
+- Older JSON fixtures still round-trip exactly after the schema extension.
+
 ## [0.1.0] - 2026-10-25
 
 Build: 1

@@ -41,6 +41,17 @@ class ExerciseProgress {
     required this.bestOneRepMaxConfidence,
   });
 
+  /// An exercise with no best set in the selected range.
+  const ExerciseProgress.empty({this.hasHistory = false})
+    : sessionCount = 0,
+      bestWeightSeries = const <ProgressPoint>[],
+      estimatedOneRepMaxSeries = const <ProgressPoint>[],
+      repsSeries = const <ProgressPoint>[],
+      rirSeries = const <ProgressPoint>[],
+      bestWeightGrams = null,
+      bestOneRepMaxGrams = null,
+      bestOneRepMaxConfidence = null;
+
   /// Whether the exercise has any finished session with a working set,
   /// regardless of the selected range.
   final bool hasHistory;
@@ -88,31 +99,79 @@ ExerciseProgress prepareExerciseProgress({
   required DateTime now,
   ProgressRange range = ProgressRange.all,
 }) {
+  return prepareExerciseProgressMap(
+    sessions: sessions,
+    exerciseIds: <String>[exerciseId],
+    now: now,
+    range: range,
+  )[exerciseId]!;
+}
+
+/// Builds progress for several exercises in one pass over [sessions].
+///
+/// Identical per-exercise results to [prepareExerciseProgress], but the
+/// session/exercise scan and the range cutoff happen once. Wanted IDs without
+/// data are present with an empty [ExerciseProgress] (their [hasHistory] still
+/// reflects working sets outside the range).
+Map<String, ExerciseProgress> prepareExerciseProgressMap({
+  required List<Session> sessions,
+  required Iterable<String> exerciseIds,
+  required DateTime now,
+  ProgressRange range = ProgressRange.all,
+}) {
   final DateTime? cutoff = _cutoff(range, now);
-  final List<_SessionBest> bestSets = <_SessionBest>[];
-  bool hasHistory = false;
+  final Set<String> wanted = exerciseIds.toSet();
+  final Map<String, List<_SessionBest>> bestByExercise =
+      <String, List<_SessionBest>>{
+        for (final String exerciseId in wanted) exerciseId: <_SessionBest>[],
+      };
+  final Set<String> withHistory = <String>{};
 
   for (final Session session in sessions) {
     if (session.isActive) {
       continue;
     }
-    final List<SetLog> workingSets = <SetLog>[];
+    // A session may list the same exercise in more than one section; the
+    // individual function merges those working sets into one best set.
+    final Map<String, List<SetLog>> perExercise = <String, List<SetLog>>{};
     for (final SessionExercise exercise in session.exercises) {
-      if (exercise.exerciseId == exerciseId) {
-        workingSets.addAll(exercise.workingSets);
+      if (!wanted.contains(exercise.exerciseId)) {
+        continue;
       }
+      final List<SetLog> workingSets = exercise.workingSets;
+      if (workingSets.isEmpty) {
+        continue;
+      }
+      (perExercise[exercise.exerciseId] ??= <SetLog>[]).addAll(workingSets);
     }
-    if (workingSets.isEmpty) {
-      continue;
+    for (final MapEntry<String, List<SetLog>> entry in perExercise.entries) {
+      withHistory.add(entry.key);
+      if (cutoff != null && session.startedAt.isBefore(cutoff)) {
+        continue;
+      }
+      final List<SetLog> workingSets = List<SetLog>.of(entry.value)
+        ..sort(_compareBestSets);
+      bestByExercise[entry.key]!.add(
+        _SessionBest(session: session, bestSet: workingSets.first),
+      );
     }
-    hasHistory = true;
-    if (cutoff != null && session.startedAt.isBefore(cutoff)) {
-      continue;
-    }
-    workingSets.sort(_compareBestSets);
-    bestSets.add(_SessionBest(session: session, bestSet: workingSets.first));
   }
 
+  return <String, ExerciseProgress>{
+    for (final String exerciseId in wanted)
+      exerciseId: bestByExercise[exerciseId]!.isEmpty
+          ? ExerciseProgress.empty(hasHistory: withHistory.contains(exerciseId))
+          : _buildProgress(
+              bestByExercise[exerciseId]!,
+              hasHistory: withHistory.contains(exerciseId),
+            ),
+  };
+}
+
+ExerciseProgress _buildProgress(
+  List<_SessionBest> bestSets, {
+  required bool hasHistory,
+}) {
   bestSets.sort((_SessionBest a, _SessionBest b) {
     final int result = a.session.startedAt.compareTo(b.session.startedAt);
     if (result != 0) {

@@ -48,6 +48,21 @@ SetPrefill prefillForExercise({
     for (final SessionExercise exercise in latest.exercises)
       if (exercise.exerciseId == exerciseId) ...exercise.workingSets,
   ];
+  return prefillFromWorkingSets(workingSets: workingSets, setIndex: setIndex);
+}
+
+/// Prefill for [setIndex] from an already-selected session's [workingSets].
+///
+/// Same selection rule as [prefillForExercise], without the session scan. If
+/// [setIndex] does not exist, the last working set is used. An empty list
+/// returns [SetPrefill.empty].
+SetPrefill prefillFromWorkingSets({
+  required List<SetLog> workingSets,
+  required int setIndex,
+}) {
+  if (setIndex < 0) {
+    throw ArgumentError.value(setIndex, 'setIndex');
+  }
   if (workingSets.isEmpty) {
     return SetPrefill.empty;
   }

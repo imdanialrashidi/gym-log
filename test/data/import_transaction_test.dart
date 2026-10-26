@@ -259,4 +259,178 @@ void main() {
     expect(store.saveCount, 0);
     expect(store.data.exercises, isEmpty);
   });
+
+  test(
+    'restoring a data snapshot publishes it and keeps a recovery point',
+    () async {
+      final File file = await _tempDataFile();
+      DateTime now = DateTime.utc(2026, 10, 23, 10);
+      final JsonAppDataStore store = JsonAppDataStore(
+        Future<File>.value(file),
+        snapshotClock: () => now,
+      );
+      await store.save(
+        AppData(
+          exercises: <Exercise>[
+            Exercise(
+              id: 'exercise-1',
+              name: 'Alpha',
+              createdAt: DateTime.utc(2026, 10, 20),
+            ),
+          ],
+        ),
+      );
+      now = now.add(const Duration(minutes: 1));
+      await store.snapshot();
+      await store.save(
+        AppData(
+          exercises: <Exercise>[
+            Exercise(
+              id: 'exercise-1',
+              name: 'Bravo',
+              createdAt: DateTime.utc(2026, 10, 20),
+            ),
+          ],
+        ),
+      );
+      final ProviderContainer container = _container(store);
+      addTearDown(container.dispose);
+      await container.read(appDataControllerProvider.future);
+      final DataSnapshotInfo recovery = (await store.listSnapshots()).single;
+      now = now.add(const Duration(minutes: 1));
+
+      await container
+          .read(appDataControllerProvider.notifier)
+          .restoreSnapshot(recovery.fileName);
+
+      expect(
+        container
+            .read(appDataControllerProvider)
+            .requireValue
+            .exercises
+            .single
+            .name,
+        'Alpha',
+      );
+      expect((await store.load()).exercises.single.name, 'Alpha');
+      final List<DataSnapshotInfo> after = await store.listSnapshots();
+      expect(
+        after,
+        hasLength(2),
+        reason: 'The pre-restore data is recoverable',
+      );
+      expect(
+        (await store.loadSnapshot(after.first.fileName)).exercises.single.name,
+        'Bravo',
+      );
+    },
+  );
+
+  test('a failed snapshot load writes nothing and keeps the state', () async {
+    final Exercise current = Exercise(
+      id: 'exercise-1',
+      name: 'Bravo',
+      createdAt: DateTime.utc(2026, 10, 20),
+    );
+    final MemoryAppDataStore memory = MemoryAppDataStore(
+      AppData(exercises: <Exercise>[current]),
+    );
+    memory.seedSnapshot(
+      'gym_log_data-2026-10-23T10-00-00.000Z.json',
+      AppData(
+        exercises: <Exercise>[
+          Exercise(
+            id: 'exercise-1',
+            name: 'Alpha',
+            createdAt: DateTime.utc(2026, 10, 20),
+          ),
+        ],
+      ),
+    );
+    final FailingAppDataStore store = FailingAppDataStore(
+      memory,
+      failLoadSnapshot: true,
+    );
+    final ProviderContainer container = _container(store);
+    addTearDown(container.dispose);
+    await container.read(appDataControllerProvider.future);
+
+    await expectLater(
+      container
+          .read(appDataControllerProvider.notifier)
+          .restoreSnapshot('gym_log_data-2026-10-23T10-00-00.000Z.json'),
+      throwsA(isA<DataStoreException>()),
+    );
+
+    expect(memory.saveCount, 0);
+    expect(memory.snapshotCount, 0);
+    expect(
+      container
+          .read(appDataControllerProvider)
+          .requireValue
+          .exercises
+          .single
+          .name,
+      'Bravo',
+    );
+  });
+
+  test('restoring a snapshot snapshots once then saves once', () async {
+    final MemoryAppDataStore store = MemoryAppDataStore();
+    store.seedSnapshot('gym_log_data-2026-10-23T10-00-00.000Z.json', AppData());
+    final ProviderContainer container = _container(store);
+    addTearDown(container.dispose);
+    await container.read(appDataControllerProvider.future);
+
+    await container
+        .read(appDataControllerProvider.notifier)
+        .restoreSnapshot('gym_log_data-2026-10-23T10-00-00.000Z.json');
+
+    expect(store.snapshotCount, 1);
+    expect(store.saveCount, 1);
+  });
+
+  test(
+    'restoreFromBackup snapshots an unreadable document before replacing it',
+    () async {
+      final File file = await _tempDataFile();
+      const String corrupt = '{"schemaVersion": 1, "exercises": [';
+      await file.writeAsString(corrupt);
+      final JsonAppDataStore json = JsonAppDataStore(Future<File>.value(file));
+      final ProviderContainer container = _container(json);
+      addTearDown(container.dispose);
+
+      await expectLater(
+        container.read(appDataControllerProvider.future),
+        throwsA(isA<DataStoreException>()),
+      );
+
+      final BackupDocument document = parseBackup(backupJson());
+      final ImportPreview preview = previewImport(
+        current: AppData(),
+        document: document,
+        mode: ImportMode.replace,
+      );
+      await container
+          .read(appDataControllerProvider.notifier)
+          .restoreFromBackup(preview);
+
+      final AppData restored = container
+          .read(appDataControllerProvider)
+          .requireValue;
+      expect(restored.sessions, hasLength(1));
+      expect((await json.load()).sessions, hasLength(1));
+
+      final Directory backups = Directory(
+        '${file.parent.path}${Platform.pathSeparator}backups',
+      );
+      final List<File> snapshots = backups
+          .listSync()
+          .whereType<File>()
+          .toList();
+      expect(snapshots, hasLength(1));
+      expect(await snapshots.single.readAsString(), corrupt);
+      expect(File('${file.path}.tmp').existsSync(), isFalse);
+    },
+  );
 }

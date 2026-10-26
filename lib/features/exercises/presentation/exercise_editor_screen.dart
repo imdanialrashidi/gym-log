@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../app/document_gate.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/action_runner.dart';
 import '../../../core/widgets/number_input.dart';
 import '../../../core/widgets/text_empty_state.dart';
 import '../../../data/app_data_controller.dart';
@@ -36,6 +38,7 @@ class _ExerciseEditorScreenState extends ConsumerState<ExerciseEditorScreen> {
   final TextEditingController _increment = TextEditingController();
   MuscleGroup? _muscleGroup;
   WeightUnit _unit = WeightUnit.kilograms;
+  int? _originalIncrementGrams;
   bool _initialized = false;
   bool _saving = false;
 
@@ -58,11 +61,10 @@ class _ExerciseEditorScreenState extends ConsumerState<ExerciseEditorScreen> {
     _repMin.text = context.digits(exercise?.defaultRepMin ?? '');
     _repMax.text = context.digits(exercise?.defaultRepMax ?? '');
     _muscleGroup = exercise?.muscleGroup;
+    _originalIncrementGrams =
+        exercise?.incrementGrams ?? data.settings.incrementFor(_unit);
     _increment.text = context.digits(
-      formatWeight(
-        exercise?.incrementGrams ?? data.settings.incrementFor(_unit),
-        _unit,
-      ),
+      formatWeight(_originalIncrementGrams!, _unit),
     );
     _initialized = true;
   }
@@ -111,7 +113,11 @@ class _ExerciseEditorScreenState extends ConsumerState<ExerciseEditorScreen> {
   }
 
   int? _incrementGrams() {
-    final WeightParseResult parsed = parseWeightInput(_increment.text, _unit);
+    final WeightParseResult parsed = parseWeightField(
+      _increment.text,
+      unit: _unit,
+      originalGrams: _originalIncrementGrams,
+    );
     if (!parsed.isValid || parsed.grams! <= 0) {
       return null;
     }
@@ -168,8 +174,8 @@ class _ExerciseEditorScreenState extends ConsumerState<ExerciseEditorScreen> {
     final int? repMin = _parseOptionalInt(_repMin.text);
     final int? repMax = _parseOptionalInt(_repMax.text);
 
-    try {
-      final Exercise saved;
+    Exercise? saved;
+    final bool ok = await runDataAction(context, () async {
       if (existing == null) {
         saved = await ref
             .read(appDataControllerProvider.notifier)
@@ -195,17 +201,16 @@ class _ExerciseEditorScreenState extends ConsumerState<ExerciseEditorScreen> {
               ),
             );
       }
-      if (!mounted) {
-        return;
-      }
-      context.pop<Exercise>(saved);
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
+    });
+    if (!mounted) {
+      return;
+    }
+    if (!ok || saved == null) {
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
+      return;
+    }
+    if (context.canPop()) {
+      context.pop<Exercise>(saved!);
     }
   }
 
@@ -235,39 +240,24 @@ class _ExerciseEditorScreenState extends ConsumerState<ExerciseEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
-
-    return asyncData.when(
-      loading: () => Scaffold(
-        appBar: AppBar(title: Text(l10n.exercisesTitle)),
-        body: const Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isNew ? l10n.newExerciseTitle : l10n.editExerciseTitle),
       ),
-      error: (Object error, StackTrace stack) => Scaffold(
-        appBar: AppBar(title: Text(l10n.exercisesTitle)),
-        body: TextEmptyState(
-          message: l10n.loadFailed,
-          action: OutlinedButton.icon(
-            onPressed: () => ref.invalidate(appDataControllerProvider),
-            icon: const Icon(Icons.refresh),
-            label: Text(l10n.retry),
-          ),
-        ),
+      body: DocumentGate(
+        builder: (BuildContext context, AppData data) {
+          final Exercise? existing = _isNew
+              ? null
+              : data.exerciseById(widget.exerciseId);
+          if (!_isNew && existing == null) {
+            return TextEmptyState(message: l10n.exerciseNotFound);
+          }
+          if (!_initialized) {
+            _initialize(existing, data, context);
+          }
+          return _buildForm(context, l10n, data, existing);
+        },
       ),
-      data: (AppData data) {
-        final Exercise? existing = _isNew
-            ? null
-            : data.exerciseById(widget.exerciseId);
-        if (!_isNew && existing == null) {
-          return Scaffold(
-            appBar: AppBar(title: Text(l10n.exercisesTitle)),
-            body: TextEmptyState(message: l10n.exerciseNotFound),
-          );
-        }
-        if (!_initialized) {
-          _initialize(existing, data, context);
-        }
-        return _buildForm(context, l10n, data, existing);
-      },
     );
   }
 
@@ -287,152 +277,148 @@ class _ExerciseEditorScreenState extends ConsumerState<ExerciseEditorScreen> {
     final bool canLookup =
         _name.text.trim().isNotEmpty || _searchTerm.text.trim().isNotEmpty;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isNew ? l10n.newExerciseTitle : l10n.editExerciseTitle),
-      ),
-      body: Form(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: ListView(
-          padding: const EdgeInsets.all(AppTokens.space2),
-          children: <Widget>[
-            TextFormField(
-              key: const Key('exercise-name-field'),
-              controller: _name,
-              autofocus: _isNew,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: l10n.nameLabel,
-                border: const OutlineInputBorder(),
-              ),
-              validator: (String? value) =>
-                  value == null || value.trim().isEmpty
-                  ? l10n.errorNameRequired
-                  : null,
-              onChanged: (_) => setState(() {}),
+    return Form(
+      key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: ListView(
+        padding: const EdgeInsets.all(AppTokens.space2),
+        children: <Widget>[
+          TextFormField(
+            key: const Key('exercise-name-field'),
+            controller: _name,
+            autofocus: _isNew,
+            maxLength: maximumExerciseNameLength,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.nameLabel,
+              counterText: '',
             ),
-            if (existing != null) ...<Widget>[
-              const SizedBox(height: AppTokens.space2),
-              ExercisePhotoSection(exerciseId: existing.id),
-            ],
+            validator: (String? value) {
+              if (value == null || value.trim().isEmpty) {
+                return l10n.errorNameRequired;
+              }
+              if (value.trim().length > maximumExerciseNameLength) {
+                return l10n.errorInputTooLong;
+              }
+              return null;
+            },
+            onChanged: (_) => setState(() {}),
+          ),
+          if (existing != null) ...<Widget>[
             const SizedBox(height: AppTokens.space2),
-            TextFormField(
-              key: const Key('exercise-search-term-field'),
-              controller: _searchTerm,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: l10n.searchTermLabel,
-                helperText: l10n.searchTermHint,
-                helperMaxLines: 2,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppTokens.space1),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
-                key: const Key('exercise-lookup-button'),
-                onPressed: canLookup ? _lookup : null,
-                icon: const Icon(Icons.image_search),
-                label: Text(l10n.lookupImages),
-              ),
-            ),
-            const SizedBox(height: AppTokens.space2),
-            DropdownButtonFormField<MuscleGroup?>(
-              key: const Key('exercise-muscle-group-field'),
-              initialValue: _muscleGroup,
-              decoration: InputDecoration(
-                labelText: l10n.muscleGroupLabel,
-                border: const OutlineInputBorder(),
-              ),
-              items: <DropdownMenuItem<MuscleGroup?>>[
-                DropdownMenuItem<MuscleGroup?>(
-                  child: Text(l10n.muscleGroupNone),
-                ),
-                for (final MuscleGroup group in MuscleGroup.values)
-                  DropdownMenuItem<MuscleGroup?>(
-                    value: group,
-                    child: Text(muscleGroupLabel(l10n, group)),
-                  ),
-              ],
-              onChanged: (MuscleGroup? value) =>
-                  setState(() => _muscleGroup = value),
-            ),
-            const SizedBox(height: AppTokens.space3),
-            Text(
-              l10n.defaultRepRangeLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppTokens.space1),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: TextFormField(
-                    key: const Key('exercise-rep-min-field'),
-                    controller: _repMin,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[wholeNumberInput],
-                    decoration: InputDecoration(
-                      labelText: l10n.repMinLabel,
-                      errorMaxLines: 2,
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: _validateRepMin,
-                  ),
-                ),
-                const SizedBox(width: AppTokens.space2),
-                Expanded(
-                  child: TextFormField(
-                    key: const Key('exercise-rep-max-field'),
-                    controller: _repMax,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[wholeNumberInput],
-                    decoration: InputDecoration(
-                      labelText: l10n.repMaxLabel,
-                      errorMaxLines: 2,
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: _validateRepMax,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTokens.space2),
-            TextFormField(
-              key: const Key('exercise-increment-field'),
-              controller: _increment,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: <TextInputFormatter>[decimalNumberInput],
-              decoration: InputDecoration(
-                labelText: l10n.incrementLabel,
-                suffixText: _unitLabel(context, data.settings.weightUnit),
-                helperText:
-                    existing == null &&
-                        data.settings.defaultIncrementGrams == null
-                    ? context.digits(l10n.incrementDefaultHint)
-                    : null,
-                errorMaxLines: 2,
-                border: const OutlineInputBorder(),
-              ),
-              validator: (String? value) =>
-                  _incrementGrams() == null ? l10n.errorIncrement : null,
-            ),
-            const SizedBox(height: AppTokens.space3),
-            FilledButton(
-              key: const Key('save-exercise'),
-              onPressed: _saving ? null : _save,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(l10n.save),
-              ),
-            ),
+            ExercisePhotoSection(exerciseId: existing.id),
           ],
-        ),
+          const SizedBox(height: AppTokens.space2),
+          TextFormField(
+            key: const Key('exercise-search-term-field'),
+            controller: _searchTerm,
+            maxLength: maximumSearchTermLength,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.searchTermLabel,
+              counterText: '',
+              helperText: l10n.searchTermHint,
+              helperMaxLines: 2,
+            ),
+            validator: (String? value) =>
+                (value?.trim().length ?? 0) > maximumSearchTermLength
+                ? l10n.errorInputTooLong
+                : null,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AppTokens.space1),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: OutlinedButton.icon(
+              key: const Key('exercise-lookup-button'),
+              onPressed: canLookup ? _lookup : null,
+              icon: const Icon(Icons.image_search),
+              label: Text(l10n.lookupImages),
+            ),
+          ),
+          const SizedBox(height: AppTokens.space2),
+          DropdownButtonFormField<MuscleGroup?>(
+            key: const Key('exercise-muscle-group-field'),
+            initialValue: _muscleGroup,
+            decoration: InputDecoration(labelText: l10n.muscleGroupLabel),
+            items: <DropdownMenuItem<MuscleGroup?>>[
+              DropdownMenuItem<MuscleGroup?>(child: Text(l10n.muscleGroupNone)),
+              for (final MuscleGroup group in MuscleGroup.values)
+                DropdownMenuItem<MuscleGroup?>(
+                  value: group,
+                  child: Text(muscleGroupLabel(l10n, group)),
+                ),
+            ],
+            onChanged: (MuscleGroup? value) =>
+                setState(() => _muscleGroup = value),
+          ),
+          const SizedBox(height: AppTokens.space3),
+          Text(
+            l10n.defaultRepRangeLabel,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppTokens.space1),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: TextFormField(
+                  key: const Key('exercise-rep-min-field'),
+                  controller: _repMin,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[wholeNumberInput],
+                  decoration: InputDecoration(
+                    labelText: l10n.repMinLabel,
+                    errorMaxLines: 2,
+                  ),
+                  validator: _validateRepMin,
+                ),
+              ),
+              const SizedBox(width: AppTokens.space2),
+              Expanded(
+                child: TextFormField(
+                  key: const Key('exercise-rep-max-field'),
+                  controller: _repMax,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[wholeNumberInput],
+                  decoration: InputDecoration(
+                    labelText: l10n.repMaxLabel,
+                    errorMaxLines: 2,
+                  ),
+                  validator: _validateRepMax,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTokens.space2),
+          TextFormField(
+            key: const Key('exercise-increment-field'),
+            controller: _increment,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: <TextInputFormatter>[decimalNumberInput],
+            decoration: InputDecoration(
+              labelText: l10n.incrementLabel,
+              suffixText: _unitLabel(context, data.settings.weightUnit),
+              helperText:
+                  existing == null &&
+                      data.settings.defaultIncrementGrams == null
+                  ? context.digits(l10n.incrementDefaultHint)
+                  : null,
+              errorMaxLines: 2,
+            ),
+            validator: (String? value) =>
+                _incrementGrams() == null ? l10n.errorIncrement : null,
+          ),
+          const SizedBox(height: AppTokens.space3),
+          FilledButton(
+            key: const Key('save-exercise'),
+            onPressed: _saving ? null : _save,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(l10n.save),
+            ),
+          ),
+        ],
       ),
     );
   }

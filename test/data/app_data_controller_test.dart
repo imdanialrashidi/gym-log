@@ -6,6 +6,8 @@ import 'package:gym_log/data/app_data_controller.dart';
 import 'package:gym_log/data/app_data_store.dart';
 import 'package:lift_core/lift_core.dart';
 
+import '../support/memory_app_data_store.dart';
+
 Future<File> _tempFile() async {
   final Directory directory = await Directory.systemTemp.createTemp(
     'gym_log_controller_test_',
@@ -31,6 +33,252 @@ Future<AppData> _load(File file) async {
 }
 
 void main() {
+  test('the startup preload is consumed once and retries reload', () async {
+    final MemoryAppDataStore store = MemoryAppDataStore(
+      AppData(settings: const AppSettings(restTimerDurationSeconds: 120)),
+    );
+    final AppData preloaded = AppData(
+      settings: const AppSettings(restTimerDurationSeconds: 30),
+    );
+    final ProviderContainer container = ProviderContainer.test(
+      overrides: [
+        appDataStoreProvider.overrideWithValue(store),
+        appDataPreloaderProvider.overrideWithValue(
+          AppDataPreloader(Future<AppData>.value(preloaded)),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final AppData first = await container.read(
+      appDataControllerProvider.future,
+    );
+    expect(first.settings.restTimerDurationSeconds, 30);
+    expect(store.loadCount, 0);
+
+    container.invalidate(appDataControllerProvider);
+    final AppData retried = await container.read(
+      appDataControllerProvider.future,
+    );
+    expect(retried.settings.restTimerDurationSeconds, 120);
+    expect(store.loadCount, 1);
+  });
+
+  test('relative rest-duration changes serialize and clamp', () async {
+    final MemoryAppDataStore store = MemoryAppDataStore(
+      AppData(settings: const AppSettings(restTimerDurationSeconds: 30)),
+    );
+    final ProviderContainer container = ProviderContainer.test(
+      overrides: [appDataStoreProvider.overrideWithValue(store)],
+    );
+    addTearDown(container.dispose);
+    await container.read(appDataControllerProvider.future);
+    final AppDataController controller = container.read(
+      appDataControllerProvider.notifier,
+    );
+
+    final Future<void> first = controller.adjustRestTimerDurationSeconds(15);
+    final Future<void> second = controller.adjustRestTimerDurationSeconds(15);
+    await Future.wait(<Future<void>>[first, second]);
+
+    expect(store.data.settings.restTimerDurationSeconds, 60);
+
+    await controller.setRestTimerDurationSeconds(5);
+    await controller.adjustRestTimerDurationSeconds(-15);
+    expect(store.data.settings.restTimerDurationSeconds, 5);
+  });
+
+  test('every missing-parent mutator throws before writing', () async {
+    final Exercise exercise = Exercise(
+      id: 'exercise-1',
+      name: 'Bench Press',
+      createdAt: DateTime.utc(2026, 10, 20, 10),
+    );
+    final Program program = Program(
+      id: 'program-1',
+      name: 'Upper/Lower',
+      createdAt: DateTime.utc(2026, 10, 20, 11),
+      days: <ProgramDay>[
+        ProgramDay(
+          id: 'day-1',
+          name: 'Upper',
+          sortOrder: 0,
+          items: <PlanItem>[
+            PlanItem(
+              id: 'item-1',
+              exerciseId: 'exercise-1',
+              targetSets: 3,
+              repMin: 8,
+              repMax: 12,
+              sortOrder: 0,
+            ),
+          ],
+        ),
+        ProgramDay(id: 'day-2', name: 'Lower', sortOrder: 1),
+      ],
+    );
+    final MemoryAppDataStore store = MemoryAppDataStore(
+      AppData(exercises: <Exercise>[exercise], programs: <Program>[program]),
+    );
+    final ProviderContainer container = ProviderContainer.test(
+      overrides: [appDataStoreProvider.overrideWithValue(store)],
+    );
+    addTearDown(container.dispose);
+    await container.read(appDataControllerProvider.future);
+    final AppDataController controller = container.read(
+      appDataControllerProvider.notifier,
+    );
+    final Map<String, Object?> before = store.data.toJson();
+
+    await expectLater(
+      controller.updateExercise(
+        Exercise(
+          id: 'missing-exercise',
+          name: 'Ghost',
+          createdAt: DateTime.utc(2026, 10, 20, 10),
+        ),
+      ),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      controller.renameProgram('missing-program', 'Ghost'),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      controller.deleteProgram('missing-program'),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      controller.renameDay('program-1', 'missing-day', 'Ghost'),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      controller.deleteDay('program-1', 'missing-day'),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      controller.deleteDay('missing-program', 'day-1'),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      controller.deletePlanItem('day-1', 'missing-item'),
+      throwsA(isA<StateError>()),
+    );
+    // The item exists, but belongs to a different day.
+    await expectLater(
+      controller.deletePlanItem('day-2', 'item-1'),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(store.saveCount, 0);
+    expect(store.data.toJson(), before);
+    expect(
+      container.read(appDataControllerProvider).requireValue.toJson(),
+      before,
+    );
+  });
+
+  test(
+    'addDay and addPlanItem throw instead of wrapping at the max order',
+    () async {
+      final File file = await _tempFile();
+      final Exercise exercise = Exercise(
+        id: 'exercise-1',
+        name: 'Bench Press',
+        createdAt: DateTime.utc(2026, 10, 20, 10),
+      );
+      final Program program = Program(
+        id: 'program-1',
+        name: 'Upper/Lower',
+        createdAt: DateTime.utc(2026, 10, 20, 11),
+        days: <ProgramDay>[
+          ProgramDay(
+            id: 'day-1',
+            name: 'Upper',
+            sortOrder: maximumSortOrder,
+            items: <PlanItem>[
+              PlanItem(
+                id: 'item-1',
+                exerciseId: 'exercise-1',
+                targetSets: 3,
+                repMin: 8,
+                repMax: 12,
+                sortOrder: maximumSortOrder,
+              ),
+            ],
+          ),
+        ],
+      );
+      await JsonAppDataStore(Future<File>.value(file)).save(
+        AppData(exercises: <Exercise>[exercise], programs: <Program>[program]),
+      );
+      final ProviderContainer container = _container(file);
+      addTearDown(container.dispose);
+      await container.read(appDataControllerProvider.future);
+      final AppDataController controller = container.read(
+        appDataControllerProvider.notifier,
+      );
+
+      await expectLater(
+        controller.addDay(program.id, 'Next'),
+        throwsA(isA<StateError>()),
+      );
+      await expectLater(
+        controller.addPlanItem(
+          dayId: 'day-1',
+          exerciseId: 'exercise-1',
+          targetSets: 3,
+          repMin: 8,
+          repMax: 12,
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      final AppData reloaded = await _load(file);
+      expect(reloaded.programs.single.days, hasLength(1));
+      expect(reloaded.programs.single.days.single.items, hasLength(1));
+      expect(
+        container
+            .read(appDataControllerProvider)
+            .requireValue
+            .programs
+            .single
+            .days,
+        hasLength(1),
+      );
+    },
+  );
+
+  test('an order just below the maximum advances to the maximum', () async {
+    final File file = await _tempFile();
+    final Exercise exercise = Exercise(
+      id: 'exercise-1',
+      name: 'Bench Press',
+      createdAt: DateTime.utc(2026, 10, 20, 10),
+    );
+    final Program program = Program(
+      id: 'program-1',
+      name: 'Upper/Lower',
+      createdAt: DateTime.utc(2026, 10, 20, 11),
+      days: <ProgramDay>[
+        ProgramDay(id: 'day-1', name: 'Upper', sortOrder: maximumSortOrder - 1),
+      ],
+    );
+    await JsonAppDataStore(Future<File>.value(file)).save(
+      AppData(exercises: <Exercise>[exercise], programs: <Program>[program]),
+    );
+    final ProviderContainer container = _container(file);
+    addTearDown(container.dispose);
+    await container.read(appDataControllerProvider.future);
+    final AppDataController controller = container.read(
+      appDataControllerProvider.notifier,
+    );
+
+    final ProgramDay added = await controller.addDay(program.id, 'Last');
+
+    expect(added.sortOrder, maximumSortOrder);
+  });
+
   test('reordering days and plan items persists across a restart', () async {
     final File file = await _tempFile();
     final ProviderContainer container = _container(file);

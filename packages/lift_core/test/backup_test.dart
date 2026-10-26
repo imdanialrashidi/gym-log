@@ -145,6 +145,78 @@ void main() {
     });
   });
 
+  group('body-weight check-ins', () {
+    test('round-trip with stable grams and timestamps', () {
+      final AppData data = AppData(
+        bodyWeights: <BodyWeightEntry>[
+          BodyWeightEntry(
+            id: 'weight-1',
+            weightGrams: 78250,
+            recordedAt: DateTime.utc(2026, 10, 21, 7, 30),
+          ),
+          BodyWeightEntry(
+            id: 'weight-2',
+            weightGrams: 78000,
+            recordedAt: DateTime.utc(2026, 10, 28, 7, 30),
+          ),
+        ],
+      );
+      final String encoded = buildBackupJson(
+        data,
+        appVersion: testAppVersion,
+        exportedAt: testExportedAt,
+      );
+      final BackupDocument parsed = parseBackup(encoded);
+
+      expect(parsed.data.bodyWeights, hasLength(2));
+      expect(parsed.data.bodyWeights.first.weightGrams, 78250);
+      expect(
+        parsed.data.bodyWeights.last.recordedAt,
+        DateTime.utc(2026, 10, 28, 7, 30),
+      );
+      expect(parsed.data.bodyWeights.last.toJson().keys, <String>[
+        'id',
+        'weightGrams',
+        'recordedAt',
+      ]);
+    });
+
+    test('an older backup without the field still imports', () {
+      final Map<String, Object?> json = sampleBackupMap();
+      json.remove('bodyWeights');
+
+      expect(parseBackup(jsonEncode(json)).data.bodyWeights, isEmpty);
+    });
+
+    test('rejects an out-of-range check-in and duplicate ids', () {
+      final Map<String, Object?> outOfRange = sampleBackupMap();
+      outOfRange['bodyWeights'] = <Object?>[
+        <String, Object?>{
+          'id': 'weight-1',
+          'weightGrams': maximumBodyWeightGrams + 1,
+          'recordedAt': '2026-10-21T07:30:00.000Z',
+        },
+      ];
+      expect(
+        () => parseBackup(jsonEncode(outOfRange)),
+        throwsA(_backupError(BackupErrorCode.absurdValue)),
+      );
+
+      final Map<String, Object?> duplicate = sampleBackupMap();
+      duplicate['bodyWeights'] = <Object?>[
+        <String, Object?>{
+          'id': 'exercise-1',
+          'weightGrams': 80000,
+          'recordedAt': '2026-10-21T07:30:00.000Z',
+        },
+      ];
+      expect(
+        () => parseBackup(jsonEncode(duplicate)),
+        throwsA(_backupError(BackupErrorCode.duplicateId)),
+      );
+    });
+  });
+
   group('import rejection', () {
     test('rejects an empty file', () {
       expect(
@@ -358,6 +430,107 @@ void main() {
         throwsA(
           _backupError(BackupErrorCode.absurdValue, field: 'exercises[0]'),
         ),
+      );
+    });
+
+    test('rejects over-limit names and search terms by path only', () {
+      final List<(String, String, String)> cases = <(String, String, String)>[
+        ('exercises[0].name', 'name', 'x' * (maximumExerciseNameLength + 1)),
+        (
+          'exercises[0].searchTerm',
+          'searchTerm',
+          'x' * (maximumSearchTermLength + 1),
+        ),
+      ];
+      for (final (String field, String key, String value) in cases) {
+        final Map<String, Object?> json = sampleBackupMap();
+        _mapAt(_listAt(json, 'exercises')[0])[key] = value;
+        expect(
+          () => parseBackup(jsonEncode(json)),
+          throwsA(_backupError(BackupErrorCode.absurdValue, field: field)),
+        );
+      }
+
+      final Map<String, Object?> json = sampleBackupMap();
+      _mapAt(_listAt(json, 'programs')[0])['name'] =
+          'p' * (maximumProgramNameLength + 1);
+      expect(
+        () => parseBackup(jsonEncode(json)),
+        throwsA(
+          _backupError(BackupErrorCode.absurdValue, field: 'programs[0].name'),
+        ),
+      );
+
+      final Map<String, Object?> dayJson = sampleBackupMap();
+      final Map<String, Object?> program = _mapAt(
+        _listAt(dayJson, 'programs')[0],
+      );
+      _mapAt((program['days'] as List).single)['name'] =
+          'd' * (maximumDayNameLength + 1);
+      expect(
+        () => parseBackup(jsonEncode(dayJson)),
+        throwsA(
+          _backupError(
+            BackupErrorCode.absurdValue,
+            field: 'programs[0].days[0].name',
+          ),
+        ),
+      );
+    });
+
+    test('accepts maximum sort orders and rejects values above them', () {
+      final Map<String, Object?> accepted = sampleBackupMap();
+      final Map<String, Object?> program = _mapAt(
+        _listAt(accepted, 'programs')[0],
+      );
+      final Map<String, Object?> day = _mapAt((program['days'] as List).single);
+      day['sortOrder'] = maximumSortOrder;
+      _mapAt((day['items'] as List).single)['sortOrder'] = maximumSortOrder;
+      final Map<String, Object?> session = _mapAt(
+        _listAt(accepted, 'sessions')[0],
+      );
+      _mapAt((session['exercises'] as List).single)['sortOrder'] =
+          maximumSortOrder;
+      expect(parseBackup(jsonEncode(accepted)).data.programs, hasLength(1));
+
+      for (final (int value, String field) in <(int, String)>[
+        (maximumSortOrder + 1, 'programs[0].days[0].sortOrder'),
+        (maximumSortOrder + 1, 'programs[0].days[0].items[0].sortOrder'),
+        (maximumSortOrder + 1, 'sessions[0].exercises[0].sortOrder'),
+        (9223372036854775807, 'programs[0].days[0].sortOrder'),
+      ]) {
+        final Map<String, Object?> json = sampleBackupMap();
+        final Map<String, Object?> p = _mapAt(_listAt(json, 'programs')[0]);
+        final Map<String, Object?> d = _mapAt((p['days'] as List).single);
+        if (field.startsWith('programs[0].days[0].items')) {
+          _mapAt((d['items'] as List).single)['sortOrder'] = value;
+        } else if (field.startsWith('sessions')) {
+          final Map<String, Object?> s = _mapAt(_listAt(json, 'sessions')[0]);
+          _mapAt((s['exercises'] as List).single)['sortOrder'] = value;
+        } else {
+          d['sortOrder'] = value;
+        }
+        expect(
+          () => parseBackup(jsonEncode(json)),
+          throwsA(_backupError(BackupErrorCode.absurdValue, field: field)),
+          reason: 'sortOrder $value at $field',
+        );
+      }
+    });
+
+    test('an on-device document with an over-limit name still loads', () {
+      final AppData data = sampleData();
+      final Map<String, Object?> json = data.toJson();
+      final Map<String, Object?> exercise = _mapAt(
+        (json['exercises'] as List)[0],
+      );
+      exercise['name'] = 'x' * (maximumExerciseNameLength + 1);
+
+      final AppData loaded = AppData.fromJson(json);
+
+      expect(
+        loaded.exercises.first.name.length,
+        greaterThan(maximumExerciseNameLength),
       );
     });
 

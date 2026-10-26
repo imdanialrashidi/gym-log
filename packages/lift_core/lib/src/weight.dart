@@ -136,6 +136,25 @@ WeightParseResult parseWeightInput(String input, WeightUnit unit) {
   return WeightParseResult.valid(grams);
 }
 
+/// Parses a weight field, but returns [originalGrams] exactly when the text
+/// still equals the canonical value's two-decimal display.
+///
+/// This preserves integer-gram identity across a no-op editor confirmation.
+/// Display rounding is not an input: only a changed string is reparsed.
+WeightParseResult parseWeightField(
+  String input, {
+  required WeightUnit unit,
+  int? originalGrams,
+}) {
+  if (originalGrams != null) {
+    final String normalized = normalizeDigits(input).trim();
+    if (normalized == formatWeight(originalGrams, unit)) {
+      return WeightParseResult.valid(originalGrams);
+    }
+  }
+  return parseWeightInput(input, unit);
+}
+
 /// Parses a repetition count. Only whole numbers from 1 to
 /// [maximumSetRepetitions] are accepted.
 RepsParseResult parseRepsInput(String input) {

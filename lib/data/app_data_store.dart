@@ -4,7 +4,16 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lift_core/lift_core.dart';
-import 'package:path_provider/path_provider.dart';
+
+import 'app_storage.dart';
+
+/// Metadata for one pre-Replace data snapshot in the private backup folder.
+class DataSnapshotInfo {
+  const DataSnapshotInfo({required this.fileName, required this.savedAt});
+
+  final String fileName;
+  final DateTime savedAt;
+}
 
 /// Persistence boundary for exercises, programs, days, and plan items.
 abstract interface class AppDataStore {
@@ -15,6 +24,12 @@ abstract interface class AppDataStore {
   /// Copies the current document into the private backup folder before a
   /// Replace import. A missing document (fresh install) needs no snapshot.
   Future<void> snapshot();
+
+  /// Lists the restorable data snapshots, newest first.
+  Future<List<DataSnapshotInfo>> listSnapshots();
+
+  /// Loads one data snapshot by its file name from [listSnapshots].
+  Future<AppData> loadSnapshot(String fileName);
 }
 
 /// Raised when the on-device document cannot be read or written.
@@ -99,9 +114,7 @@ class JsonAppDataStore implements AppDataStore {
     if (!await file.exists()) {
       return;
     }
-    final Directory backups = Directory(
-      '${file.parent.path}${Platform.pathSeparator}backups',
-    );
+    final Directory backups = _backupsDirectory(file);
     await backups.create(recursive: true);
     final String stamp = _snapshotClock().toUtc().toIso8601String().replaceAll(
       ':',
@@ -140,14 +153,76 @@ class JsonAppDataStore implements AppDataStore {
       await snapshots.removeAt(0).delete();
     }
   }
+
+  @override
+  Future<List<DataSnapshotInfo>> listSnapshots() async {
+    final Directory backups = _backupsDirectory(await _file);
+    if (!await backups.exists()) {
+      return const <DataSnapshotInfo>[];
+    }
+    final List<DataSnapshotInfo> snapshots = <DataSnapshotInfo>[];
+    await for (final FileSystemEntity entity in backups.list()) {
+      if (entity is! File) {
+        continue;
+      }
+      final String fileName = entity.uri.pathSegments.last;
+      if (!_isSnapshotFileName(fileName)) {
+        continue;
+      }
+      try {
+        final FileStat stat = await entity.stat();
+        snapshots.add(
+          DataSnapshotInfo(fileName: fileName, savedAt: stat.modified),
+        );
+      } on FileSystemException {
+        // A file that vanished between listing and stat is not restorable.
+      }
+    }
+    snapshots.sort((DataSnapshotInfo a, DataSnapshotInfo b) {
+      final int byDate = b.savedAt.compareTo(a.savedAt);
+      return byDate != 0 ? byDate : b.fileName.compareTo(a.fileName);
+    });
+    return snapshots;
+  }
+
+  @override
+  Future<AppData> loadSnapshot(String fileName) async {
+    if (!_isSnapshotFileName(fileName)) {
+      throw const DataStoreException('Could not read the data snapshot');
+    }
+    final Directory backups = _backupsDirectory(await _file);
+    final File snapshot = File(
+      '${backups.path}${Platform.pathSeparator}$fileName',
+    );
+    try {
+      final String contents = await snapshot.readAsString();
+      final Object? decoded = jsonDecode(contents);
+      if (decoded is! Map) {
+        throw const FormatException('Snapshot root must be an object');
+      }
+      return AppData.fromJson(decoded.cast<String, Object?>());
+    } catch (error) {
+      throw DataStoreException('Could not read the data snapshot', error);
+    }
+  }
+
+  Directory _backupsDirectory(File file) {
+    return Directory('${file.parent.path}${Platform.pathSeparator}backups');
+  }
+
+  static final RegExp _snapshotName = RegExp(r'^gym_log_data-.+\.json$');
+
+  bool _isSnapshotFileName(String fileName) {
+    if (fileName.contains('/') ||
+        fileName.contains(r'\') ||
+        fileName.contains('..')) {
+      return false;
+    }
+    return _snapshotName.hasMatch(fileName);
+  }
 }
 
 /// Resolves the app-private data document. Tests override this provider.
-final Provider<Future<File>> appDataFileProvider = Provider<Future<File>>((_) {
-  return _defaultDataFile();
-});
-
-Future<File> _defaultDataFile() async {
-  final Directory directory = await getApplicationSupportDirectory();
-  return File('${directory.path}${Platform.pathSeparator}gym_log_data.json');
-}
+final Provider<Future<File>> appDataFileProvider = Provider<Future<File>>(
+  (Ref ref) => appSupportFile(ref, 'gym_log_data.json'),
+);

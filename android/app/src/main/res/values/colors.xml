@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Keep the Android launch window dark on every system theme (UI-001). -->
-    <color name="launch_background">#0E1116</color>
+    <color name="launch_background">#080B10</color>
 </resources>

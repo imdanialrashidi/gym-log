@@ -144,6 +144,120 @@ void main() {
     },
   );
 
+  group('data snapshots', () {
+    Future<JsonAppDataStore> seedStore(File file) async {
+      final JsonAppDataStore store = JsonAppDataStore(
+        Future<File>.value(file),
+        snapshotClock: () => DateTime.utc(2026, 10, 22, 12),
+      );
+      await store.save(AppData(exercises: <Exercise>[_exercise('a', 'Alpha')]));
+      await store.snapshot();
+      return store;
+    }
+
+    test('a fresh install has no snapshots', () async {
+      final File file = await _tempFile();
+      final JsonAppDataStore store = JsonAppDataStore(Future<File>.value(file));
+
+      expect(await store.listSnapshots(), isEmpty);
+      expect(
+        Directory('${file.parent.path}${Platform.pathSeparator}backups')
+            .existsSync(),
+        isFalse,
+      );
+    });
+
+    test('lists snapshots newest first using file times, not names', () async {
+      final File file = await _tempFile();
+      final JsonAppDataStore store = await seedStore(file);
+      final Directory backups = Directory(
+        '${file.parent.path}${Platform.pathSeparator}backups',
+      );
+      // Names sort backwards; the file mtime is the authority.
+      final File newer = File(
+        '${backups.path}${Platform.pathSeparator}gym_log_data-2026-01-01T00-00-00.json',
+      );
+      await newer.writeAsBytes(
+        await backups.listSync().whereType<File>().single.readAsBytes(),
+      );
+      newer.setLastModifiedSync(DateTime.utc(2030, 10, 22, 13));
+      final File older = File(
+        '${backups.path}${Platform.pathSeparator}gym_log_data-2026-12-31T00-00-00.json',
+      );
+      await older.writeAsBytes(await newer.readAsBytes());
+      older.setLastModifiedSync(DateTime.utc(2030, 10, 22, 11));
+
+      final List<DataSnapshotInfo> listed = await store.listSnapshots();
+
+      expect(listed, hasLength(3));
+      expect(listed.first.fileName, contains('2026-01-01'));
+      expect(listed[1].fileName, contains('2026-12-31'));
+    });
+
+    test('loads a snapshot document', () async {
+      final File file = await _tempFile();
+      final JsonAppDataStore store = await seedStore(file);
+      final DataSnapshotInfo info = (await store.listSnapshots()).single;
+
+      final AppData loaded = await store.loadSnapshot(info.fileName);
+
+      expect(loaded.exercises.single.name, 'Alpha');
+    });
+
+    test('rejects traversal and non-snapshot names', () async {
+      final File file = await _tempFile();
+      final JsonAppDataStore store = await seedStore(file);
+
+      for (final String name in <String>[
+        '../gym_log_data-x.json',
+        r'..\gym_log_data-x.json',
+        'gym_log_data-x.json/../x',
+        'other.json',
+        'gym_log_data-x.txt',
+        'sub/gym_log_data-x.json',
+      ]) {
+        await expectLater(
+          store.loadSnapshot(name),
+          throwsA(isA<DataStoreException>()),
+          reason: 'Accepted unsafe snapshot name "$name"',
+        );
+      }
+    });
+
+    test('a corrupt snapshot throws without touching the document', () async {
+      final File file = await _tempFile();
+      final JsonAppDataStore store = await seedStore(file);
+      final DataSnapshotInfo info = (await store.listSnapshots()).single;
+      final File corrupt = File(
+        '${file.parent.path}${Platform.pathSeparator}backups'
+        '${Platform.pathSeparator}${info.fileName}',
+      );
+      await corrupt.writeAsString('{"schemaVersion": 1, "exercises": [');
+
+      await expectLater(
+        store.loadSnapshot(info.fileName),
+        throwsA(isA<DataStoreException>()),
+      );
+      expect((await store.load()).exercises.single.name, 'Alpha');
+    });
+
+    test('retention leaves exactly three listed snapshots', () async {
+      final File file = await _tempFile();
+      DateTime now = DateTime.utc(2026, 10, 22, 12);
+      final JsonAppDataStore store = JsonAppDataStore(
+        Future<File>.value(file),
+        snapshotClock: () => now,
+      );
+      await store.save(AppData(exercises: <Exercise>[_exercise('a', 'Alpha')]));
+      for (int index = 0; index < 5; index++) {
+        now = now.add(const Duration(minutes: 1));
+        await store.snapshot();
+      }
+
+      expect(await store.listSnapshots(), hasLength(3));
+    });
+  });
+
   test('rejects truncated data without overwriting it', () async {
     final File file = await _tempFile();
     await file.writeAsString('{"schemaVersion": 1, "exercises": [');
@@ -154,7 +268,7 @@ void main() {
   });
 
   test(
-    'upgrades a version 1 document to version 2 without data loss',
+    'upgrades a version 1 document to the current version without data loss',
     () async {
       final File file = await _tempFile();
       await file.writeAsString(
@@ -177,8 +291,9 @@ void main() {
       final Map<String, Object?> written = (jsonDecode(
         await file.readAsString(),
       ) as Map<Object?, Object?>).cast<String, Object?>();
-      expect(written['schemaVersion'], 2);
+      expect(written['schemaVersion'], appDataSchemaVersion);
       expect(written['sessions'], isEmpty);
+      expect(written['bodyWeights'], isEmpty);
       expect(
         (written['settings']! as Map<Object?, Object?>)['weightUnit'],
         'kilograms',

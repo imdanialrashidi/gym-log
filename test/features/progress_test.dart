@@ -140,6 +140,53 @@ void main() {
     expect(find.text('Missing RIR appears as a gap.'), findsOneWidget);
   });
 
+  testWidgets('a bodyweight working set shows no e1RM instead of 0 kg', (
+    WidgetTester tester,
+  ) async {
+    await _pumpProgress(
+      tester,
+      MemoryAppDataStore(
+        _data(
+          sessions: <Session>[
+            _session('bw-session', DateTime.utc(2026, 10, 20), <SetLog>[
+              _set('bw-set', 0, 5, rir: 0),
+            ]),
+          ],
+        ),
+      ),
+      location: '/progress/exercise-1',
+    );
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('progress-best-e1rm')),
+        matching: find.text('Not enough data'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('progress-best-e1rm')),
+        matching: find.text('0 kg'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('progress-best-weight')),
+        matching: find.text('0 kg'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('progress-chart-e1rm')),
+        matching: find.text('No values in this range.'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('overview shows an empty state without finished sessions', (
     WidgetTester tester,
   ) async {
@@ -239,6 +286,54 @@ void main() {
         .dx;
     expect(firstX, lessThan(lastX));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('chart date labels keep the locale paragraph direction', (
+    WidgetTester tester,
+  ) async {
+    final MemoryAppDataStore store = MemoryAppDataStore(
+      _data(
+        sessions: <Session>[
+          _session('newer', DateTime.utc(2026, 10, 20), <SetLog>[
+            _set('newer-set', 105000, 5),
+          ]),
+          _session('older', DateTime.utc(2026, 9), <SetLog>[
+            _set('older-set', 95000, 5),
+          ]),
+        ],
+      ),
+    );
+
+    await _pumpProgress(
+      tester,
+      store,
+      location: '/progress/exercise-1',
+      locale: const Locale('fa'),
+    );
+
+    for (final String key in <String>[
+      'progress-chart-weight-axis-first',
+      'progress-chart-weight-axis-last',
+    ]) {
+      expect(
+        tester.widget<Text>(find.byKey(Key(key))).textDirection,
+        TextDirection.rtl,
+        reason: 'The Persian label must keep its RTL paragraph direction: $key',
+      );
+    }
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpProgress(tester, store, location: '/progress/exercise-1');
+
+    for (final String key in <String>[
+      'progress-chart-weight-axis-first',
+      'progress-chart-weight-axis-last',
+    ]) {
+      expect(
+        tester.widget<Text>(find.byKey(Key(key))).textDirection,
+        TextDirection.ltr,
+      );
+    }
   });
 
   testWidgets('detail stays usable at 200% text with 48dp range chips', (

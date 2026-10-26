@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../features/body_weight/presentation/body_weight_screen.dart';
 import '../features/exercises/presentation/exercise_editor_screen.dart';
 import '../features/exercises/presentation/exercise_library_screen.dart';
 import '../features/exercises/presentation/exercise_picker_screen.dart';
@@ -13,9 +14,11 @@ import '../features/programs/presentation/program_editor_screen.dart';
 import '../features/programs/presentation/programs_screen.dart';
 import '../features/progress/presentation/exercise_progress_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
+import '../features/progress/presentation/weekly_summary_screen.dart';
 import '../features/settings/presentation/about_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/shell/presentation/app_shell.dart';
+import '../features/workout/presentation/session_summary_screen.dart';
 import '../features/workout/presentation/workout_screen.dart';
 import 'routes.dart';
 
@@ -83,6 +86,16 @@ GoRouter buildRouter({String initialLocation = '/workout'}) {
             const SettingsScreen(),
       ),
       GoRoute(
+        path: AppRoutes.bodyWeight,
+        builder: (BuildContext context, GoRouterState state) =>
+            const BodyWeightScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.weeklySummary,
+        builder: (BuildContext context, GoRouterState state) =>
+            const WeeklySummaryScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.about,
         builder: (BuildContext context, GoRouterState state) =>
             const AboutScreen(),
@@ -134,6 +147,11 @@ GoRouter buildRouter({String initialLocation = '/workout'}) {
         path: '/session/:sessionId',
         builder: (BuildContext context, GoRouterState state) =>
             SessionDetailScreen(sessionId: state.pathParameters['sessionId']!),
+      ),
+      GoRoute(
+        path: '/session-summary/:sessionId',
+        builder: (BuildContext context, GoRouterState state) =>
+            SessionSummaryScreen(sessionId: state.pathParameters['sessionId']!),
       ),
       GoRoute(
         path: '/progress/:exerciseId',

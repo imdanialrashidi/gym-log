@@ -4,8 +4,8 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 
+import 'app_storage.dart';
 import 'photo_processor.dart';
 
 /// Owner-decided session photo limit (ADR-0006).
@@ -419,8 +419,9 @@ class FilePhotoStorage implements PhotoStorage {
 final Provider<PhotoStorage> photoStorageProvider = Provider<PhotoStorage>((
   Ref ref,
 ) {
+  final Future<Directory> support = ref.watch(appSupportDirectoryProvider);
   return FilePhotoStorage(() async {
-    final Directory support = await getApplicationSupportDirectory();
-    return Directory('${support.path}${Platform.pathSeparator}photos');
+    final Directory directory = await support;
+    return Directory('${directory.path}${Platform.pathSeparator}photos');
   });
 });

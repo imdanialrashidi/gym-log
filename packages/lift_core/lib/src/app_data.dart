@@ -1,3 +1,4 @@
+import 'body_weight.dart';
 import 'exercise.dart';
 import 'json_reader.dart';
 import 'persian_search.dart';
@@ -8,9 +9,11 @@ import 'settings.dart';
 /// Current on-device document schema. A future Drift migration must carry this
 /// document forward, never discard it.
 ///
-/// Version 2 adds sessions and app settings. Version 1 documents are read with
-/// empty history and default settings, then written back as version 2.
-const int appDataSchemaVersion = 2;
+/// Version 2 added sessions and app settings. Version 3 added body-weight
+/// check-ins. Version 4 adds optional weekly goals inside settings. Older
+/// documents are read with empty/default newer fields and written back as the
+/// current version; no version ever discards an existing collection.
+const int appDataSchemaVersion = 4;
 
 /// Aggregate persisted by the exercise/program/logging milestones.
 ///
@@ -21,12 +24,18 @@ class AppData {
     List<Exercise> exercises = const <Exercise>[],
     List<Program> programs = const <Program>[],
     List<Session> sessions = const <Session>[],
+    List<BodyWeightEntry> bodyWeights = const <BodyWeightEntry>[],
     AppSettings settings = const AppSettings(),
   }) {
     final Set<String> ids = <String>{};
     for (final Exercise exercise in exercises) {
       if (!ids.add(exercise.id)) {
         throw ArgumentError('Duplicate exercise id ${exercise.id}');
+      }
+    }
+    for (final BodyWeightEntry entry in bodyWeights) {
+      if (!ids.add(entry.id)) {
+        throw ArgumentError('Duplicate body-weight id ${entry.id}');
       }
     }
     for (final Program program in programs) {
@@ -94,6 +103,7 @@ class AppData {
       exercises: List<Exercise>.unmodifiable(exercises),
       programs: List<Program>.unmodifiable(programs),
       sessions: List<Session>.unmodifiable(sessions),
+      bodyWeights: List<BodyWeightEntry>.unmodifiable(bodyWeights),
       settings: settings,
     );
   }
@@ -102,12 +112,17 @@ class AppData {
     required this.exercises,
     required this.programs,
     required this.sessions,
+    required this.bodyWeights,
     required this.settings,
   });
 
   final List<Exercise> exercises;
   final List<Program> programs;
   final List<Session> sessions;
+
+  /// Body-weight check-ins, in insertion order. Weekly series pick the latest
+  /// entry inside each week.
+  final List<BodyWeightEntry> bodyWeights;
   final AppSettings settings;
 
   /// Exercises offered by the picker and the default library view.
@@ -198,12 +213,14 @@ class AppData {
     List<Exercise>? exercises,
     List<Program>? programs,
     List<Session>? sessions,
+    List<BodyWeightEntry>? bodyWeights,
     AppSettings? settings,
   }) {
     return AppData(
       exercises: exercises ?? this.exercises,
       programs: programs ?? this.programs,
       sessions: sessions ?? this.sessions,
+      bodyWeights: bodyWeights ?? this.bodyWeights,
       settings: settings ?? this.settings,
     );
   }
@@ -219,15 +236,18 @@ class AppData {
     'sessions': <Object?>[
       for (final Session session in sessions) session.toJson(),
     ],
+    'bodyWeights': <Object?>[
+      for (final BodyWeightEntry entry in bodyWeights) entry.toJson(),
+    ],
     'settings': settings.toJson(),
   };
 
   factory AppData.fromJson(Map<String, Object?> json) {
     final int version = readInt(json, 'schemaVersion');
-    if (version != 1 && version != appDataSchemaVersion) {
+    if (version < 1 || version > appDataSchemaVersion) {
       throw FormatException(
         'Unsupported data schema version $version '
-        '(expected 1 or $appDataSchemaVersion)',
+        '(expected 1 through $appDataSchemaVersion)',
       );
     }
     final List<Program> programs = <Program>[
@@ -235,14 +255,29 @@ class AppData {
         Program.fromJson(readMap(program, 'programs')),
     ];
     final List<Session> sessions;
+    final List<BodyWeightEntry> bodyWeights;
     final AppSettings settings;
     if (version == 1) {
       sessions = const <Session>[];
+      bodyWeights = const <BodyWeightEntry>[];
       settings = const AppSettings();
-    } else {
+    } else if (version == 2) {
       sessions = <Session>[
         for (final Object? session in readList(json, 'sessions'))
           Session.fromJson(readMap(session, 'sessions')),
+      ];
+      bodyWeights = const <BodyWeightEntry>[];
+      settings = AppSettings.fromJson(readMap(json['settings'], 'settings'));
+    } else {
+      // Versions 3 and 4 share the same collections; version 4 adds optional
+      // goal values that the settings reader accepts when present.
+      sessions = <Session>[
+        for (final Object? session in readList(json, 'sessions'))
+          Session.fromJson(readMap(session, 'sessions')),
+      ];
+      bodyWeights = <BodyWeightEntry>[
+        for (final Object? entry in readList(json, 'bodyWeights'))
+          BodyWeightEntry.fromJson(readMap(entry, 'bodyWeights')),
       ];
       settings = AppSettings.fromJson(readMap(json['settings'], 'settings'));
     }
@@ -253,6 +288,7 @@ class AppData {
       ],
       programs: programs,
       sessions: sessions,
+      bodyWeights: bodyWeights,
       settings: settings,
     );
   }

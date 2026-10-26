@@ -2,13 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
 
 import '../../../app/app_clock.dart';
-import '../../../app/theme/app_tokens.dart';
-import '../../../core/l10n/digit_style_scope.dart';
-import '../../../core/l10n/l10n.dart';
-import '../../../core/widgets/app_formats.dart';
+import '../../../data/rest_timer_store.dart';
 
 /// In-app rest timer state. The end timestamp is the source of truth; the
 /// remaining duration is recomputed from the clock on every tick and when the
@@ -18,13 +14,26 @@ class RestTimerState {
     this.endsAt,
     this.remaining = Duration.zero,
     this.finished = false,
+    this.duration = Duration.zero,
   });
 
   final DateTime? endsAt;
   final Duration remaining;
   final bool finished;
 
+  /// The configured length of this countdown, used for progress feedback.
+  final Duration duration;
+
   bool get isVisible => endsAt != null;
+
+  /// Completed fraction in `0..1`; zero when the configured length is unknown.
+  double get progress {
+    if (duration <= Duration.zero) {
+      return 0;
+    }
+    final double value = 1 - remaining.inMilliseconds / duration.inMilliseconds;
+    return value.clamp(0, 1);
+  }
 }
 
 final NotifierProvider<RestTimerController, RestTimerState>
@@ -35,10 +44,15 @@ restTimerControllerProvider =
 
 class RestTimerController extends Notifier<RestTimerState> {
   Timer? _ticker;
+  bool _restoring = false;
+  int _generation = 0;
 
   @override
   RestTimerState build() {
     ref.onDispose(() => _ticker?.cancel());
+    // A process death during the workout must not lose the countdown. Restoring
+    // is best-effort and never blocks the first paint.
+    unawaited(_restore());
     return const RestTimerState();
   }
 
@@ -47,19 +61,71 @@ class RestTimerController extends Notifier<RestTimerState> {
     if (duration <= Duration.zero) {
       return;
     }
-    _ticker?.cancel();
+    _generation += 1;
     final DateTime endsAt = ref.read(appClockProvider)().add(duration);
-    state = RestTimerState(endsAt: endsAt, remaining: duration);
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    state = RestTimerState(
+      endsAt: endsAt,
+      remaining: duration,
+      duration: duration,
+    );
+    _startTicker();
+    unawaited(
+      ref
+          .read(restTimerStoreProvider)
+          .save(PersistedRestTimer(endsAt: endsAt, duration: duration)),
+    );
   }
 
   /// Recomputes from [RestTimerState.endsAt]. Call after the app resumes.
   void refresh() => _tick();
 
   void dismiss() {
+    _generation += 1;
     _ticker?.cancel();
     _ticker = null;
     state = const RestTimerState();
+    unawaited(ref.read(restTimerStoreProvider).clear());
+  }
+
+  void _startTicker() {
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  Future<void> _restore() async {
+    if (_restoring) {
+      return;
+    }
+    _restoring = true;
+    final int generation = _generation;
+    try {
+      final RestTimerStore store = ref.read(restTimerStoreProvider);
+      final PersistedRestTimer? saved = await store.load();
+      if (saved == null ||
+          generation != _generation ||
+          state.isVisible ||
+          _ticker != null) {
+        return;
+      }
+      final Duration remaining = saved.endsAt.difference(
+        ref.read(appClockProvider)(),
+      );
+      if (remaining <= Duration.zero) {
+        await store.clear();
+        return;
+      }
+      state = RestTimerState(
+        endsAt: saved.endsAt,
+        remaining: remaining,
+        duration: saved.duration,
+      );
+      _startTicker();
+    } catch (_) {
+      // The rest timer is optional; a missing or unreadable marker leaves the
+      // app fully usable.
+    } finally {
+      _restoring = false;
+    }
   }
 
   void _tick() {
@@ -73,11 +139,20 @@ class RestTimerController extends Notifier<RestTimerState> {
     if (remaining <= Duration.zero) {
       _ticker?.cancel();
       _ticker = null;
-      state = RestTimerState(endsAt: endsAt, finished: true);
+      state = RestTimerState(
+        endsAt: endsAt,
+        finished: true,
+        duration: current.duration,
+      );
+      unawaited(ref.read(restTimerStoreProvider).clear());
       unawaited(_vibrate());
       return;
     }
-    state = RestTimerState(endsAt: endsAt, remaining: remaining);
+    state = RestTimerState(
+      endsAt: endsAt,
+      remaining: remaining,
+      duration: current.duration,
+    );
   }
 
   Future<void> _vibrate() async {
@@ -86,99 +161,5 @@ class RestTimerController extends Notifier<RestTimerState> {
     } catch (_) {
       // Haptics are best-effort; the visual completion state still stands.
     }
-  }
-}
-
-/// Non-blocking rest countdown shown above the active logging surface.
-class RestTimerBanner extends ConsumerStatefulWidget {
-  const RestTimerBanner({super.key});
-
-  @override
-  ConsumerState<RestTimerBanner> createState() => _RestTimerBannerState();
-}
-
-class _RestTimerBannerState extends ConsumerState<RestTimerBanner>
-    with WidgetsBindingObserver {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      ref.read(restTimerControllerProvider.notifier).refresh();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final RestTimerState timer = ref.watch(restTimerControllerProvider);
-    if (!timer.isVisible) {
-      return const SizedBox.shrink();
-    }
-
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        key: const Key('rest-timer-banner'),
-        margin: const EdgeInsetsDirectional.only(bottom: AppTokens.space2),
-        padding: const EdgeInsetsDirectional.all(AppTokens.space1),
-        decoration: BoxDecoration(
-          color: AppTokens.surface2,
-          borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-          border: Border.all(
-            color: timer.finished ? AppTokens.accent : AppTokens.textSecondary,
-          ),
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(
-              timer.finished
-                  ? Icons.notifications_active
-                  : Icons.timer_outlined,
-              color: timer.finished
-                  ? AppTokens.accent
-                  : AppTokens.textSecondary,
-            ),
-            const SizedBox(width: AppTokens.space1),
-            Expanded(
-              child: Text(
-                timer.finished
-                    ? l10n.restTimerComplete
-                    : context.digits(
-                        l10n.restTimerRunning(
-                          formatRestDuration(timer.remaining),
-                        ),
-                      ),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: timer.finished
-                      ? AppTokens.accent
-                      : AppTokens.textPrimary,
-                  fontFeatures: const <FontFeature>[
-                    FontFeature.tabularFigures(),
-                  ],
-                ),
-              ),
-            ),
-            IconButton(
-              key: const Key('rest-timer-stop'),
-              tooltip: l10n.restTimerStop,
-              onPressed: () =>
-                  ref.read(restTimerControllerProvider.notifier).dismiss(),
-              icon: const Icon(Icons.close),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

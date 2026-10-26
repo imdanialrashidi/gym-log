@@ -52,8 +52,15 @@ Session _session(
   );
 }
 
-AppData _seed(List<Session> sessions) {
-  return AppData(exercises: <Exercise>[_exercise()], sessions: sessions);
+AppData _seed(
+  List<Session> sessions, {
+  WeightUnit unit = WeightUnit.kilograms,
+}) {
+  return AppData(
+    exercises: <Exercise>[_exercise()],
+    sessions: sessions,
+    settings: AppSettings(weightUnit: unit),
+  );
 }
 
 final DateTime _now = DateTime(2026, 10, 21, 12);
@@ -289,6 +296,38 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(store.data.sessions.single.toJson(), beforeDelete);
+  });
+
+  testWidgets('an RIR-only edit keeps the stored weight grams exact', (
+    WidgetTester tester,
+  ) async {
+    final MemoryAppDataStore store = MemoryAppDataStore(
+      _seed(<Session>[
+        _session('session-1', DateTime(2026, 10, 20, 10)),
+      ], unit: WeightUnit.pounds),
+    );
+    await pumpGymLogApp(
+      tester,
+      store: store,
+      initialLocation: '/session/session-1',
+      clock: () => _now,
+    );
+
+    await _chooseSetAction(
+      tester,
+      'session-1-set',
+      'history-set-edit-session-1-set',
+    );
+    // Only the RIR changes; the weight field still shows "220.46" lb.
+    await tester.tap(find.byKey(const Key('edit-set-rir-3')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('edit-set-save')));
+    await tester.pumpAndSettle();
+
+    final SetLog edited =
+        store.data.sessions.single.exercises.single.sets.single;
+    expect(edited.weightGrams, 100000);
+    expect(edited.rir, 3);
   });
 
   testWidgets('notes can be added from session detail and persist', (

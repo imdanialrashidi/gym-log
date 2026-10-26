@@ -4,17 +4,22 @@ import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/app_clock.dart';
+import '../../../app/document_gate.dart';
 import '../../../app/routes.dart';
+import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
-import '../../../data/app_data_controller.dart';
+import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/stat_tile.dart';
+import '../../../core/widgets/training_formats.dart';
 
 /// History list plus a month calendar that marks trained days (`HIS-001`).
 ///
 /// Sessions are rendered through a lazy [ListView.builder]; rows outside the
-/// viewport and cache extent are never built.
+/// viewport are never built. Derived stats are cached per document revision so
+/// scrolling does not rescan the same session.
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
 
@@ -24,6 +29,8 @@ class HistoryScreen extends ConsumerStatefulWidget {
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   late DateTime _visibleMonth;
+  AppData? _statsSource;
+  Map<String, SessionStats> _statsCache = <String, SessionStats>{};
 
   @override
   void initState() {
@@ -44,40 +51,23 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
-
-    return asyncData.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object error, StackTrace stack) => Center(
-        child: Padding(
-          padding: const EdgeInsetsDirectional.all(AppTokens.space3),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                l10n.loadFailed,
-                style: const TextStyle(color: AppTokens.danger),
-              ),
-              const SizedBox(height: AppTokens.space1),
-              OutlinedButton.icon(
-                onPressed: () => ref.invalidate(appDataControllerProvider),
-                icon: const Icon(Icons.refresh),
-                label: Text(l10n.retry),
-              ),
-            ],
-          ),
-        ),
-      ),
-      data: (AppData data) {
+    return DocumentGate(
+      builder: (BuildContext context, AppData data) {
+        final AppLocalizations l10n = context.l10n;
+        if (!identical(_statsSource, data)) {
+          _statsSource = data;
+          _statsCache = <String, SessionStats>{};
+        }
+        final Map<String, Exercise> exercisesById = <String, Exercise>{
+          for (final Exercise exercise in data.exercises) exercise.id: exercise,
+        };
         final List<Session> sessions = <Session>[
           for (final Session session in data.sessions)
             if (!session.isActive) session,
         ]..sort((Session a, Session b) => b.startedAt.compareTo(a.startedAt));
         final Map<DateTime, Session> trainedDays = <DateTime, Session>{};
         for (final Session session in sessions) {
-          final DateTime local = session.startedAt.toLocal();
-          final DateTime day = DateTime(local.year, local.month, local.day);
+          final DateTime day = _localDay(session.startedAt);
           final Session? existing = trainedDays[day];
           if (existing == null ||
               session.startedAt.isAfter(existing.startedAt)) {
@@ -85,51 +75,206 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           }
         }
 
+        final CalendarMonth month = context.calendarMonth(_visibleMonth);
+        final DateTime monthEnd = DateTime(
+          month.start.year,
+          month.start.month,
+          month.start.day + month.length,
+        );
+        int monthVolume = 0;
+        int monthSets = 0;
+        Duration monthDuration = Duration.zero;
+        int monthSessions = 0;
+        for (final Session session in sessions) {
+          final DateTime local = session.startedAt.toLocal();
+          if (local.isBefore(month.start) || !local.isBefore(monthEnd)) {
+            continue;
+          }
+          final SessionStats stats = _statsFor(session, exercisesById);
+          monthSessions += 1;
+          monthVolume += stats.volumeGrams;
+          monthSets += stats.workingSetCount;
+          monthDuration += stats.duration ?? Duration.zero;
+        }
+
         final bool isEmpty = sessions.isEmpty;
         return ListView.builder(
           key: const Key('history-list'),
-          padding: const EdgeInsetsDirectional.only(
-            start: AppTokens.space1,
-            end: AppTokens.space1,
-            top: AppTokens.space2,
-            bottom: AppTokens.space2,
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            AppTokens.space1,
+            AppTokens.space2,
+            AppTokens.space1,
+            AppTokens.space4,
           ),
           itemCount: 1 + (isEmpty ? 0 : sessions.length),
           itemBuilder: (BuildContext context, int index) {
             if (index == 0) {
-              final Widget calendar = _HistoryCalendar(
-                visibleMonth: _visibleMonth,
-                trainedDays: trainedDays,
-                onPreviousMonth: () => _shiftMonth(-1),
-                onNextMonth: () => _shiftMonth(1),
-                onOpenDay: _openSession,
-              );
-              if (!isEmpty) {
-                return calendar;
-              }
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  calendar,
-                  Padding(
-                    padding: const EdgeInsetsDirectional.all(AppTokens.space3),
-                    child: Text(
-                      l10n.historyEmpty,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge
-                          ?.copyWith(color: AppTokens.textSecondary),
+                  _MonthSummary(
+                    monthLabel: context.formatDate(
+                      month.start,
+                      style: AppDateStyle.monthYear,
                     ),
+                    sessions: monthSessions,
+                    volumeGrams: monthVolume,
+                    workingSets: monthSets,
+                    duration: monthDuration,
+                    unit: data.settings.weightUnit,
                   ),
+                  const SizedBox(height: AppTokens.space2),
+                  _HistoryCalendar(
+                    visibleMonth: _visibleMonth,
+                    trainedDays: trainedDays,
+                    onPreviousMonth: () => _shiftMonth(-1),
+                    onNextMonth: () => _shiftMonth(1),
+                    onOpenDay: _openSession,
+                  ),
+                  if (isEmpty)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.all(
+                        AppTokens.space3,
+                      ),
+                      child: Text(
+                        l10n.historyEmpty,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(color: AppTokens.textSecondary),
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        top: AppTokens.space2,
+                        bottom: AppTokens.space1,
+                      ),
+                      child: Text(
+                        l10n.sessionsTitle,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
                 ],
               );
             }
             final Session session = sessions[index - 1];
-            return _SessionTile(
-              session: session,
-              onTap: () => _openSession(session),
+            return Padding(
+              padding: const EdgeInsetsDirectional.only(
+                bottom: AppTokens.space1,
+              ),
+              child: _SessionTile(
+                session: session,
+                stats: _statsFor(session, exercisesById),
+                unit: data.settings.weightUnit,
+                onTap: () => _openSession(session),
+              ),
             );
           },
         );
       },
+    );
+  }
+
+  SessionStats _statsFor(Session session, Map<String, Exercise> exercisesById) {
+    return _statsCache.putIfAbsent(
+      session.id,
+      () => sessionStatsUsingMap(
+        session,
+        exerciseById: exercisesById,
+        now: ref.read(appClockProvider)(),
+      ),
+    );
+  }
+}
+
+DateTime _localDay(DateTime value) {
+  final DateTime local = value.toLocal();
+  return DateTime(local.year, local.month, local.day);
+}
+
+class _MonthSummary extends StatelessWidget {
+  const _MonthSummary({
+    required this.monthLabel,
+    required this.sessions,
+    required this.volumeGrams,
+    required this.workingSets,
+    required this.duration,
+    required this.unit,
+  });
+
+  final String monthLabel;
+  final int sessions;
+  final int volumeGrams;
+  final int workingSets;
+  final Duration duration;
+  final WeightUnit unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    return AppCard(
+      key: const Key('history-month-summary'),
+      gradient: AppGradients.hero,
+      borderColor: AppTokens.accentDeep.withValues(alpha: 0.35),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  context.digits('${l10n.thisMonth} · $monthLabel'),
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              Text(
+                context.digits(l10n.workoutsLabel(sessions)),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppTokens.accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTokens.space1),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double half = (constraints.maxWidth - AppTokens.space1) / 2;
+              return Wrap(
+                spacing: AppTokens.space1,
+                runSpacing: AppTokens.space1,
+                children: <Widget>[
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.volumeLabel,
+                      value: context.digits(formatWeight(volumeGrams, unit)),
+                      unit: weightUnitLabel(context, unit),
+                      compact: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.workingSets,
+                      value: context.digits('$workingSets'),
+                      compact: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.timeLabel,
+                      value: formatTrainingDurationShort(context, duration),
+                      compact: true,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -156,54 +301,64 @@ class _HistoryCalendar extends StatelessWidget {
     final int leading =
         (month.firstWeekdayIndex - context.weekStartIndex + 7) % 7;
 
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(bottom: AppTokens.space2),
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              IconButton(
-                key: const Key('history-previous-month'),
-                tooltip: l10n.historyCalendarPrevious,
-                onPressed: onPreviousMonth,
-                icon: const Icon(Icons.chevron_left),
-              ),
-              Expanded(
-                child: Text(
-                  context.formatDate(
-                    month.start,
-                    style: AppDateStyle.monthYear,
-                  ),
-                  key: const Key('history-month'),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
+          Padding(
+            padding: const EdgeInsetsDirectional.symmetric(
+              horizontal: AppTokens.space1,
+            ),
+            child: Row(
+              children: <Widget>[
+                IconButton(
+                  key: const Key('history-previous-month'),
+                  tooltip: l10n.historyCalendarPrevious,
+                  onPressed: onPreviousMonth,
+                  icon: const Icon(Icons.chevron_left),
                 ),
-              ),
-              IconButton(
-                key: const Key('history-next-month'),
-                tooltip: l10n.historyCalendarNext,
-                onPressed: onNextMonth,
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTokens.space1),
-          Row(
-            children: <Widget>[
-              for (int column = 0; column < 7; column++)
                 Expanded(
                   child: Text(
-                    _weekdayLabel(context, column),
-                    key: ValueKey<String>('calendar-weekday-$column'),
+                    context.formatDate(
+                      month.start,
+                      style: AppDateStyle.monthYear,
+                    ),
+                    key: const Key('history-month'),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelSmall
-                        ?.copyWith(color: AppTokens.textSecondary),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-            ],
+                IconButton(
+                  key: const Key('history-next-month'),
+                  tooltip: l10n.historyCalendarNext,
+                  onPressed: onNextMonth,
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppTokens.space1),
+          const SizedBox(height: AppTokens.spaceHalf),
+          Padding(
+            padding: const EdgeInsetsDirectional.symmetric(
+              horizontal: AppTokens.space1,
+            ),
+            child: Row(
+              children: <Widget>[
+                for (int column = 0; column < 7; column++)
+                  Expanded(
+                    child: Text(
+                      _weekdayLabel(context, column),
+                      key: ValueKey<String>('calendar-weekday-$column'),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall
+                          ?.copyWith(color: AppTokens.textSecondary),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppTokens.spaceHalf),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -211,6 +366,7 @@ class _HistoryCalendar extends StatelessWidget {
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
               mainAxisSpacing: 2,
+              crossAxisSpacing: 1,
             ),
             itemCount: leading + month.length,
             itemBuilder: (BuildContext context, int index) {
@@ -235,14 +391,19 @@ class _HistoryCalendar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
                   onTap: trained == null ? null : () => onOpenDay(trained),
                   child: Container(
-                    decoration: trained == null
-                        ? null
-                        : BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              AppTokens.radiusSmall,
-                            ),
-                            border: Border.all(color: AppTokens.accent),
-                          ),
+                    decoration: BoxDecoration(
+                      color: trained == null
+                          ? null
+                          : AppTokens.accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.radiusSmall,
+                      ),
+                      border: Border.all(
+                        color: trained == null
+                            ? Colors.transparent
+                            : AppTokens.accent,
+                      ),
+                    ),
                     child: Stack(
                       alignment: Alignment.center,
                       children: <Widget>[
@@ -261,14 +422,15 @@ class _HistoryCalendar extends StatelessWidget {
                         ),
                         if (trained != null)
                           PositionedDirectional(
-                            top: 0,
+                            bottom: 3,
                             start: 0,
+                            end: 0,
                             child: Icon(
                               Icons.check,
                               key: ValueKey<String>(
                                 'calendar-trained-${_dayKey(date)}',
                               ),
-                              size: 10,
+                              size: 9,
                               color: AppTokens.accent,
                             ),
                           ),
@@ -284,9 +446,6 @@ class _HistoryCalendar extends StatelessWidget {
     );
   }
 
-  /// Maps a calendar column to a narrow weekday label through the single
-  /// calendar service. 2024-01-07 was a Sunday, index 0 of
-  /// [MaterialLocalizations.narrowWeekdays].
   String _weekdayLabel(BuildContext context, int column) {
     final int firstDay = context.weekStartIndex;
     final DateTime anchor = DateTime(
@@ -299,44 +458,94 @@ class _HistoryCalendar extends StatelessWidget {
 }
 
 class _SessionTile extends StatelessWidget {
-  const _SessionTile({required this.session, required this.onTap});
+  const _SessionTile({
+    required this.session,
+    required this.stats,
+    required this.unit,
+    required this.onTap,
+  });
 
   final Session session;
+  final SessionStats stats;
+  final WeightUnit unit;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final int setCount = session.exercises.fold<int>(
-      0,
-      (int total, SessionExercise exercise) => total + exercise.sets.length,
-    );
-
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(
-        start: AppTokens.space1,
-        end: AppTokens.space1,
-        bottom: AppTokens.space1,
-      ),
-      child: Material(
-        color: AppTokens.surface,
-        borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-        child: ListTile(
-          key: ValueKey<String>('history-session-${session.id}'),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-          ),
-          title: Text(
-            context.formatDate(session.startedAt, style: AppDateStyle.dateTime),
-          ),
-          subtitle: Text(
-            context.digits(
-              l10n.historySessionSummary(setCount, session.exercises.length),
+    final ThemeData theme = Theme.of(context);
+    final DateTime local = session.startedAt.toLocal();
+    return AppCard(
+      key: ValueKey<String>('history-session-${session.id}'),
+      onTap: onTap,
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 46,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppTokens.surface2,
+              borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
+              border: Border.all(color: AppTokens.outline),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    context.formatDate(local, style: AppDateStyle.day),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    context.formatDate(
+                      local,
+                      style: AppDateStyle.weekdayNarrow,
+                    ),
+                    style: theme.textTheme.labelSmall,
+                  ),
+                ),
+              ],
             ),
           ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: onTap,
-        ),
+          const SizedBox(width: AppTokens.space2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  context.formatDate(
+                    session.startedAt,
+                    style: AppDateStyle.dateTime,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  context.digits(
+                    '${l10n.setsLabel(stats.workingSetCount)} · '
+                    '${formatWeight(stats.volumeGrams, unit)} '
+                    '${weightUnitLabel(context, unit)} · '
+                    '${formatTrainingDuration(context, stats.duration)}',
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppTokens.space1),
+          const Icon(Icons.chevron_right, size: 18),
+        ],
       ),
     );
   }

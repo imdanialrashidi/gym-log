@@ -5,10 +5,15 @@ import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/app_clock.dart';
+import '../../../app/document_gate.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/rir_info.dart';
+import '../../../core/widgets/stat_tile.dart';
 import '../../../core/widgets/text_empty_state.dart';
+import '../../../core/widgets/training_formats.dart';
 import '../../../data/app_data_controller.dart';
 import '../../../data/photo_index_controller.dart';
 import '../../../data/photo_storage.dart';
@@ -35,51 +40,24 @@ class _ExerciseProgressScreenState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
-    final PhotoIndex? photoIndex = ref.watch(photoIndexProvider).value;
-
-    return asyncData.when(
-      loading: () => Scaffold(
-        appBar: AppBar(title: Text(l10n.progressTab)),
-        body: const Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      appBar: AppBar(
+        title: _ExerciseProgressTitle(exerciseId: widget.exerciseId),
       ),
-      error: (Object error, StackTrace stack) => Scaffold(
-        appBar: AppBar(title: Text(l10n.progressTab)),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space3),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  l10n.loadFailed,
-                  style: const TextStyle(color: AppTokens.danger),
-                ),
-                const SizedBox(height: AppTokens.space1),
-                OutlinedButton.icon(
-                  onPressed: () => ref.invalidate(appDataControllerProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: Text(l10n.retry),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      data: (AppData data) {
-        final Exercise? exercise = data.exerciseById(widget.exerciseId);
-        final DateTime now = ref.watch(appClockProvider)();
-        final ExerciseProgress progress = prepareExerciseProgress(
-          sessions: data.sessions,
-          exerciseId: widget.exerciseId,
-          range: _range,
-          now: now,
-        );
-        final String title = exercise?.name ?? l10n.exerciseNotFound;
-
-        return Scaffold(
-          appBar: AppBar(title: _title(context, title, photoIndex)),
-          body: !progress.hasHistory
+      body: DocumentGate(
+        builder: (BuildContext context, AppData data) {
+          final DateTime now = ref.watch(appClockProvider)();
+          final ExerciseProgress progress = prepareExerciseProgress(
+            sessions: data.sessions,
+            exerciseId: widget.exerciseId,
+            range: _range,
+            now: now,
+          );
+          final ExerciseTrainingStats training = exerciseTrainingStats(
+            sessions: data.sessions,
+            exerciseId: widget.exerciseId,
+          );
+          return !progress.hasHistory
               ? TextEmptyState(message: l10n.progressNoDataForExercise)
               : ListView(
                   key: const Key('exercise-progress-list'),
@@ -95,60 +73,15 @@ class _ExerciseProgressScreenState
                     if (!progress.hasData)
                       TextEmptyState(message: l10n.progressNoDataInRange)
                     else
-                      ..._charts(context, progress, data.settings.weightUnit),
+                      ..._charts(
+                        context,
+                        progress,
+                        training,
+                        data.settings.weightUnit,
+                      ),
                   ],
-                ),
-        );
-      },
-    );
-  }
-
-  Widget _title(BuildContext context, String title, PhotoIndex? index) {
-    final String? photoName = index?.exerciseFileName(widget.exerciseId);
-    if (index == null || photoName == null) {
-      return Text(title, overflow: TextOverflow.ellipsis);
-    }
-    final File file = index.file(photoName);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Semantics(
-          button: true,
-          label: context.l10n.exercisePhotoLabel,
-          child: InkWell(
-            key: const Key('exercise-detail-photo'),
-            onTap: () => _openPhoto(file),
-            child: SizedBox(
-              width: AppTokens.minTouchTarget,
-              height: AppTokens.minTouchTarget,
-              child: Center(
-                child: PhotoThumbnail(
-                  file: file,
-                  label: context.l10n.exercisePhotoLabel,
-                  size: 32,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppTokens.space1),
-        Flexible(child: Text(title, overflow: TextOverflow.ellipsis)),
-      ],
-    );
-  }
-
-  Future<void> _openPhoto(File file) async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (BuildContext routeContext) => PhotoViewerScreen(
-          file: file,
-          onRemove: () async {
-            await ref
-                .read(photoIndexProvider.notifier)
-                .removeExercisePhoto(widget.exerciseId);
-            return true;
-          },
-        ),
+                );
+        },
       ),
     );
   }
@@ -156,6 +89,7 @@ class _ExerciseProgressScreenState
   List<Widget> _charts(
     BuildContext context,
     ExerciseProgress progress,
+    ExerciseTrainingStats training,
     WeightUnit unit,
   ) {
     final AppLocalizations l10n = context.l10n;
@@ -168,6 +102,8 @@ class _ExerciseProgressScreenState
 
     return <Widget>[
       _SummaryRow(progress: progress, unit: unit),
+      const SizedBox(height: AppTokens.space2),
+      _TrainingTotalsCard(training: training, unit: unit),
       const SizedBox(height: AppTokens.space2),
       ProgressChartSection(
         key: const Key('progress-chart-weight'),
@@ -207,7 +143,155 @@ class _ExerciseProgressScreenState
         emptyMessage: l10n.progressChartEmptyValues,
         axisKeyPrefix: 'progress-chart-rir',
       ),
+      const Padding(
+        padding: EdgeInsetsDirectional.only(
+          bottom: AppTokens.space2,
+          top: AppTokens.spaceHalf,
+        ),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: RirInfoButton(key: Key('progress-rir-info')),
+        ),
+      ),
     ];
+  }
+}
+
+class _ExerciseProgressTitle extends ConsumerWidget {
+  const _ExerciseProgressTitle({required this.exerciseId});
+
+  final String exerciseId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppData? data = ref.watch(appDataControllerProvider).value;
+    final PhotoIndex? index = ref.watch(photoIndexProvider).value;
+    final String title =
+        data?.exerciseById(exerciseId)?.name ?? context.l10n.exerciseNotFound;
+    final String? photoName = index?.exerciseFileName(exerciseId);
+    if (index == null || photoName == null) {
+      return Text(title, overflow: TextOverflow.ellipsis);
+    }
+    final File file = index.file(photoName);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Semantics(
+          button: true,
+          label: context.l10n.exercisePhotoLabel,
+          child: InkWell(
+            key: const Key('exercise-detail-photo'),
+            onTap: () => _openPhoto(context, ref, file),
+            child: SizedBox(
+              width: AppTokens.minTouchTarget,
+              height: AppTokens.minTouchTarget,
+              child: Center(
+                child: PhotoThumbnail(
+                  file: file,
+                  label: context.l10n.exercisePhotoLabel,
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppTokens.space1),
+        Flexible(child: Text(title, overflow: TextOverflow.ellipsis)),
+      ],
+    );
+  }
+
+  Future<void> _openPhoto(
+    BuildContext context,
+    WidgetRef ref,
+    File file,
+  ) async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (BuildContext routeContext) => PhotoViewerScreen(
+          file: file,
+          onRemove: () async {
+            await ref
+                .read(photoIndexProvider.notifier)
+                .removeExercisePhoto(exerciseId);
+            return true;
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _TrainingTotalsCard extends StatelessWidget {
+  const _TrainingTotalsCard({required this.training, required this.unit});
+
+  final ExerciseTrainingStats training;
+  final WeightUnit unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    return AppCard(
+      key: const Key('progress-training-totals'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(l10n.trainingTotals, style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppTokens.space1),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: StatTile(
+                  label: l10n.totalTime,
+                  value: training.totalSpan == Duration.zero
+                      ? l10n.notEnoughData
+                      : formatTrainingDurationShort(
+                          context,
+                          training.totalSpan,
+                        ),
+                  icon: Icons.timer_outlined,
+                ),
+              ),
+              Expanded(
+                child: StatTile(
+                  label: l10n.averageTime,
+                  value: training.averageSpan == null
+                      ? l10n.notEnoughData
+                      : formatTrainingDurationShort(
+                          context,
+                          training.averageSpan,
+                        ),
+                  icon: Icons.av_timer_outlined,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTokens.space1),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: StatTile(
+                  label: l10n.workingSets,
+                  value: context.digits('${training.workingSetCount}'),
+                  icon: Icons.layers_outlined,
+                ),
+              ),
+              Expanded(
+                child: StatTile(
+                  label: l10n.volumeLabel,
+                  value: context.digits(
+                    formatWeight(training.volumeGrams, unit),
+                  ),
+                  unit: weightUnitLabel(context, unit),
+                  icon: Icons.scale_outlined,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

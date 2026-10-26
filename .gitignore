@@ -2,6 +2,8 @@
 node_modules/
 dist/
 build/
+# The DSH skill directory is named after the skill, not a build output.
+!.dsh/skills/build/
 coverage/
 .env
 .env.local
@@ -29,12 +31,19 @@ android/app/debug/
 android/app/profile/
 android/app/release/
 android/key.properties
+key.properties
+signing.properties
+keystore.properties
 *.jks
 *.keystore
 *.jks.b64
 *.keystore.b64
 *.p12
 *.pfx
+*.pem
+*.key
+*.p8
+*.b64
 release-keystore*
 
 # Golden failure output

@@ -8,7 +8,7 @@ This directory is the product source of truth for scope and behavior. The spec i
 
 1. The current accepted task request and its criteria govern that task.
 2. This directory governs product scope and behavior; work by requirement ID.
-3. `AGENTS.md`, `docs/HARNESS.md`, `docs/QUALITY.md`, and `.omp/RULES.md` govern process and delivery. Where the spec's Section 24 (or another process statement) conflicts with OMP, OMP wins; every conflict is listed in [91-omp-reconciliation.md](91-omp-reconciliation.md).
+3. `AGENTS.md`, `docs/HARNESS.md`, `docs/QUALITY.md`, and `.dsh/skills/` govern process and delivery. Where the spec's Section 24 (or another process statement) conflicts with the DSH Workflow, the workflow wins; every conflict is listed in [91-workflow-reconciliation.md](91-workflow-reconciliation.md).
 4. Code, tests, and docs must not silently diverge from a requirement. Report a material conflict instead of choosing a side.
 
 Only rows labeled **Confirmed** are commitments. **Assumption**, **Recommendation**, **Needs Decision**, **Out of Scope**, **Future Phase**, **Verified**, and **Unverified** keep their spec meaning unless an owner decision below explicitly resolves that item.
@@ -41,7 +41,7 @@ Only rows labeled **Confirmed** are commitments. **Assumption**, **Recommendatio
 | [21-open-decisions.md](21-open-decisions.md) | Open decisions | Section 28 | — |
 | [22-sources-and-glossary.md](22-sources-and-glossary.md) | Sources and glossary | Section 38 | — |
 | [90-legacy-agent-operating-model.md](90-legacy-agent-operating-model.md) | Legacy agent model | Section 24 (superseded, verbatim) | — |
-| [91-omp-reconciliation.md](91-omp-reconciliation.md) | OMP reconciliation | Conflicts and retained rules | — |
+| [91-workflow-reconciliation.md](91-workflow-reconciliation.md) | Workflow reconciliation (formerly OMP) | Conflicts and retained rules | — |
 
 ## Requirement ID to milestone map
 
@@ -66,7 +66,7 @@ Section 20 keeps the source's summary row `NFR-PERF-001..005`; Section 22 define
 
 These decisions were supplied by the owner on 2026-10-21. Each has a short ADR. They resolve only the named point; the verbatim spec row keeps its original label and is not edited.
 
-The workflow-guide decision (D1) is resolved by adopting OMP. Section 24 is retained verbatim for traceability and superseded in [91-omp-reconciliation.md](91-omp-reconciliation.md).
+The workflow-guide decision (D1) is resolved by adopting the DSH Workflow. Section 24 is retained verbatim for traceability and superseded in [91-workflow-reconciliation.md](91-workflow-reconciliation.md).
 
 | Decision | Value | ADR |
 |---|---|---|
@@ -100,6 +100,14 @@ Items marked **Assumption** or **Could** are included because they are not commi
 | Persian search normalization rules | **Needs Decision** | `EXR-003`, `L10N-008`; the AC names the variants, the exact rule set is open (D15). |
 
 The M4 chart spike resolved the chart-rendering choice outside the owner-decision table: a custom painter was selected over `fl_chart` and recorded in [ADR-0008](../adr/0008-chart-rendering.md).
+
+The 2026-10-26 owner-requested extensions (body-weight check-ins and weekly
+trend, weekly summary, dashboard, RIR explainer, post-workout summary, weekly
+goals, plate calculator, night-session visual system, post-workout cat, Persian voice) are
+documented with local IDs
+in [PRODUCT.md](../PRODUCT.md#owner-requested-extensions-2026-10-26) and
+[DESIGN.md](../DESIGN.md#owner-requested-extensions). They do not edit, relabel,
+or renumber a spec requirement row.
 
 ## Verification invariant
 

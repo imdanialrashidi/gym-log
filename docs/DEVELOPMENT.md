@@ -41,6 +41,17 @@ Dependency pins and their license/maintenance/size review are in
    flutter gen-l10n
    ```
 
+4. Put the pinned JDK on `JAVA_HOME` and `PATH`:
+
+   ```sh
+   export JAVA_HOME=/path/to/temurin-21
+   export PATH="$JAVA_HOME/bin:$PATH"
+   ```
+
+   `flutter build apk`, `tool/release/selfcheck.sh`, and the release manifest
+   guard fail with `java: not found` without it. `scripts/check_toolchain.sh`
+   checks Flutter and Dart only, so a missing JDK fails later in the gate.
+
 ## Commands
 
 Run the same lane locally that CI runs:
@@ -49,8 +60,10 @@ Run the same lane locally that CI runs:
 bash scripts/verify.sh
 ```
 
-`scripts/verify.sh` runs the template self-checks and then
-`scripts/project-verify.sh`, which executes:
+`scripts/verify.sh` runs the workflow self-checks and then
+`scripts/project-verify.sh`. The self-checks validate every
+`.dsh/skills/*/SKILL.md` manifest and reject legacy `.omp` workflow artifacts.
+The project lane executes:
 
 ```sh
 scripts/check_toolchain.sh
@@ -141,9 +154,11 @@ flutter build apk --release
 
 The Gradle guard also verifies the merged release manifest has no `INTERNET`
 permission and has Android backup disabled. Debug/profile manifests keep the
-Flutter development `INTERNET` permission; release does not. Do not add a
-release workflow or signing material until the owner supplies the permanent
-applicationId and signing plan.
+Flutter development `INTERNET` permission; release does not. The tag-triggered
+release workflow is `.github/workflows/release.yml`; the owner runbook is
+[docs/RELEASE.md](RELEASE.md). Release builds are still refused while the
+`applicationId` is the placeholder or the signing secrets are absent, and no
+release has been performed yet. Do not add signing material to the repository.
 
 ## Network-restricted workstation note
 
@@ -167,7 +182,7 @@ add a new repository in that script: the included Flutter tools build sets
 `FAIL_ON_PROJECT_REPOS`. Do not commit mirror configuration; CI uses the
 official endpoints.
 
-## Known M0 limits
+## Known current limits
 
 - Device locales whose language is `fa` start in Persian RTL; `en` devices
   start in English LTR; any other device language falls back to English. The
@@ -176,8 +191,11 @@ official endpoints.
   Switching applies without restart (the accepted `SET-001` criterion), but
   the choice does not survive process death.
 - Persian scaffold copy still needs native review (`L10N-010`).
-- Tabular-figure alignment for numeric columns is unverified until set rows
-  exist (`L10N-003`).
+- Set rows and their goldens exist, but tabular-figure alignment on a real
+  device renderer remains unverified (`L10N-003`).
+- The dashboard, body-weight trend, and weekly summary are covered by fa/en
+  goldens and widget tests; their on-device first paint/scroll remains
+  `UNPROVEN` with the other device budgets.
 - Device-only criteria remain `UNPROVEN`; see [QUALITY.md](QUALITY.md).
 
 ## Data and secrets

@@ -1,75 +1,283 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/app_clock.dart';
+import '../../../app/document_gate.dart';
 import '../../../app/routes.dart';
+import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/action_runner.dart';
+import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/mini_trend.dart';
+import '../../../core/widgets/section_header.dart';
+import '../../../core/widgets/stat_tile.dart';
 import '../../../core/widgets/text_empty_state.dart';
+import '../../../core/widgets/training_formats.dart';
 import '../../../data/app_data_controller.dart';
+import '../../../data/training_overview.dart';
+import '../../body_weight/presentation/body_weight_summary_card.dart';
+import '../../body_weight/presentation/log_weight_dialog.dart';
 
-/// Progress overview: exercises with finished training, best weight and best
-/// estimated 1RM (`PRG-001`–`PRG-003`).
+/// Progress overview: this week at a glance, the body-weight trend, and one
+/// card per trained exercise with best-set numbers and total time (`PRG-001`–
+/// `PRG-003`, `BODY-002`).
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
 
-    return asyncData.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object error, StackTrace stack) => Center(
-        child: Padding(
-          padding: const EdgeInsetsDirectional.all(AppTokens.space3),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                l10n.loadFailed,
-                style: const TextStyle(color: AppTokens.danger),
-              ),
-              const SizedBox(height: AppTokens.space1),
-              OutlinedButton.icon(
-                onPressed: () => ref.invalidate(appDataControllerProvider),
-                icon: const Icon(Icons.refresh),
-                label: Text(l10n.retry),
-              ),
-            ],
-          ),
-        ),
-      ),
-      data: (AppData data) {
+    return DocumentGate(
+      builder: (BuildContext context, AppData data) {
         final DateTime now = ref.watch(appClockProvider)();
+        final DateTime day = DateTime(now.year, now.month, now.day);
+        final TrainingOverview? overview = ref.watch(
+          trainingOverviewProvider((
+            weekStartsOn: context.weekStartsOn,
+            day: day,
+          )),
+        );
         final List<_ExerciseSummary> summaries = _summaries(
           data,
           now,
           l10n.exerciseNotFound,
         );
-        if (summaries.isEmpty) {
-          return TextEmptyState(message: l10n.progressEmpty);
-        }
+        final double padding = AppTokens.pagePadding(
+          MediaQuery.sizeOf(context).width,
+        );
 
-        return ListView.builder(
+        return ListView(
           key: const Key('progress-list'),
-          padding: const EdgeInsetsDirectional.all(AppTokens.space2),
-          itemCount: summaries.length,
-          itemBuilder: (BuildContext context, int index) {
-            final _ExerciseSummary summary = summaries[index];
-            return _ProgressCard(
-              summary: summary,
-              unit: data.settings.weightUnit,
-              onTap: () =>
-                  context.push(AppRoutes.exerciseProgress(summary.exerciseId)),
-            );
-          },
+          padding: EdgeInsetsDirectional.fromSTEB(
+            padding,
+            AppTokens.space2,
+            padding,
+            AppTokens.space4,
+          ),
+          children: <Widget>[
+            if (summaries.isEmpty) ...<Widget>[
+              TextEmptyState(message: l10n.progressEmpty),
+              SectionHeader(
+                title: l10n.bodyWeightTitle,
+                actionLabel: l10n.viewAll,
+                actionKey: const Key('progress-open-body-weight'),
+                onAction: () => context.push(AppRoutes.bodyWeight),
+              ),
+              BodyWeightSummaryCard(
+                overview: overview,
+                unit: data.settings.weightUnit,
+                cardKey: const Key('progress-body-weight'),
+                onOpen: () => context.push(AppRoutes.bodyWeight),
+                onLog: () => unawaited(
+                  _logWeight(context, ref, overview, data.settings.weightUnit),
+                ),
+              ),
+            ] else ...<Widget>[
+              _WeekOverviewCard(
+                overview: overview,
+                unit: data.settings.weightUnit,
+                onOpen: () => context.push(AppRoutes.weeklySummary),
+              ),
+              const SizedBox(height: AppTokens.space3),
+            ],
+            if (summaries.isNotEmpty) ...<Widget>[
+              const SizedBox(height: AppTokens.space3),
+              SectionHeader(
+                title: l10n.exercisesTitle,
+                subtitle: l10n.progressSummaryHint,
+              ),
+              for (final _ExerciseSummary summary in summaries)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    bottom: AppTokens.space1,
+                  ),
+                  child: _ProgressCard(
+                    summary: summary,
+                    unit: data.settings.weightUnit,
+                    onTap: () => context.push(
+                      AppRoutes.exerciseProgress(summary.exerciseId),
+                    ),
+                  ),
+                ),
+            ],
+            if (summaries.isNotEmpty) ...<Widget>[
+              const SizedBox(height: AppTokens.space3),
+              SectionHeader(
+                title: l10n.bodyWeightTitle,
+                actionLabel: l10n.viewAll,
+                actionKey: const Key('progress-open-body-weight'),
+                onAction: () => context.push(AppRoutes.bodyWeight),
+              ),
+              BodyWeightSummaryCard(
+                overview: overview,
+                unit: data.settings.weightUnit,
+                cardKey: const Key('progress-body-weight'),
+                onOpen: () => context.push(AppRoutes.bodyWeight),
+                onLog: () => unawaited(
+                  _logWeight(context, ref, overview, data.settings.weightUnit),
+                ),
+              ),
+            ],
+          ],
         );
       },
+    );
+  }
+
+  Future<void> _logWeight(
+    BuildContext context,
+    WidgetRef ref,
+    TrainingOverview? overview,
+    WeightUnit unit,
+  ) async {
+    final int? grams = await showLogWeightDialog(
+      context,
+      unit: unit,
+      initialGrams: overview?.latestWeightEntry?.weightGrams,
+    );
+    if (grams == null || !context.mounted) {
+      return;
+    }
+    final bool saved = await runDataAction(
+      context,
+      () => ref
+          .read(appDataControllerProvider.notifier)
+          .logBodyWeight(
+            weightGrams: grams,
+            replaceId: overview?.currentWeek.bodyWeight?.entry?.id,
+          ),
+    );
+    if (saved && context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.bodyWeightSaved)));
+    }
+  }
+}
+
+class _WeekOverviewCard extends StatelessWidget {
+  const _WeekOverviewCard({
+    required this.overview,
+    required this.unit,
+    required this.onOpen,
+  });
+
+  final TrainingOverview? overview;
+  final WeightUnit unit;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final WeekStats? week = overview?.currentWeek;
+    if (week == null) {
+      return const SizedBox.shrink();
+    }
+    return AppCard(
+      key: const Key('progress-week-overview'),
+      gradient: AppGradients.hero,
+      borderColor: AppTokens.accentDeep.withValues(alpha: 0.45),
+      padding: const EdgeInsetsDirectional.all(AppTokens.space3),
+      onTap: onOpen,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(l10n.thisWeek, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      formatWeekRange(context, week),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 18),
+            ],
+          ),
+          const SizedBox(height: AppTokens.space2),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double half = (constraints.maxWidth - AppTokens.space1) / 2;
+              return Wrap(
+                spacing: AppTokens.space1,
+                runSpacing: AppTokens.space1,
+                children: <Widget>[
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.workoutsStatLabel,
+                      value: context.digits('${week.sessionCount}'),
+                      compact: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.volumeLabel,
+                      value: context.digits(
+                        formatWeight(week.volumeGrams, unit),
+                      ),
+                      unit: weightUnitLabel(context, unit),
+                      compact: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.setsStatLabel,
+                      value: context.digits('${week.workingSetCount}'),
+                      compact: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.timeLabel,
+                      value: formatTrainingDurationShort(
+                        context,
+                        week.duration,
+                      ),
+                      compact: true,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: AppTokens.space1),
+          Row(
+            children: <Widget>[
+              Text(
+                l10n.viewWeeklySummary,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: AppTokens.accent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward,
+                size: 15,
+                color: AppTokens.accent,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -79,11 +287,13 @@ class _ExerciseSummary {
     required this.exerciseId,
     required this.name,
     required this.progress,
+    required this.training,
   });
 
   final String exerciseId;
   final String name;
   final ExerciseProgress progress;
+  final ExerciseTrainingStats training;
 }
 
 List<_ExerciseSummary> _summaries(
@@ -103,13 +313,21 @@ List<_ExerciseSummary> _summaries(
     }
   }
 
+  // One session pass each, not one pass per exercise.
+  final Map<String, ExerciseProgress> progressById = prepareExerciseProgressMap(
+    sessions: data.sessions,
+    exerciseIds: exerciseIds,
+    now: now,
+  );
+  final Map<String, ExerciseTrainingStats> trainingById =
+      exerciseTrainingStatsMap(
+        sessions: data.sessions,
+        exerciseIds: exerciseIds,
+      );
+
   final List<_ExerciseSummary> summaries = <_ExerciseSummary>[];
   for (final String exerciseId in exerciseIds) {
-    final ExerciseProgress progress = prepareExerciseProgress(
-      sessions: data.sessions,
-      exerciseId: exerciseId,
-      now: now,
-    );
+    final ExerciseProgress progress = progressById[exerciseId]!;
     if (!progress.hasData) {
       continue;
     }
@@ -118,15 +336,18 @@ List<_ExerciseSummary> _summaries(
         exerciseId: exerciseId,
         name: data.exerciseById(exerciseId)?.name ?? missingName,
         progress: progress,
+        training: trainingById[exerciseId]!,
       ),
     );
   }
   summaries.sort((_ExerciseSummary a, _ExerciseSummary b) {
-    final int byDate = b.progress.bestWeightSeries.last.date.compareTo(
-      a.progress.bestWeightSeries.last.date,
-    );
-    if (byDate != 0) {
-      return byDate;
+    final DateTime? aLast = a.training.lastTrainedAt;
+    final DateTime? bLast = b.training.lastTrainedAt;
+    if (aLast != null && bLast != null) {
+      final int byDate = bLast.compareTo(aLast);
+      if (byDate != 0) {
+        return byDate;
+      }
     }
     return a.name.compareTo(b.name);
   });
@@ -147,117 +368,80 @@ class _ProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final ExerciseProgress progress = summary.progress;
-    final String unitLabel = switch (unit) {
-      WeightUnit.kilograms => l10n.unitKilograms,
-      WeightUnit.pounds => l10n.unitPounds,
-    };
-    final DateTime lastTrained = progress.bestWeightSeries.last.date;
+    final ExerciseTrainingStats training = summary.training;
+    String weight(double? grams) {
+      if (grams == null) {
+        return l10n.progressValueMissing;
+      }
+      return context.digits(
+        '${formatWeight(grams.round(), unit)} '
+        '${weightUnitLabel(context, unit)}',
+      );
+    }
 
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(bottom: AppTokens.space1),
-      child: Material(
-        color: AppTokens.surface,
-        borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-        child: InkWell(
-          key: ValueKey<String>('progress-exercise-${summary.exerciseId}'),
-          borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        summary.name,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right),
-                  ],
-                ),
-                const SizedBox(height: AppTokens.space1),
-                Wrap(
-                  spacing: AppTokens.space3,
-                  runSpacing: AppTokens.space1,
-                  children: <Widget>[
-                    _Stat(
-                      label: l10n.progressBestWeight,
-                      value: context.digits(
-                        '${formatWeight(progress.bestWeightGrams!.round(), unit)} '
-                        '$unitLabel',
-                      ),
-                    ),
-                    _Stat(
-                      label: l10n.progressBestE1rm,
-                      value: progress.bestOneRepMaxGrams == null
-                          ? l10n.progressValueMissing
-                          : context.digits(
-                              '${formatWeight(progress.bestOneRepMaxGrams!.round(), unit)} '
-                              '$unitLabel',
-                            ),
-                      note: progress.bestOneRepMaxGrams == null
-                          ? null
-                          : progress.bestOneRepMaxLessReliable
-                          ? '${l10n.progressEstimatedLabel} · '
-                                '${l10n.progressLessReliableLabel}'
-                          : l10n.progressEstimatedLabel,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppTokens.space1),
-                Text(
-                  context.digits(
-                    '${l10n.progressSessions(progress.sessionCount)} · '
-                    '${l10n.progressLastTrained(context.formatDate(lastTrained))}',
+    return AppCard(
+      key: ValueKey<String>('progress-exercise-${summary.exerciseId}'),
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  summary.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: AppTokens.textSecondary),
                 ),
-              ],
-            ),
+              ),
+              const Icon(Icons.chevron_right, size: 18),
+            ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value, this.note});
-
-  final String label;
-  final String value;
-  final String? note;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          context.digits(label),
-          style: Theme.of(context).textTheme.labelSmall
-              ?.copyWith(color: AppTokens.textSecondary),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppTokens.textPrimary,
-            fontWeight: FontWeight.w700,
+          const SizedBox(height: AppTokens.space1),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: StatTile(
+                  label: l10n.progressBestWeight,
+                  value: weight(progress.bestWeightGrams),
+                  compact: true,
+                ),
+              ),
+              Expanded(
+                child: StatTile(
+                  label: l10n.progressBestE1rm,
+                  value: weight(progress.bestOneRepMaxGrams),
+                  compact: true,
+                ),
+              ),
+            ],
           ),
-        ),
-        if (note != null)
+          const SizedBox(height: AppTokens.space1),
+          MiniTrend(
+            points: progress.bestWeightSeries.length > 12
+                ? progress.bestWeightSeries.sublist(
+                    progress.bestWeightSeries.length - 12,
+                  )
+                : progress.bestWeightSeries,
+            height: 38,
+          ),
+          const SizedBox(height: AppTokens.space1),
           Text(
-            note!,
-            style: Theme.of(context).textTheme.labelSmall
-                ?.copyWith(color: AppTokens.textSecondary),
+            context.digits(
+              '${l10n.setsLabel(training.workingSetCount)} · '
+              '${training.totalSpan == Duration.zero ? l10n.notEnoughData : formatTrainingDuration(context, training.totalSpan)} · '
+              '${l10n.progressSessions(progress.sessionCount)}',
+            ),
+            maxLines: 2,
+            style: theme.textTheme.bodySmall,
           ),
-      ],
+        ],
+      ),
     );
   }
 }

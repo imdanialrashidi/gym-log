@@ -4,7 +4,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lift_core/lift_core.dart';
-import 'package:path_provider/path_provider.dart';
+
+import 'app_storage.dart';
 
 /// The in-app reminder interval (`SET-004`).
 const Duration exportReminderInterval = Duration(days: 30);
@@ -120,14 +121,9 @@ class JsonExportReminderStore implements ExportReminderStore {
 }
 
 final Provider<Future<File>> exportReminderFileProvider =
-    Provider<Future<File>>((_) => _defaultReminderFile());
-
-Future<File> _defaultReminderFile() async {
-  final Directory directory = await getApplicationSupportDirectory();
-  return File(
-    '${directory.path}${Platform.pathSeparator}gym_log_reminder.json',
-  );
-}
+    Provider<Future<File>>(
+      (Ref ref) => appSupportFile(ref, 'gym_log_reminder.json'),
+    );
 
 final Provider<ExportReminderStore> exportReminderStoreProvider =
     Provider<ExportReminderStore>((Ref ref) {

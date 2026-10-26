@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Canonical verification gate for this repository.
-# Template self-checks first, then the cheapest project lane that applies.
+# Workflow self-checks first, then the cheapest project lane that applies.
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,31 +15,31 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git --no-pager diff --check || bad "git diff --check reported whitespace errors."
 fi
 
-# 2. Every skill needs name + description frontmatter (omp discovery requires description).
-for skill in .omp/skills/*/SKILL.md; do
+# 2. Every project skill needs name + description frontmatter (DSH discovery).
+[[ -d .dsh/skills ]] || bad ".dsh/skills is missing."
+for name in quick-fix spec build verify review test-design; do
+  [[ -f ".dsh/skills/$name/SKILL.md" ]] || bad "missing project skill: $name"
+done
+for skill in .dsh/skills/*/SKILL.md; do
   [[ -f "$skill" ]] || continue
+  dir="$(basename "$(dirname "$skill")")"
+  [[ "$dir" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || bad "$skill directory is not a valid DSH skill name."
+  [[ "$(head -n 1 "$skill")" == "---" ]] || bad "$skill must start with YAML frontmatter."
   front="$(sed -n '1,/^---$/p' "$skill" | sed '1d;$d')"
   grep -Eq '^name: .+' <<<"$front" || bad "$skill is missing frontmatter name."
+  grep -Eq "^name: [\"']?$dir[\"']?[[:space:]]*$" <<<"$front" || bad "$skill frontmatter name must match its directory ($dir)."
   grep -Eq '^description: .+' <<<"$front" || bad "$skill is missing frontmatter description."
 done
 
-# 3. Every file command needs a description frontmatter.
-for cmd in .omp/commands/*.md; do
-  [[ -f "$cmd" ]] || continue
-  head -n 5 "$cmd" | grep -Eq '^description: .+' || bad "$cmd is missing frontmatter description."
-done
-
-# 4. PR helper must parse.
-if command -v node >/dev/null 2>&1; then
-  node --check scripts/omp-pr.mjs || bad "scripts/omp-pr.mjs does not parse."
-else
-  note "SKIP: node not installed; cannot syntax-check scripts/omp-pr.mjs."
+# 3. The retired OMP workflow and delivery helper must not return.
+if [[ -e .omp || -e scripts/omp-pr.mjs ]]; then
+  bad "legacy OMP workflow artifacts are present; this project uses .dsh/skills."
 fi
 
 [[ "$fail" -eq 0 ]] || exit 1
-note "Template self-checks passed."
+note "Workflow self-checks passed."
 
-# 5. Project override wins when the repo defines its own gate.
+# 4. Project override wins when the repo defines its own gate.
 if [[ -x scripts/project-verify.sh ]]; then
   exec scripts/project-verify.sh
 fi

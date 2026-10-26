@@ -23,6 +23,11 @@ final List<_Pair> _textPairs = <_Pair>[
     AppTokens.surface2,
   ),
   const _Pair(
+    'textPrimary on surface3',
+    AppTokens.textPrimary,
+    AppTokens.surface3,
+  ),
+  const _Pair(
     'textSecondary on background',
     AppTokens.textSecondary,
     AppTokens.background,
@@ -37,8 +42,15 @@ final List<_Pair> _textPairs = <_Pair>[
     AppTokens.textSecondary,
     AppTokens.surface2,
   ),
+  const _Pair(
+    'textSecondary on surface3',
+    AppTokens.textSecondary,
+    AppTokens.surface3,
+  ),
   const _Pair('accent on background', AppTokens.accent, AppTokens.background),
   const _Pair('accent on surface', AppTokens.accent, AppTokens.surface),
+  const _Pair('accent on surface2', AppTokens.accent, AppTokens.surface2),
+  const _Pair('accent on surface3', AppTokens.accent, AppTokens.surface3),
   const _Pair(
     'highlight on background',
     AppTokens.highlight,
@@ -46,13 +58,21 @@ final List<_Pair> _textPairs = <_Pair>[
   ),
   const _Pair('highlight on surface', AppTokens.highlight, AppTokens.surface),
   const _Pair('highlight on surface2', AppTokens.highlight, AppTokens.surface2),
+  const _Pair('highlight on surface3', AppTokens.highlight, AppTokens.surface3),
   const _Pair('danger on background', AppTokens.danger, AppTokens.background),
   const _Pair('danger on surface', AppTokens.danger, AppTokens.surface),
   const _Pair('info on background', AppTokens.info, AppTokens.background),
   const _Pair('info on surface', AppTokens.info, AppTokens.surface),
+  const _Pair('info on surface2', AppTokens.info, AppTokens.surface2),
+  const _Pair('info on surface3', AppTokens.info, AppTokens.surface3),
+  const _Pair('weight on background', AppTokens.weight, AppTokens.background),
+  const _Pair('weight on surface', AppTokens.weight, AppTokens.surface),
+  const _Pair('weight on surface2', AppTokens.weight, AppTokens.surface2),
+  const _Pair('weight on surface3', AppTokens.weight, AppTokens.surface3),
   const _Pair('onAccent on accent', AppTokens.onAccent, AppTokens.accent),
   const _Pair('background on danger', AppTokens.background, AppTokens.danger),
   const _Pair('background on info', AppTokens.background, AppTokens.info),
+  const _Pair('background on weight', AppTokens.background, AppTokens.weight),
 ];
 
 void main() {

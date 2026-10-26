@@ -102,6 +102,8 @@ const List<String> _routes = <String>[
   '/session/history-1',
   '/progress',
   '/progress/exercise-1',
+  '/body-weight',
+  '/weekly-summary',
   '/exercises',
   '/exercise-picker',
   '/exercise-editor/exercise-1',
@@ -170,7 +172,11 @@ void main() {
       final List<String> offenders = _visibleStrings(tester)
           .where((String value) => RegExp(r'[0-9]').hasMatch(value))
           .toList();
-      expect(offenders, isEmpty, reason: '$route leaked Latin digits');
+      expect(
+        offenders,
+        isEmpty,
+        reason: '$route leaked Latin digits: $offenders',
+      );
     }
   });
 
@@ -192,7 +198,11 @@ void main() {
                 RegExp(r'[\u06F0-\u06F9\u0660-\u0669]').hasMatch(value),
           )
           .toList();
-      expect(offenders, isEmpty, reason: '$route leaked Persian digits');
+      expect(
+        offenders,
+        isEmpty,
+        reason: '$route leaked Persian digits: $offenders',
+      );
     }
   });
 }

@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../app/document_gate.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/action_runner.dart';
 import '../../../core/widgets/dialogs.dart';
 import '../../../core/widgets/number_input.dart';
 import '../../../core/widgets/text_empty_state.dart';
@@ -119,7 +121,7 @@ class _PlanItemEditorScreenState extends ConsumerState<PlanItemEditorScreen> {
       return;
     }
     setState(() => _saving = true);
-    try {
+    final bool saved = await runDataAction(context, () async {
       final AppDataController controller = ref.read(
         appDataControllerProvider.notifier,
       );
@@ -141,17 +143,14 @@ class _PlanItemEditorScreenState extends ConsumerState<PlanItemEditorScreen> {
           ),
         );
       }
-      if (!mounted) {
-        return;
-      }
-      context.pop();
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
+    });
+    if (!mounted) {
+      return;
+    }
+    if (!saved) {
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
+    } else if (context.canPop()) {
+      context.pop();
     }
   }
 
@@ -165,43 +164,24 @@ class _PlanItemEditorScreenState extends ConsumerState<PlanItemEditorScreen> {
     if (!confirmed || !mounted) {
       return;
     }
-    try {
-      await ref
+    final bool saved = await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .deletePlanItem(widget.dayId, item.id);
-      if (mounted) {
-        context.pop();
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.saveFailed)));
-      }
+          .deletePlanItem(widget.dayId, item.id),
+    );
+    if (saved && mounted && context.canPop()) {
+      context.pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
 
-    return asyncData.when(
-      loading: () => Scaffold(
-        appBar: AppBar(title: Text(l10n.newPlanItemTitle)),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (Object error, StackTrace stack) => Scaffold(
-        appBar: AppBar(title: Text(l10n.newPlanItemTitle)),
-        body: TextEmptyState(
-          message: l10n.loadFailed,
-          action: OutlinedButton.icon(
-            onPressed: () => ref.invalidate(appDataControllerProvider),
-            icon: const Icon(Icons.refresh),
-            label: Text(l10n.retry),
-          ),
-        ),
-      ),
-      data: (AppData data) {
+    return DocumentGate(
+      fallbackTitle: l10n.newPlanItemTitle,
+      builder: (BuildContext context, AppData data) {
         final ProgramDay? day = data.dayById(widget.dayId);
         PlanItem? existing;
         if (!_isNew && day != null) {
@@ -298,7 +278,6 @@ class _PlanItemEditorScreenState extends ConsumerState<PlanItemEditorScreen> {
               decoration: InputDecoration(
                 labelText: l10n.targetSetsLabel,
                 errorMaxLines: 2,
-                border: const OutlineInputBorder(),
               ),
               validator: _validateSets,
             ),
@@ -315,7 +294,6 @@ class _PlanItemEditorScreenState extends ConsumerState<PlanItemEditorScreen> {
                     decoration: InputDecoration(
                       labelText: l10n.repMinLabel,
                       errorMaxLines: 2,
-                      border: const OutlineInputBorder(),
                     ),
                     validator: _validateRepMin,
                   ),
@@ -330,7 +308,6 @@ class _PlanItemEditorScreenState extends ConsumerState<PlanItemEditorScreen> {
                     decoration: InputDecoration(
                       labelText: l10n.repMaxLabel,
                       errorMaxLines: 2,
-                      border: const OutlineInputBorder(),
                     ),
                     validator: _validateRepMax,
                   ),

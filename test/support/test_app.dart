@@ -13,9 +13,11 @@ import 'package:gym_log/data/photo_pending_store.dart';
 import 'package:gym_log/data/photo_picker.dart';
 import 'package:gym_log/data/photo_picker_service.dart';
 import 'package:gym_log/data/photo_storage.dart';
+import 'package:gym_log/data/rest_timer_store.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'memory_export_reminder_store.dart';
+import 'memory_rest_timer_store.dart';
 import 'photo_fakes.dart';
 
 /// Pumps the real app at [initialLocation] with an isolated in-memory store.
@@ -32,6 +34,7 @@ Future<void> pumpGymLogApp(
   PhotoStorage? photoStorage,
   PhotoPicker? photoPicker,
   PhotoPendingStore? photoPendingStore,
+  RestTimerStore? restTimerStore,
 }) async {
   tester.view.physicalSize = const Size(360, 800);
   tester.view.devicePixelRatio = 1;
@@ -56,6 +59,9 @@ Future<void> pumpGymLogApp(
         photoPickerProvider.overrideWithValue(photoPicker ?? FakePhotoPicker()),
         photoPendingStoreProvider.overrideWithValue(
           photoPendingStore ?? MemoryPhotoPendingStore(),
+        ),
+        restTimerStoreProvider.overrideWithValue(
+          restTimerStore ?? MemoryRestTimerStore(),
         ),
         routerProvider.overrideWithValue(
           buildRouter(initialLocation: initialLocation),

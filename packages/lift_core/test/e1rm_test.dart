@@ -7,6 +7,12 @@ void main() {
       expect(estimateOneRepMax(weightGrams: 3, reps: 5)!.grams, 4);
     });
 
+    test('zero load has no estimate; a tiny load still does', () {
+      expect(estimateOneRepMax(weightGrams: 0, reps: 5), isNull);
+      expect(estimateOneRepMax(weightGrams: 0, reps: 1), isNull);
+      expect(estimateOneRepMax(weightGrams: 1, reps: 5), isNotNull);
+    });
+
     test('rejects negative weight', () {
       expect(
         () => estimateOneRepMax(weightGrams: -1, reps: 5),

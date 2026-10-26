@@ -48,6 +48,17 @@ void main() {
     );
   }
 
+  group('limits', () {
+    test('numeric bounds are positive and ordered', () {
+      expect(maximumExerciseNameLength, 120);
+      expect(maximumSearchTermLength, 200);
+      expect(maximumProgramNameLength, 120);
+      expect(maximumDayNameLength, 120);
+      expect(maximumSortOrder, 1000000);
+      expect(maximumSortOrder + 1, lessThan(9223372036854775807));
+    });
+  });
+
   group('Exercise', () {
     test('round-trips through JSON with explicit nullable fields', () {
       final Exercise original = exercise();

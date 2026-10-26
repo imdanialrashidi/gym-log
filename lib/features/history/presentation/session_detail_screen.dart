@@ -3,19 +3,25 @@ import 'package:go_router/go_router.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../app/document_gate.dart';
+import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/l10n/muscle_labels.dart';
+import '../../../core/widgets/action_runner.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/dialogs.dart';
 import '../../../core/widgets/note_dialog.dart';
 import '../../../core/widgets/pr_badge.dart';
+import '../../../core/widgets/stat_tile.dart';
+import '../../../core/widgets/training_formats.dart';
 import '../../../core/widgets/undo_snack_bar.dart';
 import '../../../data/app_data_controller.dart';
 import '../../../data/photo_index_controller.dart';
 import '../../photos/presentation/session_photos_section.dart';
 import '../../workout/presentation/set_edit_dialog.dart';
-import '../../workout/presentation/set_row.dart';
 
 /// Read-only session detail with notes and set/session editing (`HIS-002`,
 /// `LOG-006`, `LOG-007`).
@@ -27,87 +33,51 @@ class SessionDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<AppData> asyncData = ref.watch(appDataControllerProvider);
 
-    return asyncData.when(
-      loading: () => Scaffold(
-        appBar: AppBar(title: Text(l10n.sessionDetailTitle)),
-        body: const Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.sessionDetailTitle),
+        actions: <Widget>[_DeleteSessionAction(sessionId: sessionId)],
       ),
-      error: (Object error, StackTrace stack) => Scaffold(
-        appBar: AppBar(title: Text(l10n.sessionDetailTitle)),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.space3),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  l10n.loadFailed,
-                  style: const TextStyle(color: AppTokens.danger),
-                ),
-                const SizedBox(height: AppTokens.space1),
-                OutlinedButton.icon(
-                  onPressed: () => ref.invalidate(appDataControllerProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: Text(l10n.retry),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      data: (AppData data) {
-        final Session? session = data.sessionById(sessionId);
-        if (session == null) {
-          return Scaffold(
-            appBar: AppBar(title: Text(l10n.sessionDetailTitle)),
-            body: Center(
+      body: DocumentGate(
+        builder: (BuildContext context, AppData data) {
+          final Session? session = data.sessionById(sessionId);
+          if (session == null) {
+            return Center(
               child: Text(
                 l10n.sessionNotFound,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
-            ),
-          );
-        }
+            );
+          }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(l10n.sessionDetailTitle),
-            actions: <Widget>[
-              IconButton(
-                key: const Key('delete-session'),
-                tooltip: l10n.deleteSession,
-                onPressed: () => _deleteSession(context, ref, session),
-                icon: const Icon(Icons.delete_outline),
-              ),
-            ],
-          ),
-          body: ListView(
+          final SessionStats stats = sessionStatsFor(
+            session,
+            exercises: data.exercises,
+          );
+          final Map<String, SessionExerciseStats> statsByExercise =
+              <String, SessionExerciseStats>{
+                for (final SessionExerciseStats exercise in stats.exercises)
+                  exercise.sessionExerciseId: exercise,
+              };
+          // One session pass for this screen's exercises, not one scan per
+          // exercise section.
+          final Map<String, PersonalRecordsBySet> personalRecords =
+              personalRecordsForExercises(
+                sessions: data.sessions,
+                exerciseIds: <String>{
+                  for (final SessionExercise exercise in session.exercises)
+                    exercise.exerciseId,
+                },
+              );
+
+          return ListView(
             padding: const EdgeInsetsDirectional.all(AppTokens.space2),
             children: <Widget>[
-              Text(
-                context.formatDate(
-                  session.startedAt,
-                  style: AppDateStyle.dateTime,
-                ),
-                key: const Key('session-detail-date'),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppTokens.space1),
-              Text(
-                context.digits(
-                  l10n.historySessionSummary(
-                    session.exercises.fold<int>(
-                      0,
-                      (int total, SessionExercise exercise) =>
-                          total + exercise.sets.length,
-                    ),
-                    session.exercises.length,
-                  ),
-                ),
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: AppTokens.textSecondary),
+              _SessionSummaryCard(
+                session: session,
+                stats: stats,
+                unit: data.settings.weightUnit,
               ),
               const SizedBox(height: AppTokens.space2),
               _NoteSection(
@@ -123,11 +93,11 @@ class SessionDetailScreen extends ConsumerWidget {
                 _ExerciseSection(
                   sessionExercise: exercise,
                   exercise: data.exerciseById(exercise.exerciseId),
+                  stats: statsByExercise[exercise.id],
                   unit: data.settings.weightUnit,
-                  personalRecords: personalRecordsForExercise(
-                    sessions: data.sessions,
-                    exerciseId: exercise.exerciseId,
-                  ),
+                  personalRecords:
+                      personalRecords[exercise.exerciseId] ??
+                      const <String, Set<PersonalRecordType>>{},
                   onEditNote: () =>
                       _editExerciseNote(context, ref, session, exercise),
                   onEditSet: (SetLog set) =>
@@ -136,9 +106,9 @@ class SessionDetailScreen extends ConsumerWidget {
                       _deleteSet(context, ref, session, exercise, set),
                 ),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -155,15 +125,12 @@ class SessionDetailScreen extends ConsumerWidget {
     if (note == null || !context.mounted) {
       return;
     }
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .setSessionNote(session.id, note);
-    } catch (_) {
-      if (context.mounted) {
-        _showFailure(context);
-      }
-    }
+          .setSessionNote(session.id, note),
+    );
   }
 
   Future<void> _editExerciseNote(
@@ -180,19 +147,16 @@ class SessionDetailScreen extends ConsumerWidget {
     if (note == null || !context.mounted) {
       return;
     }
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
           .setSessionExerciseNote(
             sessionId: session.id,
             sessionExerciseId: exercise.id,
             note: note,
-          );
-    } catch (_) {
-      if (context.mounted) {
-        _showFailure(context);
-      }
-    }
+          ),
+    );
   }
 
   Future<void> _editSet(
@@ -207,36 +171,25 @@ class SessionDetailScreen extends ConsumerWidget {
         .requireValue
         .settings
         .weightUnit;
-    final SetDraft? draft = await showSetEditDialog(
+    final SetEntry? entry = await showSetEditDialog(
       context,
       set: set,
       unit: unit,
     );
-    if (draft == null || !context.mounted) {
+    if (entry == null || !context.mounted) {
       return;
     }
-    final SetLog updated = SetLog(
-      id: set.id,
-      setIndex: set.setIndex,
-      weightGrams: draft.weightGrams,
-      reps: draft.reps,
-      rir: draft.rir,
-      isWarmup: draft.isWarmup,
-      loggedAt: set.loggedAt,
-    );
-    try {
-      await ref
+    await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
           .updateSet(
             sessionId: session.id,
             sessionExerciseId: exercise.id,
-            set: updated,
-          );
-    } catch (_) {
-      if (context.mounted) {
-        _showFailure(context);
-      }
-    }
+            setId: set.id,
+            entry: entry,
+          ),
+    );
   }
 
   Future<void> _deleteSet(
@@ -249,31 +202,51 @@ class SessionDetailScreen extends ConsumerWidget {
     final AppDataController controller = ref.read(
       appDataControllerProvider.notifier,
     );
-    try {
-      final SetLog removed = await controller.deleteSet(
+    SetLog? removed;
+    final bool saved = await runDataAction(context, () async {
+      removed = await controller.deleteSet(
         sessionId: session.id,
         sessionExerciseId: exercise.id,
         setId: set.id,
       );
-      if (!context.mounted) {
-        return;
-      }
-      showUndoSnackBar(
-        context,
-        message: context.l10n.setDeleted,
-        onUndo: () async {
-          await controller.restoreSet(
-            sessionId: session.id,
-            sessionExerciseId: exercise.id,
-            set: removed,
-          );
-        },
-      );
-    } catch (_) {
-      if (context.mounted) {
-        _showFailure(context);
-      }
+    });
+    if (!saved || removed == null || !context.mounted) {
+      return;
     }
+    showUndoSnackBar(
+      context,
+      message: context.l10n.setDeleted,
+      onUndo: () async {
+        await controller.restoreSet(
+          sessionId: session.id,
+          sessionExerciseId: exercise.id,
+          set: removed!,
+        );
+      },
+    );
+  }
+}
+
+class _DeleteSessionAction extends ConsumerWidget {
+  const _DeleteSessionAction({required this.sessionId});
+
+  final String sessionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Session? session = ref
+        .watch(appDataControllerProvider)
+        .value
+        ?.sessionById(sessionId);
+    if (session == null) {
+      return const SizedBox.shrink();
+    }
+    return IconButton(
+      key: const Key('delete-session'),
+      tooltip: context.l10n.deleteSession,
+      onPressed: () => _deleteSession(context, ref, session),
+      icon: const Icon(Icons.delete_outline),
+    );
   }
 
   Future<void> _deleteSession(
@@ -291,30 +264,137 @@ class SessionDetailScreen extends ConsumerWidget {
       return;
     }
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref
+    final bool saved = await runDataAction(
+      context,
+      () => ref
           .read(appDataControllerProvider.notifier)
-          .deleteSession(session.id);
-      ref.invalidate(photoIndexProvider);
-      if (!context.mounted) {
-        return;
-      }
-      if (context.canPop()) {
-        context.pop();
-      } else {
-        context.go('/history');
-      }
-      messenger.showSnackBar(SnackBar(content: Text(l10n.sessionDeleted)));
-    } catch (_) {
-      if (context.mounted) {
-        _showFailure(context);
-      }
+          .deleteSession(session.id),
+    );
+    if (!saved || !context.mounted) {
+      return;
     }
+    ref.invalidate(photoIndexProvider);
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/history');
+    }
+    messenger.showSnackBar(SnackBar(content: Text(l10n.sessionDeleted)));
   }
+}
 
-  void _showFailure(BuildContext context) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(context.l10n.saveFailed)));
+class _SessionSummaryCard extends StatelessWidget {
+  const _SessionSummaryCard({
+    required this.session,
+    required this.stats,
+    required this.unit,
+  });
+
+  final Session session;
+  final SessionStats stats;
+  final WeightUnit unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    return AppCard(
+      key: const Key('session-summary-card'),
+      gradient: AppGradients.hero,
+      borderColor: AppTokens.accentDeep.withValues(alpha: 0.4),
+      padding: const EdgeInsetsDirectional.all(AppTokens.space3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            context.formatDate(session.startedAt, style: AppDateStyle.dateTime),
+            key: const Key('session-detail-date'),
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppTokens.space1),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double half = (constraints.maxWidth - AppTokens.space1) / 2;
+              return Wrap(
+                spacing: AppTokens.space1,
+                runSpacing: AppTokens.space1,
+                children: <Widget>[
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.sessionTime,
+                      value: formatTrainingDuration(context, stats.duration),
+                      compact: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.volumeLabel,
+                      value: context.digits(
+                        formatWeight(stats.volumeGrams, unit),
+                      ),
+                      unit: weightUnitLabel(context, unit),
+                      compact: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.workingSets,
+                      value: context.digits('${stats.workingSetCount}'),
+                      compact: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: half,
+                    child: StatTile(
+                      label: l10n.exerciseCount(session.exercises.length),
+                      value: context.digits('${session.exercises.length}'),
+                      compact: true,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaPill extends StatelessWidget {
+  const _MetaPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsetsDirectional.symmetric(
+        horizontal: AppTokens.space1,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: AppTokens.surface2,
+        borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+        border: Border.all(color: AppTokens.outline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 13, color: AppTokens.textSecondary),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: AppTokens.textSecondary),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -322,6 +402,7 @@ class _ExerciseSection extends StatelessWidget {
   const _ExerciseSection({
     required this.sessionExercise,
     required this.exercise,
+    required this.stats,
     required this.unit,
     required this.personalRecords,
     required this.onEditNote,
@@ -331,6 +412,7 @@ class _ExerciseSection extends StatelessWidget {
 
   final SessionExercise sessionExercise;
   final Exercise? exercise;
+  final SessionExerciseStats? stats;
   final WeightUnit unit;
   final PersonalRecordsBySet personalRecords;
   final VoidCallback onEditNote;
@@ -348,33 +430,88 @@ class _ExerciseSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
-                child: Text(
-                  exercise?.name ?? l10n.exerciseNotFound,
-                  style: Theme.of(context).textTheme.titleMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      exercise?.name ?? l10n.exerciseNotFound,
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    if (exercise?.muscleGroup != null) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(
+                        muscleGroupLabel(l10n, exercise!.muscleGroup!),
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(color: AppTokens.accent),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               if (sessionExercise.repMin != null &&
                   sessionExercise.repMax != null)
-                Text(
-                  context.digits(
-                    sessionExercise.targetSets == null
-                        ? l10n.repRangeSummary(
-                            sessionExercise.repMin!,
-                            sessionExercise.repMax!,
-                          )
-                        : l10n.planItemSummary(
-                            sessionExercise.targetSets!,
-                            sessionExercise.repMin!,
-                            sessionExercise.repMax!,
-                          ),
+                Container(
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: AppTokens.space1,
+                    vertical: 4,
                   ),
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(color: AppTokens.textSecondary),
+                  decoration: BoxDecoration(
+                    color: AppTokens.surface2,
+                    borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+                  ),
+                  child: Text(
+                    context.digits(
+                      sessionExercise.targetSets == null
+                          ? l10n.repRangeSummary(
+                              sessionExercise.repMin!,
+                              sessionExercise.repMax!,
+                            )
+                          : l10n.planItemSummary(
+                              sessionExercise.targetSets!,
+                              sessionExercise.repMin!,
+                              sessionExercise.repMax!,
+                            ),
+                    ),
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: AppTokens.textSecondary),
+                  ),
                 ),
             ],
           ),
+          if (stats != null) ...<Widget>[
+            const SizedBox(height: AppTokens.space1),
+            Wrap(
+              spacing: AppTokens.space1,
+              runSpacing: AppTokens.space1,
+              children: <Widget>[
+                _MetaPill(
+                  icon: Icons.layers_outlined,
+                  label: context.digits(l10n.setsLabel(stats!.workingSetCount)),
+                ),
+                _MetaPill(
+                  icon: Icons.scale_outlined,
+                  label: context.digits(
+                    '${formatWeight(stats!.volumeGrams, unit)} '
+                    '${weightUnitLabel(context, unit)}',
+                  ),
+                ),
+                if (stats!.setSpan != null && stats!.setSpan! > Duration.zero)
+                  Tooltip(
+                    message: l10n.exerciseTimeHint,
+                    triggerMode: TooltipTriggerMode.tap,
+                    child: _MetaPill(
+                      icon: Icons.timer_outlined,
+                      label: formatTrainingDuration(context, stats!.setSpan),
+                    ),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppTokens.space1),
           _NoteSection(
             label: l10n.exerciseNoteLabel,
@@ -439,6 +576,26 @@ class _SetTile extends StatelessWidget {
           key: ValueKey<String>('history-set-${set.id}'),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+          ),
+          leading: Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: set.isWarmup
+                  ? AppTokens.surface3
+                  : AppTokens.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
+            ),
+            child: Text(
+              context.digits('${set.setIndex + 1}'),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: set.isWarmup
+                    ? AppTokens.textSecondary
+                    : AppTokens.accent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           title: Wrap(
             spacing: 4,

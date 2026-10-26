@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_log/data/app_data_controller.dart';
 import 'package:gym_log/data/app_data_store.dart';
 import 'package:gym_log/data/backup_codec.dart';
-import 'package:gym_log/data/backup_coordinator.dart';
+import 'package:gym_log/data/backup_flow.dart';
 import 'package:gym_log/data/backup_gateway.dart';
 import 'package:gym_log/data/export_reminder.dart';
 import 'package:lift_core/lift_core.dart';
@@ -71,6 +71,21 @@ String _invalidAbsurd() {
   return jsonEncode(json);
 }
 
+String _invalidOverLimitName() {
+  final Map<String, Object?> json = _sampleMap();
+  _mapAt(_listAt(json, 'exercises')[0])['name'] =
+      'x' * (maximumExerciseNameLength + 1);
+  return jsonEncode(json);
+}
+
+String _invalidSortOrder() {
+  final Map<String, Object?> json = _sampleMap();
+  final Map<String, Object?> program = _mapAt(_listAt(json, 'programs')[0]);
+  final Map<String, Object?> day = _mapAt((program['days'] as List).single);
+  day['sortOrder'] = maximumSortOrder + 1;
+  return jsonEncode(json);
+}
+
 String _invalidNewer() {
   final Map<String, Object?> json = _sampleMap();
   json['schemaVersion'] = backupSchemaVersion + 1;
@@ -117,15 +132,13 @@ Future<void> _expectRejected({
   );
   addTearDown(container.dispose);
   await container.read(appDataControllerProvider.future);
-  final BackupCoordinator coordinator = container.read(
-    backupCoordinatorProvider,
-  );
+  final BackupFlow flow = container.read(backupFlowProvider);
 
   await expectLater(
-    coordinator.pickImport(),
+    flow.pickImport(),
     throwsA(
-      isA<BackupError>().having(
-        (BackupError error) => error.code,
+      isA<ImportFailure>().having(
+        (ImportFailure failure) => failure.error?.code,
         'code',
         code,
       ),
@@ -148,6 +161,12 @@ void main() {
         ('duplicate id', _invalidDuplicate, BackupErrorCode.duplicateId),
         ('orphan reference', _invalidOrphan, BackupErrorCode.orphanReference),
         ('absurd value', _invalidAbsurd, BackupErrorCode.absurdValue),
+        ('over-limit name', _invalidOverLimitName, BackupErrorCode.absurdValue),
+        (
+          'over-limit sort order',
+          _invalidSortOrder,
+          BackupErrorCode.absurdValue,
+        ),
         ('newer schemaVersion', _invalidNewer, BackupErrorCode.newerVersion),
         ('deeply nested', _invalidDeep, BackupErrorCode.tooDeep),
         ('oversized', _invalidOversized, BackupErrorCode.tooLarge),

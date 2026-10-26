@@ -6,19 +6,50 @@
       "id": "NFR-PERF-003",
       "metric": "prefill_query",
       "budgetMs": 50,
+      "regressionBudgetMs": 1,
       "description": "Prefill for an exercise with 10,000 logged sets"
     },
     {
       "id": "NFR-PERF-005",
       "metric": "chart_aggregation",
       "budgetMs": 200,
+      "regressionBudgetMs": 8,
       "description": "Progress aggregation for 1,000 chart points (CI proxy; first paint stays a device trace)"
     },
     {
       "id": "NFR-PERF-006",
       "metric": "export_json",
       "budgetMs": 3000,
+      "regressionBudgetMs": 83,
       "description": "JSON export of the 10,000-set fixture (CI codec proxy; UI responsiveness stays a device check)"
+    },
+    {
+      "id": "CI-PR-001",
+      "metric": "single_set_pr",
+      "budgetMs": 100,
+      "regressionBudgetMs": 6,
+      "description": "PR types for one logged set on the 10,000-set fixture (CI proxy; tap latency stays a device check)"
+    },
+    {
+      "id": "CI-PR-002",
+      "metric": "full_pr_map",
+      "budgetMs": 100,
+      "regressionBudgetMs": 9,
+      "description": "Full PR map for the 10,000-set fixture, the single-set baseline for comparison"
+    },
+    {
+      "id": "CI-MUT-001",
+      "metric": "document_validation",
+      "budgetMs": 100,
+      "regressionBudgetMs": 4,
+      "description": "Whole-document validation performed by copyWith on every mutation"
+    },
+    {
+      "id": "CI-STATS-001",
+      "metric": "weekly_stats",
+      "budgetMs": 100,
+      "regressionBudgetMs": 6,
+      "description": "Weekly overview aggregation (8 weeks incl. body-weight trend) over the 10,000-set fixture"
     }
   ]
 }

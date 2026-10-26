@@ -80,27 +80,19 @@ void main() {
       programDayId: seeded.day.id,
     );
     final SessionExercise exercise = started.exercises.single;
-    final SetLog original = await seeded.controller.logSet(
+    final LoggedSet original = await seeded.controller.logSet(
       sessionId: started.id,
       sessionExerciseId: exercise.id,
       setIndex: 0,
-      weightGrams: 100000,
-      reps: 8,
-      rir: 2,
+      entry: SetEntry(weightGrams: 100000, reps: 8, rir: 2),
     );
     await seeded.controller.finishSession(started.id);
 
-    final SetLog edited = SetLog(
-      id: original.id,
-      setIndex: original.setIndex,
-      weightGrams: 105000,
-      reps: 12,
-      loggedAt: original.loggedAt,
-    );
     await seeded.controller.updateSet(
       sessionId: started.id,
       sessionExerciseId: exercise.id,
-      set: edited,
+      setId: original.set.id,
+      entry: SetEntry(weightGrams: 105000, reps: 12),
     );
 
     final AppData reloaded = await _load(file);
@@ -109,8 +101,8 @@ void main() {
     expect(restored.weightGrams, 105000);
     expect(restored.reps, 12);
     expect(restored.rir, isNull);
-    expect(restored.setIndex, original.setIndex);
-    expect(restored.loggedAt, original.loggedAt);
+    expect(restored.setIndex, original.set.setIndex);
+    expect(restored.loggedAt, original.set.loggedAt);
 
     final SetPrefill prefill = prefillForExercise(
       sessions: reloaded.sessions,
@@ -135,16 +127,13 @@ void main() {
         sessionId: started.id,
         sessionExerciseId: exercise.id,
         setIndex: 0,
-        weightGrams: 100000,
-        reps: 8,
-        rir: 2,
+        entry: SetEntry(weightGrams: 100000, reps: 8, rir: 2),
       );
-      final SetLog second = await seeded.controller.logSet(
+      final LoggedSet second = await seeded.controller.logSet(
         sessionId: started.id,
         sessionExerciseId: exercise.id,
         setIndex: 1,
-        weightGrams: 97500,
-        reps: 7,
+        entry: SetEntry(weightGrams: 97500, reps: 7),
       );
       await seeded.controller.finishSession(started.id);
 
@@ -154,17 +143,17 @@ void main() {
       final SetLog removed = await seeded.controller.deleteSet(
         sessionId: started.id,
         sessionExerciseId: exercise.id,
-        setId: second.id,
+        setId: second.set.id,
       );
-      expect(removed.id, second.id);
+      expect(removed.id, second.set.id);
 
       final AppData afterDelete = await _load(file);
       expect(afterDelete.sessions.single.exercises.single.sets, hasLength(1));
       expect(
         afterDelete.sessions.single.exercises.single.sets.single.id,
-        isNot(second.id),
+        isNot(second.set.id),
       );
-      expect(await file.readAsString(), isNot(contains(second.id)));
+      expect(await file.readAsString(), isNot(contains(second.set.id)));
 
       await seeded.controller.restoreSet(
         sessionId: started.id,
@@ -183,12 +172,11 @@ void main() {
     final Session firstStarted = await seeded.controller.startSession(
       programDayId: seeded.day.id,
     );
-    final SetLog firstSet = await seeded.controller.logSet(
+    final LoggedSet firstSet = await seeded.controller.logSet(
       sessionId: firstStarted.id,
       sessionExerciseId: firstStarted.exercises.single.id,
       setIndex: 0,
-      weightGrams: 100000,
-      reps: 8,
+      entry: SetEntry(weightGrams: 100000, reps: 8),
     );
     final Session first = await seeded.controller.finishSession(
       firstStarted.id,
@@ -207,7 +195,7 @@ void main() {
     ]);
     final String contents = await file.readAsString();
     expect(contents, isNot(contains(first.id)));
-    expect(contents, isNot(contains(firstSet.id)));
+    expect(contents, isNot(contains(firstSet.set.id)));
   });
 
   test('session and exercise notes persist and can be cleared', () async {
@@ -243,4 +231,47 @@ void main() {
     expect(cleared.sessions.single.note, isNull);
     expect(cleared.sessions.single.exercises.single.note, isNull);
   });
+  test(
+    'logging a set returns the records it earned from the new document',
+    () async {
+      final File file = await _tempFile();
+      final seeded = await _seedDay(file);
+
+      final Session first = await seeded.controller.startSession(
+        programDayId: seeded.day.id,
+      );
+      final LoggedSet baseline = await seeded.controller.logSet(
+        sessionId: first.id,
+        sessionExerciseId: first.exercises.single.id,
+        setIndex: 0,
+        entry: SetEntry(weightGrams: 100000, reps: 5),
+      );
+      expect(
+        baseline.personalRecords,
+        isEmpty,
+        reason: 'the first working set is the exercise baseline',
+      );
+      await seeded.controller.finishSession(first.id);
+
+      final Session second = await seeded.controller.startSession(
+        programDayId: seeded.day.id,
+      );
+      final LoggedSet heavier = await seeded.controller.logSet(
+        sessionId: second.id,
+        sessionExerciseId: second.exercises.single.id,
+        setIndex: 0,
+        entry: SetEntry(weightGrams: 105000, reps: 5),
+      );
+
+      expect(
+        heavier.personalRecords,
+        contains(PersonalRecordType.heaviestWeight),
+      );
+      expect(heavier.set.weightGrams, 105000);
+
+      final AppData reloaded = await _load(file);
+      final SetLog stored = reloaded.sessions.last.exercises.single.sets.single;
+      expect(stored.id, heavier.set.id);
+    },
+  );
 }

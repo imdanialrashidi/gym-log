@@ -40,6 +40,10 @@ dart run tool/guards/check_calendar_boundary.dart
 dart run tool/guards/check_no_destructive_reset.dart
 dart run tool/guards/check_changelog.dart
 dart run tool/guards/check_no_signing_material.dart
+dart run tool/guards/check_workflow_pins.dart
+
+step "Guard self-check"
+tool/guards/selfcheck.sh
 
 step "Tests"
 (cd packages/lift_core && dart test)
