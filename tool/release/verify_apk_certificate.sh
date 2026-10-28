@@ -53,7 +53,9 @@ fi
 
 actual="$(
   "$apksigner" verify --print-certs "$apk" |
-    sed -n 's/^Signer #1 certificate SHA-256 digest: //p' |
+    # Build-tools 37 prefixes the line with "V2 Signer:"; older versions use
+    # "Signer #1". Match the suffix so both formats work.
+    sed -n 's/.*certificate SHA-256 digest: //p' |
     head -n 1 |
     tr -d '[:space:]:' |
     tr '[:upper:]' '[:lower:]'
