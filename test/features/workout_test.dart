@@ -527,6 +527,37 @@ void main() {
     expect(find.text('No active workout.'), findsOneWidget);
   });
 
+  testWidgets('finish stays reachable while scrolled and skips unlogged sets', (
+    WidgetTester tester,
+  ) async {
+    final MemoryAppDataStore store = MemoryAppDataStore(
+      _seed(withSecondExercise: true),
+    );
+
+    await pumpGymLogApp(tester, store: store, initialLocation: '/workout');
+    await _startDay(tester);
+
+    await tester.drag(
+      find.byKey(const Key('active-workout-list')),
+      const Offset(0, -600),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('finish-workout')));
+    await tester.pumpAndSettle();
+    expect(find.text('Finish workout?'), findsOneWidget);
+    expect(find.textContaining('Empty rows are skipped'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('confirm-finish-workout')));
+    await tester.pumpAndSettle();
+
+    expect(store.data.activeSession, isNull);
+    expect(store.data.sessions.last.endedAt, isNotNull);
+    expect(
+      store.data.sessions.last.exercises.expand((SessionExercise e) => e.sets),
+      isEmpty,
+    );
+  });
+
   testWidgets('mid-session add hides exercises already in the workout', (
     WidgetTester tester,
   ) async {

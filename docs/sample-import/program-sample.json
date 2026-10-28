@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "0.2.1",
+  "exportedAt": "2026-01-05T09:00:00.000Z",
+  "generator": "gym-log",
+  "exercises": [
+    {
+      "id": "exercise-bench-press",
+      "name": "Bench Press",
+      "searchTerm": "bench",
+      "muscleGroup": "chest",
+      "defaultRepMin": 8,
+      "defaultRepMax": 12,
+      "incrementGrams": 2500,
+      "archivedAt": null,
+      "createdAt": "2026-01-03T09:00:00.000Z"
+    },
+    {
+      "id": "exercise-squat",
+      "name": "Squat",
+      "searchTerm": "squat",
+      "muscleGroup": "quadriceps",
+      "defaultRepMin": 5,
+      "defaultRepMax": 8,
+      "incrementGrams": 2500,
+      "archivedAt": null,
+      "createdAt": "2026-01-03T09:01:00.000Z"
+    },
+    {
+      "id": "exercise-romanian-deadlift",
+      "name": "Romanian Deadlift",
+      "searchTerm": "rdl",
+      "muscleGroup": "hamstrings",
+      "defaultRepMin": 8,
+      "defaultRepMax": 12,
+      "incrementGrams": 2500,
+      "archivedAt": null,
+      "createdAt": "2026-01-03T09:02:00.000Z"
+    }
+  ],
+  "programs": [
+    {
+      "id": "program-upper-lower",
+      "name": "Upper / Lower",
+      "createdAt": "2026-01-04T09:00:00.000Z",
+      "archivedAt": null,
+      "days": [
+        {
+          "id": "day-upper",
+          "name": "Upper",
+          "sortOrder": 0,
+          "items": [
+            {
+              "id": "item-upper-bench",
+              "exerciseId": "exercise-bench-press",
+              "targetSets": 3,
+              "repMin": 8,
+              "repMax": 12,
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "id": "day-lower",
+          "name": "Lower",
+          "sortOrder": 1,
+          "items": [
+            {
+              "id": "item-lower-squat",
+              "exerciseId": "exercise-squat",
+              "targetSets": 3,
+              "repMin": 5,
+              "repMax": 8,
+              "sortOrder": 0
+            },
+            {
+              "id": "item-lower-rdl",
+              "exerciseId": "exercise-romanian-deadlift",
+              "targetSets": 3,
+              "repMin": 8,
+              "repMax": 12,
+              "sortOrder": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [],
+  "settings": {
+    "weightUnit": "kilograms",
+    "restTimerEnabled": true,
+    "restTimerDurationSeconds": 120
+  }
+}

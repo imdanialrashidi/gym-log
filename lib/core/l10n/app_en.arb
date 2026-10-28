@@ -207,7 +207,7 @@
   "activeWorkoutTitle": "Active workout",
   "finishWorkout": "Finish workout",
   "finishWorkoutTitle": "Finish workout?",
-  "finishWorkoutBody": "Logged sets stay in your history.",
+  "finishWorkoutBody": "Logged sets stay in your history. Empty rows are skipped.",
   "finishWorkoutConfirm": "Finish",
   "addSet": "Add set",
   "setNumber": "Set {number}",
@@ -603,6 +603,7 @@
       }
     }
   },
+  "aboutDeveloper": "Developer",
   "aboutLicenseLabel": "App license",
   "aboutLicenseValue": "MIT",
   "aboutOpenSourceLicenses": "Open-source licenses",

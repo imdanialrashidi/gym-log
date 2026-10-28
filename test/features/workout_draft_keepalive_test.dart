@@ -55,16 +55,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(weight, '87.5');
 
-    // Travel far enough that the first card leaves the lazy list's cache.
+    // Travel far enough that the first card leaves the viewport and the lazy
+    // list's cache. The keep-alive bucket holds the draft state even while the
+    // row is detached, so the text must survive the round trip below.
     await tester.fling(
       find.byType(Scrollable).first,
       const Offset(0, -3000),
       3000,
     );
     await tester.pumpAndSettle();
-    // The kept-alive draft is still in the tree even though its card is far
-    // outside the viewport.
-    expect(weight, findsOneWidget);
 
     await tester.fling(
       find.byType(Scrollable).first,

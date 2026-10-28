@@ -10,6 +10,21 @@ as pre-release; see `docs/RELEASE.md`.
 
 No unreleased changes.
 
+## [0.2.1] - 2026-10-28
+
+Build: 3
+Schema: none
+
+### Added
+
+- The active workout now keeps a finish action pinned above the tab bar, so a
+  session can end from any scroll position without logging every prefilled set.
+  Saved sets stay in history, empty rows are skipped, and the confirmation says
+  so.
+- The About screen names Danial Rashidi and links to danialrashidi.ir.
+- `docs/sample-import/` ships a valid program-only backup and a one-page format
+  guide so an AI can generate a program that imports cleanly.
+
 ## [0.2.0] - 2026-10-28
 
 Build: 2

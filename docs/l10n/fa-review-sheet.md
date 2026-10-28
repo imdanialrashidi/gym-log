@@ -6,6 +6,7 @@ Regenerate with `dart run tool/fa_review_sheet.dart`.
 
 | Key | Screen / context | Persian (fa) | English reference | Notes |
 |---|---|---|---|---|
+| `aboutDeveloper` | General | سازنده | Developer | Review tone and clarity. |
 | `aboutDonate` | General | حمایت مالی | Donate | Review tone and clarity. |
 | `aboutLicenseLabel` | General | مجوز برنامه | App license | Review tone and clarity. |
 | `aboutLicenseValue` | General | MIT | MIT | Review tone and clarity. |
@@ -145,7 +146,7 @@ Regenerate with `dart run tool/fa_review_sheet.dart`.
 | `exportReminderTitle` | Settings / backup | از داده‌هایت پشتیبان بگیر | Back up your data | Review tone and clarity. |
 | `exportSaved` | Settings / backup | پشتیبان ذخیره شد. | Backup saved. | Review tone and clarity. |
 | `finishWorkout` | Workout | پایان تمرین | Finish workout | Review tone and clarity. |
-| `finishWorkoutBody` | Workout | ست‌های ثبت‌شده در تاریخچه می‌مانند. | Logged sets stay in your history. | Review tone and clarity. |
+| `finishWorkoutBody` | Workout | ست‌های ثبت‌شده در تاریخچه می‌مانند؛ ردیف‌های خالی نادیده گرفته می‌شوند. | Logged sets stay in your history. Empty rows are skipped. | Review tone and clarity. |
 | `finishWorkoutConfirm` | Workout | تمام کن | Finish | Review tone and clarity. |
 | `finishWorkoutTitle` | Workout | تمرین را تمام کنم؟ | Finish workout? | Review tone and clarity. |
 | `goalEdit` | Shared controls | ویرایش هدف | Edit goal | Review tone and clarity. |

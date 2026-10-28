@@ -42,6 +42,25 @@ class AboutScreen extends ConsumerWidget {
             ),
           ),
           ListTile(
+            key: const Key('about-developer'),
+            contentPadding: const EdgeInsetsDirectional.symmetric(
+              horizontal: AppTokens.space1,
+            ),
+            leading: const Icon(Icons.person_outline),
+            title: Text(l10n.aboutDeveloper),
+            subtitle: const Text('$appAuthorName\n$appWebsiteUrl'),
+            isThreeLine: true,
+            trailing: const Icon(Icons.open_in_new),
+            onTap: () => unawaited(
+              openExternalLink(
+                context,
+                ref,
+                Uri.parse(appWebsiteUrl),
+                failureMessage: l10n.aboutLinkFailed,
+              ),
+            ),
+          ),
+          ListTile(
             contentPadding: const EdgeInsetsDirectional.symmetric(
               horizontal: AppTokens.space1,
             ),

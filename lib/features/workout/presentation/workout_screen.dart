@@ -369,90 +369,91 @@ class _ActiveWorkoutView extends StatelessWidget {
 
     final List<SessionExercise> exercises = session.exercises;
     final int itemCount = exercises.isEmpty ? 3 : exercises.length + 2;
-    return ListView.builder(
-      key: const Key('active-workout-list'),
-      padding: EdgeInsetsDirectional.fromSTEB(
-        padding,
-        AppTokens.space2,
-        padding,
-        AppTokens.space4,
-      ),
-      itemCount: itemCount,
-      itemBuilder: (BuildContext context, int index) {
-        if (index == 0) {
-          return Padding(
-            padding: const EdgeInsetsDirectional.only(bottom: AppTokens.space3),
-            child: _ActiveSessionHero(
-              busy: busy,
-              unit: unit,
-              onFinish: onFinish,
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: ListView.builder(
+            key: const Key('active-workout-list'),
+            padding: EdgeInsetsDirectional.fromSTEB(
+              padding,
+              AppTokens.space2,
+              padding,
+              AppTokens.space4,
             ),
-          );
-        }
-        if (index == itemCount - 1) {
-          return Padding(
-            padding: EdgeInsetsDirectional.only(
-              top: exercises.isEmpty ? 0 : AppTokens.space2,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                key: const Key('session-add-exercise'),
-                onPressed: busy ? null : onAddExercise,
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addExercise),
-              ),
-            ),
-          );
-        }
-        if (exercises.isEmpty) {
-          return Padding(
-            padding: const EdgeInsetsDirectional.only(bottom: AppTokens.space2),
-            child: AppCard(
-              child: Text(
-                l10n.noExercisesInSession,
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: AppTokens.textSecondary),
-              ),
-            ),
-          );
-        }
-        final int exerciseIndex = index - 1;
-        final SessionExercise sessionExercise = exercises[exerciseIndex];
-        return _SessionExerciseCard(
-          key: ValueKey<String>(
-            'exercise-card-${session.id}-${sessionExercise.id}',
+            itemCount: itemCount,
+            itemBuilder: (BuildContext context, int index) {
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    bottom: AppTokens.space3,
+                  ),
+                  child: _ActiveSessionHero(unit: unit),
+                );
+              }
+              if (index == itemCount - 1) {
+                return Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    top: exercises.isEmpty ? 0 : AppTokens.space2,
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      key: const Key('session-add-exercise'),
+                      onPressed: busy ? null : onAddExercise,
+                      icon: const Icon(Icons.add),
+                      label: Text(l10n.addExercise),
+                    ),
+                  ),
+                );
+              }
+              if (exercises.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    bottom: AppTokens.space2,
+                  ),
+                  child: AppCard(
+                    child: Text(
+                      l10n.noExercisesInSession,
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: AppTokens.textSecondary),
+                    ),
+                  ),
+                );
+              }
+              final int exerciseIndex = index - 1;
+              final SessionExercise sessionExercise = exercises[exerciseIndex];
+              return _SessionExerciseCard(
+                key: ValueKey<String>(
+                  'exercise-card-${session.id}-${sessionExercise.id}',
+                ),
+                data: data,
+                session: session,
+                sessionExercise: sessionExercise,
+                exerciseIndex: exerciseIndex,
+                unit: unit,
+                busy: busy,
+                personalRecords:
+                    personalRecordsByExercise[sessionExercise.exerciseId] ??
+                    const <String, Set<PersonalRecordType>>{},
+                extraRows: extraRows[sessionExercise.id] ?? 0,
+                onAddSet: () => onAddSet(sessionExercise.id),
+                onLog: onLog,
+                onEditSet: onEditSet,
+                onDeleteSet: onDeleteSet,
+              );
+            },
           ),
-          data: data,
-          session: session,
-          sessionExercise: sessionExercise,
-          exerciseIndex: exerciseIndex,
-          unit: unit,
-          busy: busy,
-          personalRecords:
-              personalRecordsByExercise[sessionExercise.exerciseId] ??
-              const <String, Set<PersonalRecordType>>{},
-          extraRows: extraRows[sessionExercise.id] ?? 0,
-          onAddSet: () => onAddSet(sessionExercise.id),
-          onLog: onLog,
-          onEditSet: onEditSet,
-          onDeleteSet: onDeleteSet,
-        );
-      },
+        ),
+        _FinishWorkoutBar(busy: busy, onFinish: onFinish),
+      ],
     );
   }
 }
 
 class _ActiveSessionHero extends ConsumerWidget {
-  const _ActiveSessionHero({
-    required this.busy,
-    required this.unit,
-    required this.onFinish,
-  });
+  const _ActiveSessionHero({required this.unit});
 
-  final bool busy;
   final WeightUnit unit;
-  final VoidCallback onFinish;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -590,16 +591,49 @@ class _ActiveSessionHero extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppTokens.space2),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              key: const Key('finish-workout'),
-              onPressed: busy ? null : onFinish,
-              icon: const Icon(Icons.flag_outlined, size: 18),
-              label: Text(l10n.finishWorkout),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Always-visible finish action for the active workout.
+///
+/// The exercise list can be longer than the screen, so the primary way out of
+/// a session must not scroll away. Finishing never requires every prefilled
+/// row to be logged; only saved sets are written to history.
+class _FinishWorkoutBar extends StatelessWidget {
+  const _FinishWorkoutBar({required this.busy, required this.onFinish});
+
+  final bool busy;
+  final VoidCallback onFinish;
+
+  @override
+  Widget build(BuildContext context) {
+    final double padding = AppTokens.pagePadding(
+      MediaQuery.sizeOf(context).width,
+    );
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: AppTokens.surface,
+        border: Border(top: BorderSide(color: AppTokens.outline)),
+      ),
+      child: Padding(
+        padding: EdgeInsetsDirectional.fromSTEB(
+          padding,
+          AppTokens.space2,
+          padding,
+          AppTokens.space2,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            key: const Key('finish-workout'),
+            onPressed: busy ? null : onFinish,
+            icon: const Icon(Icons.flag_outlined, size: 18),
+            label: Text(context.l10n.finishWorkout),
+          ),
+        ),
       ),
     );
   }

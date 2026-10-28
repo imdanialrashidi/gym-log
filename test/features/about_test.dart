@@ -21,6 +21,9 @@ void main() {
     expect(find.text('Version $appVersion'), findsOneWidget);
     expect(find.text('App license'), findsOneWidget);
     expect(find.text('MIT'), findsOneWidget);
+    expect(find.text('Developer'), findsOneWidget);
+    expect(find.textContaining('Danial Rashidi'), findsOneWidget);
+    expect(find.textContaining('danialrashidi.ir'), findsOneWidget);
     expect(find.text('Open-source licenses'), findsOneWidget);
     expect(find.text('Source code'), findsOneWidget);
     expect(find.text('Donate'), findsOneWidget);
@@ -46,14 +49,21 @@ void main() {
       },
     );
 
+    await tester.tap(find.byKey(const Key('about-developer')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('about-source')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('about-donate')));
     await tester.pumpAndSettle();
 
-    expect(launched, <Uri>[Uri.parse(appSourceUrl), Uri.parse(appDonateUrl)]);
+    expect(launched, <Uri>[
+      Uri.parse(appWebsiteUrl),
+      Uri.parse(appSourceUrl),
+      Uri.parse(appDonateUrl),
+    ]);
     expect(launched[0].scheme, 'https');
     expect(launched[1].scheme, 'https');
+    expect(launched[2].scheme, 'https');
   });
 
   testWidgets('failed link launch shows a non-blocking message', (

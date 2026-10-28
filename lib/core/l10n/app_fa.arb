@@ -136,7 +136,7 @@
   "activeWorkoutTitle": "تمرین فعال",
   "finishWorkout": "پایان تمرین",
   "finishWorkoutTitle": "تمرین را تمام کنم؟",
-  "finishWorkoutBody": "ست‌های ثبت‌شده در تاریخچه می‌مانند.",
+  "finishWorkoutBody": "ست‌های ثبت‌شده در تاریخچه می‌مانند؛ ردیف‌های خالی نادیده گرفته می‌شوند.",
   "finishWorkoutConfirm": "تمام کن",
   "addSet": "افزودن ست",
   "setNumber": "ست {number}",
@@ -318,6 +318,7 @@
       }
     }
   },
+  "aboutDeveloper": "سازنده",
   "aboutLicenseLabel": "مجوز برنامه",
   "aboutLicenseValue": "MIT",
   "aboutOpenSourceLicenses": "مجوزهای متن‌باز",
