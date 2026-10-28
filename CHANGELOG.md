@@ -25,12 +25,13 @@ fields are omitted while absent so historical fixtures keep round-tripping.
 - Per-exercise set/volume/time meta in active logging, session detail, and the
   progress overview; session and exercise totals.
 - Plain-language RIR explainer in the set row and on the RIR progress chart.
-- Painted brand emblem and launcher icon; refreshed dark palette with a
-  lavender body-weight series; redesigned cards, charts, calendar, and shell.
+- Aperture brand mark, regenerated launcher/web/social kit, and a one-page
+  brand sheet; refreshed achromatic palette; redesigned cards, charts,
+  calendar, shell, and About lockup.
 - Post-workout summary: volume hero, grouped records, muscle split, exercise
   breakdown, comparison with the previous session, and a way home.
-- Post-workout cat mascot that says `تمرین تموم شد!` / “Workout done!” and a
-  meow hint, with a reduced-motion-safe entrance.
+- Monochrome engraved finish cat that says `تمرین تموم شد!` / “Workout done!”
+  and a meow hint, with a reduced-motion-safe entrance.
 - Optional weekly session and working-set goals with current-week progress,
   a calm streak, a dashboard block, and one editor sheet shared with Settings.
 - Plate calculator and bar-first warm-up ramp for standard 20 kg/45 lb bars,
@@ -47,11 +48,19 @@ fields are omitted while absent so historical fixtures keep round-tripping.
 
 ### Changed
 
-- The visual system is now a night session: near-black navy canvas, soft blue
-  backdrop glow, electric-blue action color, 20 dp rounded panels, pill chips
-  and nav indicators, a weekly progress ring, and the post-workout seal. The
-  cut-corner ledger language is removed from every screen, including Settings
-  and Programs/Exercises.
+- The visual system is now **Obsidian Telemetry**: black and zinc achromatic
+  surfaces, 0 dp corners, 1 px hairlines, pure white as the only action/PR/error
+  signal, no gradients, glows, or shadows. The weekly ring is a square session
+  gauge; charts are white hairline traces with dashed grids; Material pill
+  switches are replaced by square toggles; the finish cat is a monochrome
+  engraving. The cut-corner ledger and navy/electric-blue night-session
+  languages are both superseded.
+- The brand identity is the square **Aperture** mark (frame + calibration index
+  + barbell). The launcher, favicon, web, social, and brand-sheet assets are
+  regenerated from one Pillow script; the in-app mark is painted, not decoded.
+- Typography keeps Vazirmatn for Persian-first coverage, but adopts the
+  reference system's behavior: tabular display figures, tight display tracking,
+  and wide-tracked Latin micro-labels. The old per-series chart colors are gone.
 - Persian copy now separates `حرکت` (exercise) from `تمرین`/`جلسه`
   (workout/session), uses `ثبت` for set logging, and explains RIR in plain
   language; the native-speaker review sheet is regenerated.
@@ -70,6 +79,13 @@ fields are omitted while absent so historical fixtures keep round-tripping.
 - History calendar day cells are 48 dp at 360 dp width and session rows show
   duration/volume; the month summary shows sessions, volume, working sets, and
   time.
+
+### Removed
+
+- The navy/electric-blue night-session palette, gradient tokens, backdrop glow,
+  rounded-panel geometry, the circular weekly gauge, the gold PR marker, and
+  the per-series chart color argument. `logo-horizontal-navy.png` is replaced
+  by `logo-horizontal-panel.png`.
 
 ### Fixed
 

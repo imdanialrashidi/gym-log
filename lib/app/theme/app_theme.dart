@@ -4,9 +4,11 @@ import 'app_tokens.dart';
 
 /// Dark-only application theme built from [AppTokens].
 ///
-/// Component themes carry the visual hierarchy so feature widgets stay
-/// declarative: surfaces are raised by color and a hairline border rather than
-/// by shadows, and every interactive control keeps at least a 48 dp target.
+/// Obsidian Telemetry raises hierarchy by surface luminance and 1 px structure,
+/// never by shadow, blur, gradient, or hue. Every shape is a square, every
+/// interactive control keeps a 48 dp target, and white is the only focal
+/// signal. Component themes carry the visual hierarchy so feature widgets stay
+/// declarative.
 abstract final class AppTheme {
   /// Built once. ThemeData construction is not free, and the app is dark-only,
   /// so rebuilding it on every widget rebuild buys nothing.
@@ -17,13 +19,12 @@ abstract final class AppTheme {
       primary: AppTokens.accent,
       onPrimary: AppTokens.onAccent,
       secondary: AppTokens.info,
-      onSecondary: AppTokens.background,
+      onSecondary: AppTokens.onInfo,
       tertiary: AppTokens.weight,
-      onTertiary: AppTokens.background,
+      onTertiary: AppTokens.onInfo,
       error: AppTokens.danger,
-      onError: AppTokens.background,
+      onError: AppTokens.onDanger,
       surface: AppTokens.surface,
-      onSurface: AppTokens.textPrimary,
       surfaceContainerLowest: AppTokens.background,
       surfaceContainerLow: AppTokens.surface,
       surfaceContainer: AppTokens.surface,
@@ -37,94 +38,116 @@ abstract final class AppTheme {
     );
 
     const TextTheme textTheme = TextTheme(
-      displaySmall: TextStyle(
+      displayLarge: TextStyle(
         color: AppTokens.textPrimary,
-        fontSize: 38,
+        fontSize: 56,
         fontWeight: FontWeight.w700,
         height: 1.05,
-        letterSpacing: -0.8,
-        fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
+        letterSpacing: -2.0,
+        fontFeatures: AppTokens.telemetryFeatures,
       ),
-      headlineMedium: TextStyle(
+      displayMedium: TextStyle(
+        color: AppTokens.textPrimary,
+        fontSize: 44,
+        fontWeight: FontWeight.w700,
+        height: 1.05,
+        letterSpacing: -1.6,
+        fontFeatures: AppTokens.telemetryFeatures,
+      ),
+      displaySmall: TextStyle(
+        color: AppTokens.textPrimary,
+        fontSize: 36,
+        fontWeight: FontWeight.w700,
+        height: 1.08,
+        letterSpacing: -1.2,
+        fontFeatures: AppTokens.telemetryFeatures,
+      ),
+      headlineLarge: TextStyle(
         color: AppTokens.textPrimary,
         fontSize: 30,
         fontWeight: FontWeight.w700,
-        height: 1.1,
-        letterSpacing: -0.5,
-        fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
+        height: 1.12,
+        letterSpacing: -0.9,
+        fontFeatures: AppTokens.telemetryFeatures,
       ),
-      headlineSmall: TextStyle(
+      headlineMedium: TextStyle(
         color: AppTokens.textPrimary,
         fontSize: 24,
         fontWeight: FontWeight.w700,
-        height: 1.2,
-        letterSpacing: -0.2,
-        fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
+        height: 1.16,
+        letterSpacing: -0.6,
+        fontFeatures: AppTokens.telemetryFeatures,
       ),
-      titleLarge: TextStyle(
+      headlineSmall: TextStyle(
         color: AppTokens.textPrimary,
         fontSize: 21,
         fontWeight: FontWeight.w700,
+        height: 1.2,
+        letterSpacing: -0.35,
+        fontFeatures: AppTokens.telemetryFeatures,
+      ),
+      titleLarge: TextStyle(
+        color: AppTokens.textPrimary,
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
         height: 1.25,
+        letterSpacing: -0.15,
       ),
       titleMedium: TextStyle(
         color: AppTokens.textPrimary,
         fontSize: 16,
         fontWeight: FontWeight.w500,
-        height: 1.35,
+        height: 1.3,
+        letterSpacing: 0,
       ),
       titleSmall: TextStyle(
         color: AppTokens.textPrimary,
         fontSize: 14,
         fontWeight: FontWeight.w700,
         height: 1.35,
+        letterSpacing: 0,
       ),
       bodyLarge: TextStyle(
         color: AppTokens.textPrimary,
         fontSize: 16,
         fontWeight: FontWeight.w400,
-        height: 1.55,
+        height: 1.5,
       ),
       bodyMedium: TextStyle(
         color: AppTokens.textPrimary,
         fontSize: 14,
         fontWeight: FontWeight.w400,
-        height: 1.5,
+        height: 1.45,
       ),
       bodySmall: TextStyle(
         color: AppTokens.textSecondary,
         fontSize: 12,
         fontWeight: FontWeight.w400,
-        height: 1.45,
+        height: 1.4,
       ),
       labelLarge: TextStyle(
         color: AppTokens.textPrimary,
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        height: 1.3,
+        height: 1.25,
       ),
       labelMedium: TextStyle(
         color: AppTokens.textSecondary,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        height: 1.3,
-        letterSpacing: 0.2,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: 0.5,
       ),
       labelSmall: TextStyle(
-        color: AppTokens.textSecondary,
-        fontSize: 11,
+        color: AppTokens.textMuted,
+        fontSize: 10,
         fontWeight: FontWeight.w500,
-        height: 1.3,
+        height: 1.25,
         letterSpacing: 0.3,
       ),
     );
 
-    const RoundedRectangleBorder cardShape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.all(Radius.circular(AppTokens.radiusLarge)),
-    );
-    const RoundedRectangleBorder controlShape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.all(Radius.circular(AppTokens.radiusMedium)),
-    );
+    const RoundedRectangleBorder squareShape = RoundedRectangleBorder();
 
     return ThemeData(
       useMaterial3: true,
@@ -142,35 +165,36 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
+        toolbarHeight: 60,
         titleTextStyle: TextStyle(
           color: AppTokens.textPrimary,
           fontFamily: AppTokens.fontFamily,
           fontSize: 19,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.15,
         ),
+        shape: Border(bottom: BorderSide(color: AppTokens.outline)),
       ),
       cardTheme: const CardThemeData(
         color: AppTokens.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: cardShape,
+        shape: squareShape,
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppTokens.surface,
-        indicatorColor: AppTokens.accent.withValues(alpha: 0.18),
+        indicatorColor: AppTokens.accent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        height: 68,
+        height: 64,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        indicatorShape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(AppTokens.radiusPill)),
-        ),
+        indicatorShape: squareShape,
         iconTheme: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
           final bool selected = states.contains(WidgetState.selected);
           return IconThemeData(
-            color: selected ? AppTokens.accent : AppTokens.textSecondary,
-            size: 24,
+            color: selected ? AppTokens.onAccent : AppTokens.textSecondary,
+            size: 22,
           );
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((
@@ -178,31 +202,45 @@ abstract final class AppTheme {
         ) {
           final bool selected = states.contains(WidgetState.selected);
           return TextStyle(
-            color: selected ? AppTokens.accent : AppTokens.textSecondary,
+            color: selected ? AppTokens.textPrimary : AppTokens.textSecondary,
             fontFamily: AppTokens.fontFamily,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            letterSpacing: 0.2,
           );
         }),
       ),
-      filledButtonTheme: const FilledButtonThemeData(
+      filledButtonTheme: FilledButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll<Color>(AppTokens.accent),
-          foregroundColor: WidgetStatePropertyAll<Color>(AppTokens.onAccent),
-          textStyle: WidgetStatePropertyAll<TextStyle>(
+          backgroundColor: WidgetStateProperty.resolveWith((
+            Set<WidgetState> states,
+          ) {
+            if (states.contains(WidgetState.disabled)) {
+              return AppTokens.surface3;
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return const Color(0xFFE4E4E7);
+            }
+            return AppTokens.accent;
+          }),
+          foregroundColor: const WidgetStatePropertyAll<Color>(
+            AppTokens.onAccent,
+          ),
+          textStyle: const WidgetStatePropertyAll<TextStyle>(
             TextStyle(
               fontFamily: AppTokens.fontFamily,
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
+              letterSpacing: 0,
             ),
           ),
-          minimumSize: WidgetStatePropertyAll<Size>(
+          minimumSize: const WidgetStatePropertyAll<Size>(
             Size(AppTokens.minTouchTarget, AppTokens.minTouchTarget),
           ),
-          padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-            EdgeInsetsDirectional.symmetric(horizontal: 22, vertical: 14),
+          padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
+            EdgeInsetsDirectional.symmetric(horizontal: 20, vertical: 14),
           ),
-          shape: WidgetStatePropertyAll<OutlinedBorder>(controlShape),
+          shape: const WidgetStatePropertyAll<OutlinedBorder>(squareShape),
         ),
       ),
       outlinedButtonTheme: const OutlinedButtonThemeData(
@@ -212,7 +250,7 @@ abstract final class AppTheme {
             TextStyle(
               fontFamily: AppTokens.fontFamily,
               fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w700,
             ),
           ),
           minimumSize: WidgetStatePropertyAll<Size>(
@@ -222,9 +260,9 @@ abstract final class AppTheme {
             EdgeInsetsDirectional.symmetric(horizontal: 18, vertical: 12),
           ),
           side: WidgetStatePropertyAll<BorderSide>(
-            BorderSide(color: AppTokens.outline, width: 1.2),
+            BorderSide(color: AppTokens.outlineStrong),
           ),
-          shape: WidgetStatePropertyAll<OutlinedBorder>(controlShape),
+          shape: WidgetStatePropertyAll<OutlinedBorder>(squareShape),
         ),
       ),
       textButtonTheme: const TextButtonThemeData(
@@ -233,20 +271,14 @@ abstract final class AppTheme {
           textStyle: WidgetStatePropertyAll<TextStyle>(
             TextStyle(
               fontFamily: AppTokens.fontFamily,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
           ),
           minimumSize: WidgetStatePropertyAll<Size>(
             Size(AppTokens.minTouchTarget, AppTokens.minTouchTarget),
           ),
-          shape: WidgetStatePropertyAll<OutlinedBorder>(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(
-                Radius.circular(AppTokens.radiusSmall),
-              ),
-            ),
-          ),
+          shape: WidgetStatePropertyAll<OutlinedBorder>(squareShape),
         ),
       ),
       iconButtonTheme: const IconButtonThemeData(
@@ -254,80 +286,83 @@ abstract final class AppTheme {
           minimumSize: WidgetStatePropertyAll<Size>(
             Size(AppTokens.minTouchTarget, AppTokens.minTouchTarget),
           ),
-          iconSize: WidgetStatePropertyAll<double>(22),
+          iconSize: WidgetStatePropertyAll<double>(20),
           foregroundColor: WidgetStatePropertyAll<Color>(AppTokens.textPrimary),
-          shape: WidgetStatePropertyAll<OutlinedBorder>(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(
-                Radius.circular(AppTokens.radiusSmall),
-              ),
-            ),
-          ),
+          shape: WidgetStatePropertyAll<OutlinedBorder>(squareShape),
         ),
       ),
-      iconTheme: const IconThemeData(color: AppTokens.textPrimary, size: 22),
+      iconTheme: const IconThemeData(color: AppTokens.textPrimary, size: 20),
       listTileTheme: const ListTileThemeData(
         iconColor: AppTokens.textSecondary,
         textColor: AppTokens.textPrimary,
+        selectedColor: AppTokens.textPrimary,
+        selectedTileColor: AppTokens.surface3,
         contentPadding: EdgeInsetsDirectional.symmetric(
           horizontal: AppTokens.space2,
           vertical: AppTokens.spaceHalf,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(AppTokens.radiusMedium),
-          ),
-        ),
+        shape: squareShape,
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: const InputDecorationTheme(
         filled: true,
-        fillColor: AppTokens.surface2,
-        labelStyle: const TextStyle(color: AppTokens.textSecondary),
-        floatingLabelStyle: const TextStyle(color: AppTokens.accent),
-        hintStyle: const TextStyle(color: AppTokens.textSecondary),
-        helperStyle: const TextStyle(color: AppTokens.textSecondary),
-        suffixStyle: const TextStyle(color: AppTokens.textSecondary),
-        counterStyle: const TextStyle(color: AppTokens.textSecondary),
-        contentPadding: const EdgeInsetsDirectional.symmetric(
+        fillColor: AppTokens.background,
+        labelStyle: TextStyle(color: AppTokens.textSecondary),
+        floatingLabelStyle: TextStyle(
+          color: AppTokens.textPrimary,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
+        ),
+        hintStyle: TextStyle(color: AppTokens.textMuted),
+        helperStyle: TextStyle(color: AppTokens.textMuted),
+        errorStyle: TextStyle(
+          color: AppTokens.textPrimary,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1.35,
+        ),
+        suffixStyle: TextStyle(color: AppTokens.textMuted),
+        counterStyle: TextStyle(color: AppTokens.textMuted),
+        contentPadding: EdgeInsetsDirectional.symmetric(
           horizontal: AppTokens.space2,
           vertical: AppTokens.space1 + AppTokens.spaceHalf,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
-          borderSide: const BorderSide(color: AppTokens.outline),
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: AppTokens.outlineStrong),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
-          borderSide: const BorderSide(color: AppTokens.outline),
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: AppTokens.outlineStrong),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
-          borderSide: const BorderSide(color: AppTokens.accent, width: 2),
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: AppTokens.accent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
-          borderSide: const BorderSide(color: AppTokens.danger, width: 1.5),
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: AppTokens.danger, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
-          borderSide: const BorderSide(color: AppTokens.danger, width: 2),
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: AppTokens.danger, width: 2),
         ),
       ),
       chipTheme: const ChipThemeData(
         backgroundColor: AppTokens.surface2,
         selectedColor: AppTokens.accent,
         disabledColor: AppTokens.surface2,
-        side: BorderSide(color: AppTokens.outline),
+        side: BorderSide(color: AppTokens.outlineStrong),
         labelStyle: TextStyle(
           color: AppTokens.textPrimary,
           fontFamily: AppTokens.fontFamily,
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
         secondaryLabelStyle: TextStyle(
           color: AppTokens.onAccent,
           fontFamily: AppTokens.fontFamily,
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
         checkmarkColor: AppTokens.onAccent,
@@ -335,9 +370,7 @@ abstract final class AppTheme {
           horizontal: AppTokens.space1 + AppTokens.spaceHalf,
           vertical: AppTokens.space1,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(AppTokens.radiusPill)),
-        ),
+        shape: squareShape,
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
@@ -351,8 +384,8 @@ abstract final class AppTheme {
           textStyle: const WidgetStatePropertyAll<TextStyle>(
             TextStyle(
               fontFamily: AppTokens.fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
           ),
           backgroundColor: WidgetStateProperty.resolveWith((
@@ -363,13 +396,9 @@ abstract final class AppTheme {
                 : AppTokens.surface2;
           }),
           side: const WidgetStatePropertyAll<BorderSide>(
-            BorderSide(color: AppTokens.textSecondary),
+            BorderSide(color: AppTokens.outlineStrong),
           ),
-          shape: WidgetStatePropertyAll<OutlinedBorder>(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-            ),
-          ),
+          shape: const WidgetStatePropertyAll<OutlinedBorder>(squareShape),
           minimumSize: const WidgetStatePropertyAll<Size>(
             Size(AppTokens.minTouchTarget, AppTokens.minTouchTarget),
           ),
@@ -379,69 +408,79 @@ abstract final class AppTheme {
         thumbColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
           return states.contains(WidgetState.selected)
               ? AppTokens.onAccent
-              : AppTokens.textSecondary;
+              : AppTokens.textMuted;
         }),
         trackColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
           return states.contains(WidgetState.selected)
               ? AppTokens.accent
               : AppTokens.surface3;
         }),
-        trackOutlineColor: const WidgetStatePropertyAll<Color>(
-          Colors.transparent,
-        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith((
+          Set<WidgetState> states,
+        ) {
+          return states.contains(WidgetState.selected)
+              ? AppTokens.accent
+              : AppTokens.outlineStrong;
+        }),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppTokens.accent,
         linearTrackColor: AppTokens.surface3,
+        circularTrackColor: AppTokens.surface3,
       ),
-      dialogTheme: DialogThemeData(
+      dialogTheme: const DialogThemeData(
         backgroundColor: AppTokens.surface2,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(AppTokens.radiusLarge),
-          ),
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: AppTokens.outline),
         ),
-        titleTextStyle: textTheme.titleLarge,
-        contentTextStyle: textTheme.bodyLarge,
+        titleTextStyle: TextStyle(
+          color: AppTokens.textPrimary,
+          fontFamily: AppTokens.fontFamily,
+          fontSize: 19,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.15,
+        ),
+        contentTextStyle: TextStyle(
+          color: AppTokens.textSecondary,
+          fontFamily: AppTokens.fontFamily,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          height: 1.45,
+        ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppTokens.surface,
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: AppTokens.surface,
-        showDragHandle: true,
-        dragHandleColor: AppTokens.outline,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadiusDirectional.vertical(
-            top: Radius.circular(AppTokens.radiusLarge),
-          ),
-        ),
+        showDragHandle: false,
+        shape: RoundedRectangleBorder(),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppTokens.surface3,
+        backgroundColor: AppTokens.surface4,
         contentTextStyle: textTheme.bodyMedium,
         actionTextColor: AppTokens.accent,
         behavior: SnackBarBehavior.floating,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-        ),
+        shape: squareShape,
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: AppTokens.surface2,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
+        shape: const RoundedRectangleBorder(
+          side: BorderSide(color: AppTokens.outline),
         ),
         textStyle: textTheme.bodyMedium,
       ),
       tooltipTheme: TooltipThemeData(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppTokens.surface3,
-          borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-          border: Border.all(color: AppTokens.outline),
+          borderRadius: BorderRadius.zero,
+          border: Border.fromBorderSide(
+            BorderSide(color: AppTokens.outlineStrong),
+          ),
         ),
         textStyle: textTheme.bodySmall?.copyWith(color: AppTokens.textPrimary),
         waitDuration: const Duration(milliseconds: 500),

@@ -74,11 +74,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
           ? FloatingActionButton.extended(
               key: const Key('add-exercise-fab'),
               elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                  Radius.circular(AppTokens.radiusMedium),
-                ),
-              ),
+              shape: const RoundedRectangleBorder(),
               onPressed: _openEditor,
               icon: const Icon(Icons.add),
               label: Text(l10n.addExercise),

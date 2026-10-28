@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/square_switch.dart';
 
 /// The values the goal sheet hands back. Both null means "remove the goal".
 class WeeklyGoalDraft {
@@ -85,14 +86,9 @@ class _WeeklyGoalSheetState extends State<_WeeklyGoalSheet> {
       child: Padding(
         padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppTokens.surface,
-            borderRadius: const BorderRadiusDirectional.vertical(
-              top: Radius.circular(AppTokens.radiusLarge),
-            ),
-            border: Border(
-              top: BorderSide(color: AppTokens.accent.withValues(alpha: 0.5)),
-            ),
+            border: Border(top: BorderSide(color: AppTokens.outlineStrong)),
           ),
           child: Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(
@@ -263,10 +259,11 @@ class _GoalStepper extends StatelessWidget {
               Expanded(child: Text(label, style: theme.textTheme.labelMedium)),
               Tooltip(
                 message: enabledLabel,
-                child: Switch(
+                child: SquareSwitch(
                   key: enabledKey,
                   value: enabled,
                   onChanged: onEnabledChanged,
+                  semanticLabel: enabledLabel,
                 ),
               ),
             ],

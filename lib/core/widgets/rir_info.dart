@@ -139,10 +139,9 @@ class _RirInfoSheet extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsetsDirectional.all(AppTokens.space2),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppTokens.surface2,
-                borderRadius: BorderRadius.circular(AppTokens.radiusMedium),
-                border: const BorderDirectional(
+                border: BorderDirectional(
                   start: BorderSide(color: AppTokens.accent, width: 3),
                 ),
               ),

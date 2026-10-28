@@ -5,10 +5,13 @@ import 'package:material_ui/material_ui.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/l10n.dart';
 
-/// The post-workout mascot: a small painted cat that announces the finish.
+/// The post-workout mascot: a small engraved line cat that announces the
+/// finish.
 ///
-/// It is shown once, at the top of the session summary, and enters with one
-/// short fade/rise that is skipped when the platform asks for reduced motion.
+/// It is the one intentional levity in the system, rendered in a single ink
+/// color and a square speech plate. It is shown once, at the top of the
+/// session summary, and enters with one short fade/rise that is skipped when
+/// the platform asks for reduced motion.
 class WorkoutDoneCat extends StatelessWidget {
   const WorkoutDoneCat({super.key});
 
@@ -71,13 +74,7 @@ class _SpeechBubble extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppTokens.surface2,
-        borderRadius: const BorderRadiusDirectional.only(
-          topStart: Radius.circular(AppTokens.radiusLarge),
-          topEnd: Radius.circular(AppTokens.radiusLarge),
-          bottomEnd: Radius.circular(AppTokens.radiusLarge),
-          bottomStart: Radius.circular(AppTokens.spaceHalf),
-        ),
-        border: Border.all(color: AppTokens.accent.withValues(alpha: 0.35)),
+        border: Border.all(color: AppTokens.outlineStrong),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,180 +126,126 @@ class _CatFace extends StatelessWidget {
 class _CatFacePainter extends CustomPainter {
   const _CatFacePainter();
 
-  static const Color _fur = Color(0xFFF6DDBC);
-  static const Color _furLight = Color(0xFFFFF0DA);
-  static const Color _furDark = Color(0xFFD9B384);
-  static const Color _earInner = Color(0xFFF3A8A8);
-  static const Color _ink = Color(0xFF2B2230);
-  static const Color _nose = Color(0xFFE98C8C);
-
   @override
   void paint(Canvas canvas, Size size) {
     final double s = size.shortestSide;
-    final Offset c = Offset(size.width / 2, size.height / 2 + s * 0.03);
-    final double r = s * 0.35;
-    final double line = math.max(1.6, s * 0.022);
+    final Offset c = Offset(size.width / 2, size.height / 2 + s * 0.02);
+    final double r = s * 0.30;
+    final double line = math.max(1.2, s * 0.016);
+    const Color ink = AppTokens.textPrimary;
+    const Color detail = AppTokens.textSecondary;
 
-    // Soft blue halo so the mascot sits in the app's light.
-    final Rect halo = Rect.fromCircle(center: c, radius: s * 0.48);
-    canvas.drawCircle(
-      c,
-      s * 0.48,
-      Paint()
-        ..shader = RadialGradient(
-          colors: <Color>[
-            AppTokens.accent.withValues(alpha: 0.20),
-            AppTokens.accent.withValues(alpha: 0),
-          ],
-        ).createShader(halo),
-    );
+    final Paint stroke = Paint()
+      ..color = ink
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = line
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final Paint fine = Paint()
+      ..color = detail
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = line * 0.7
+      ..strokeCap = StrokeCap.round;
+    final Paint face = Paint()..color = AppTokens.surface2;
 
-    // Ears sit behind the head; the head circle covers their bases.
+    // Ears sit behind the head; the head fill covers their bases.
     for (final double sign in <double>[-1, 1]) {
       final Path ear = Path()
-        ..moveTo(c.dx + sign * r * 0.86, c.dy - r * 0.28)
-        ..lineTo(c.dx + sign * r * 0.95, c.dy - r * 1.24)
-        ..lineTo(c.dx + sign * r * 0.18, c.dy - r * 0.82)
+        ..moveTo(c.dx + sign * r * 0.64, c.dy - r * 0.46)
+        ..lineTo(c.dx + sign * r * 0.88, c.dy - r * 1.24)
+        ..lineTo(c.dx + sign * r * 0.16, c.dy - r * 0.92)
         ..close();
-      canvas.drawPath(ear, Paint()..color = _fur);
-      final Offset earCenter = Offset(c.dx + sign * r * 0.63, c.dy - r * 0.62);
+      canvas.drawPath(ear, face);
+      canvas.drawPath(ear, stroke);
       final Path inner = Path()
-        ..moveTo(c.dx + sign * r * 0.77, c.dy - r * 0.36)
-        ..lineTo(c.dx + sign * r * 0.83, c.dy - r * 0.96)
-        ..lineTo(c.dx + sign * r * 0.37, c.dy - r * 0.72)
+        ..moveTo(c.dx + sign * r * 0.64, c.dy - r * 0.62)
+        ..lineTo(c.dx + sign * r * 0.79, c.dy - r * 1.04)
+        ..lineTo(c.dx + sign * r * 0.37, c.dy - r * 0.86)
         ..close();
-      canvas.save();
-      canvas.translate(earCenter.dx, earCenter.dy);
-      canvas.scale(0.94);
-      canvas.translate(-earCenter.dx, -earCenter.dy);
-      canvas.drawPath(inner, Paint()..color = _earInner);
-      canvas.restore();
+      canvas.drawPath(inner, fine);
     }
 
-    // Head.
-    canvas.drawCircle(
-      c,
-      r,
-      Paint()
-        ..shader = const RadialGradient(
-          center: Alignment(-0.35, -0.45),
-          radius: 1.4,
-          colors: <Color>[_furLight, _fur],
-        ).createShader(Rect.fromCircle(center: c, radius: r)),
-    );
+    // Head plate.
+    canvas.drawCircle(c, r, face);
+    canvas.drawCircle(c, r, stroke);
 
-    // Forehead stripes.
-    final Paint stripe = Paint()
-      ..color = _furDark.withValues(alpha: 0.55)
-      ..strokeWidth = line
-      ..strokeCap = StrokeCap.round;
+    // Three etched forehead ticks.
     for (final double dx in <double>[-0.18, 0, 0.18]) {
       canvas.drawLine(
-        Offset(c.dx + r * dx, c.dy - r * 0.74),
-        Offset(c.dx + r * dx, c.dy - r * 0.55),
-        stripe,
+        Offset(c.dx + r * dx, c.dy - r * 0.72),
+        Offset(c.dx + r * dx, c.dy - r * 0.52),
+        fine,
       );
     }
 
-    // Whiskers, then blush, so the cheeks sit on top.
-    final Paint whisker = Paint()
-      ..color = _furDark.withValues(alpha: 0.65)
-      ..strokeWidth = math.max(1, line * 0.55)
-      ..strokeCap = StrokeCap.round;
+    // Whiskers.
     for (final double sign in <double>[-1, 1]) {
       canvas.drawLine(
-        Offset(c.dx + sign * r * 0.62, c.dy + r * 0.16),
-        Offset(c.dx + sign * r * 0.97, c.dy + r * 0.10),
-        whisker,
+        Offset(c.dx + sign * r * 0.64, c.dy + r * 0.18),
+        Offset(c.dx + sign * r * 0.98, c.dy + r * 0.10),
+        fine,
       );
       canvas.drawLine(
-        Offset(c.dx + sign * r * 0.62, c.dy + r * 0.32),
-        Offset(c.dx + sign * r * 0.97, c.dy + r * 0.36),
-        whisker,
-      );
-    }
-    final Paint blush = Paint()..color = _nose.withValues(alpha: 0.28);
-    for (final double sign in <double>[-1, 1]) {
-      canvas.drawCircle(
-        Offset(c.dx + sign * r * 0.58, c.dy + r * 0.22),
-        r * 0.13,
-        blush,
+        Offset(c.dx + sign * r * 0.64, c.dy + r * 0.34),
+        Offset(c.dx + sign * r * 0.98, c.dy + r * 0.38),
+        fine,
       );
     }
 
-    // Happy closed eyes.
-    final Paint eye = Paint()
-      ..color = _ink
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = line * 1.2
-      ..strokeCap = StrokeCap.round;
+    // Closed, content eyes: two upward arcs.
     for (final double sign in <double>[-1, 1]) {
-      final Rect eyeRect = Rect.fromCenter(
-        center: Offset(c.dx + sign * r * 0.40, c.dy - r * 0.12),
-        width: r * 0.34,
-        height: r * 0.26,
+      canvas.drawArc(
+        Rect.fromCenter(
+          center: Offset(c.dx + sign * r * 0.38, c.dy - r * 0.10),
+          width: r * 0.32,
+          height: r * 0.24,
+        ),
+        math.pi,
+        math.pi,
+        false,
+        stroke,
       );
-      canvas.drawArc(eyeRect, math.pi, math.pi, false, eye);
     }
 
     // Nose and the small "w" mouth.
-    final double noseY = c.dy + r * 0.18;
+    final double noseY = c.dy + r * 0.16;
     final Path nose = Path()
-      ..moveTo(c.dx - r * 0.09, noseY)
-      ..lineTo(c.dx + r * 0.09, noseY)
-      ..lineTo(c.dx, noseY + r * 0.10)
+      ..moveTo(c.dx - r * 0.08, noseY)
+      ..lineTo(c.dx + r * 0.08, noseY)
+      ..lineTo(c.dx, noseY + r * 0.09)
       ..close();
-    canvas.drawPath(
-      nose,
-      Paint()
-        ..color = _nose
-        ..strokeJoin = StrokeJoin.round,
-    );
+    canvas.drawPath(nose, Paint()..color = detail);
     final Path mouth = Path()
-      ..moveTo(c.dx - r * 0.17, noseY + r * 0.17)
+      ..moveTo(c.dx - r * 0.16, noseY + r * 0.17)
       ..quadraticBezierTo(
-        c.dx - r * 0.08,
+        c.dx - r * 0.07,
         noseY + r * 0.27,
         c.dx,
-        noseY + r * 0.11,
+        noseY + r * 0.10,
       )
       ..quadraticBezierTo(
-        c.dx + r * 0.08,
+        c.dx + r * 0.07,
         noseY + r * 0.27,
-        c.dx + r * 0.17,
+        c.dx + r * 0.16,
         noseY + r * 0.17,
       );
-    canvas.drawPath(
-      mouth,
-      Paint()
-        ..color = _ink.withValues(alpha: 0.8)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = line
-        ..strokeCap = StrokeCap.round,
-    );
+    canvas.drawPath(mouth, stroke);
 
-    // Blue collar with the gold brand marker.
+    // Square collar band and a single square tag: no color, just structure.
     final Rect collar = Rect.fromCenter(
       center: Offset(c.dx, c.dy + r * 0.78),
-      width: r * 1.5,
-      height: r * 0.18,
+      width: r * 1.44,
+      height: r * 0.10,
     );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(collar, Radius.circular(r * 0.09)),
-      Paint()
-        ..shader = const LinearGradient(
-          colors: <Color>[AppTokens.accent, AppTokens.accentDeep],
-        ).createShader(collar),
-    );
-    final Offset bell = Offset(c.dx, c.dy + r * 0.95);
-    canvas.drawCircle(bell, r * 0.11, Paint()..color = AppTokens.highlight);
-    canvas.drawLine(
-      bell.translate(0, -r * 0.04),
-      bell.translate(0, r * 0.03),
-      Paint()
-        ..color = _ink.withValues(alpha: 0.55)
-        ..strokeWidth = math.max(1, line * 0.5)
-        ..strokeCap = StrokeCap.round,
+    canvas.drawRect(collar, Paint()..color = ink);
+    final double tag = r * 0.16;
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(c.dx, c.dy + r * 0.96),
+        width: tag,
+        height: tag,
+      ),
+      Paint()..color = ink,
     );
   }
 

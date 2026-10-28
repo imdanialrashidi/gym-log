@@ -14,15 +14,16 @@ suggestions, full JSON export, validated Merge/Replace import, historical
 fixtures, the export reminder, Persian/Latin digits, Jalali display behind
 `CalendarService`, Saturday-first Persian weeks, the digit/increment Settings
 controls, private photos, and the About screen exist. The post-M9 owner pass
-adds a painted brand emblem and refreshed palette, a statistical dashboard,
+adds a painted aperture brand mark and refreshed palette, a statistical dashboard,
 weekly body-weight check-ins with a trend chart, a weekly summary with sets per
 muscle group, per-exercise set/volume/time meta, and a plain-language RIR
 explainer. The 2026-10-26 build pass adds the post-workout summary, optional
-weekly goals with streaks, a plate/warm-up calculator, improved Persian copy
-(`حرکت` for exercise, `تمرین` for workout), and a night-session visual system
-(navy canvas, electric-blue accent, rounded panels) across the dashboard,
-active workout, summary, Programs, Exercises, and Settings. Weekly goals live in document schema v4; the JSON
-backup format stays additive schema 1.
+weekly goals with streaks, a plate/warm-up calculator, and improved Persian copy
+(`حرکت` for exercise, `تمرین` for workout). The 2026-10-28 rebrand replaces the
+night-session look with **Obsidian Telemetry**: an achromatic black/zinc
+instrument surface, square hardlines, a white strike-point, the aperture brand
+mark, and a regenerated logo/launcher/social kit. Weekly goals live in document
+schema v4; the JSON backup format stays additive schema 1.
 
 M9 adds CI micro-benchmarks with hard budgets on a deterministic 10,000-set
 fixture, the reference-device runbook, secrets-only release signing with a

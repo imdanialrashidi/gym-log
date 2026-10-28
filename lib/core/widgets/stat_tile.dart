@@ -64,7 +64,7 @@ class StatTile extends StatelessWidget {
             Flexible(
               child: Text(
                 context.digits(value),
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: tone,
@@ -141,28 +141,18 @@ class MetricBar extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppTokens.radiusPill),
-            child: SizedBox(
-              height: 6,
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  const ColoredBox(color: AppTokens.surface3),
-                  FractionallySizedBox(
-                    alignment: AlignmentDirectional.centerStart,
-                    widthFactor: safe == 0 ? 0.02 : safe,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(
-                          AppTokens.radiusPill,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          SizedBox(
+            height: 5,
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                const ColoredBox(color: AppTokens.surface3),
+                FractionallySizedBox(
+                  alignment: AlignmentDirectional.centerStart,
+                  widthFactor: safe == 0 ? 0.02 : safe,
+                  child: ColoredBox(color: color),
+                ),
+              ],
             ),
           ),
         ],

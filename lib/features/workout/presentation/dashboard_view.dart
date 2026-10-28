@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +7,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../app/app_clock.dart';
 import '../../../app/routes.dart';
-import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
@@ -16,6 +14,7 @@ import '../../../core/l10n/l10n.dart';
 import '../../../core/widgets/action_runner.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/muscle_balance_card.dart';
+import '../../../core/widgets/progress_track.dart';
 import '../../../core/widgets/training_formats.dart';
 import '../../../data/app_data_controller.dart';
 import '../../../data/training_overview.dart';
@@ -289,23 +288,13 @@ class _Masthead extends StatelessWidget {
                 vertical: 5,
               ),
               decoration: BoxDecoration(
-                color: AppTokens.accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppTokens.radiusPill),
-                border: Border.all(
-                  color: AppTokens.accent.withValues(alpha: 0.28),
-                ),
+                color: AppTokens.surface2,
+                border: Border.all(color: AppTokens.outlineStrong),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: AppTokens.accent,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  Container(width: 6, height: 6, color: AppTokens.accent),
                   const SizedBox(width: 6),
                   Text(
                     l10n.dashboardReady,
@@ -354,8 +343,7 @@ class _WeekInstrument extends StatelessWidget {
         : (week.sessionCount / sessionGoal).clamp(0.0, 1.0);
     return AppCard(
       key: const Key('dashboard-week-hero'),
-      gradient: AppGradients.hero,
-      borderColor: AppTokens.accent.withValues(alpha: 0.32),
+      borderColor: AppTokens.outlineStrong,
       padding: const EdgeInsetsDirectional.all(AppTokens.space3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,9 +369,10 @@ class _WeekInstrument extends StatelessWidget {
                 onPressed: onOpen,
                 tooltip: l10n.viewWeeklySummary,
                 style: IconButton.styleFrom(
-                  backgroundColor: AppTokens.accent.withValues(alpha: 0.12),
-                  foregroundColor: AppTokens.accent,
-                  shape: const CircleBorder(),
+                  backgroundColor: AppTokens.surface2,
+                  foregroundColor: AppTokens.textPrimary,
+                  side: const BorderSide(color: AppTokens.outlineStrong),
+                  shape: const RoundedRectangleBorder(),
                 ),
                 icon: const Icon(Icons.arrow_outward, size: 20),
               ),
@@ -392,28 +381,10 @@ class _WeekInstrument extends StatelessWidget {
           const SizedBox(height: AppTokens.space3),
           Row(
             children: <Widget>[
-              _WeekRing(
+              _WeekGauge(
                 fraction: fraction,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        context.digits('${week.sessionCount}'),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontSize: 30,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      l10n.workoutsStatLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall,
-                    ),
-                  ],
-                ),
+                value: context.digits('${week.sessionCount}'),
+                label: l10n.workoutsStatLabel,
               ),
               const SizedBox(width: AppTokens.space3),
               Expanded(
@@ -520,74 +491,77 @@ class _WeekMeta extends StatelessWidget {
   }
 }
 
-/// A soft blue progress ring, with the week's session count in the middle.
-class _WeekRing extends StatelessWidget {
-  const _WeekRing({required this.fraction, required this.child});
+/// A square session counter with a linear meter.
+///
+/// The square plate, index mark, and 1 px frame replace the previous circular
+/// ring: Obsidian Telemetry communicates progress with structure, not a round
+/// gauge.
+class _WeekGauge extends StatelessWidget {
+  const _WeekGauge({
+    required this.fraction,
+    required this.value,
+    required this.label,
+  });
 
   final double fraction;
-  final Widget child;
+  final String value;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return SizedBox.square(
       dimension: 108,
-      child: CustomPaint(
-        painter: _WeekRingPainter(fraction: fraction),
-        child: Center(child: child),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: AppTokens.surface2,
+          border: Border.fromBorderSide(
+            BorderSide(color: AppTokens.outlineStrong),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.all(AppTokens.space1),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Align(
+                alignment: AlignmentDirectional.topStart,
+                child: Container(width: 5, height: 5, color: AppTokens.accent),
+              ),
+              Expanded(
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          value,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          maxLines: 1,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: AppTokens.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              ProgressTrack(value: fraction, height: 3),
+            ],
+          ),
+        ),
       ),
     );
   }
-}
-
-class _WeekRingPainter extends CustomPainter {
-  const _WeekRingPainter({required this.fraction});
-
-  final double fraction;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const double stroke = 9;
-    final Rect rect = (Offset.zero & size).deflate(stroke / 2);
-    canvas.drawCircle(
-      rect.center,
-      rect.width / 2,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..color = AppTokens.surface3,
-    );
-    final double sweep = (fraction.clamp(0.0, 1.0)) * math.pi * 2;
-    if (sweep <= 0) {
-      return;
-    }
-    final Paint arc = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round
-      ..shader = const SweepGradient(
-        transform: GradientRotation(-math.pi / 2),
-        colors: <Color>[
-          AppTokens.accentDeep,
-          AppTokens.accent,
-          AppTokens.info,
-          AppTokens.accentDeep,
-        ],
-      ).createShader(rect);
-    canvas.drawArc(rect, -math.pi / 2, sweep, false, arc);
-    final double end = -math.pi / 2 + sweep;
-    canvas.drawCircle(
-      Offset(
-        rect.center.dx + rect.width / 2 * math.cos(end),
-        rect.center.dy + rect.width / 2 * math.sin(end),
-      ),
-      3.2,
-      Paint()..color = AppTokens.textPrimary,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_WeekRingPainter oldDelegate) =>
-      oldDelegate.fraction != fraction;
 }
 
 class _WeekRail extends StatelessWidget {
@@ -826,7 +800,6 @@ class _GoalBlock extends StatelessWidget {
               ),
               count: progress.workingSetCount,
               goal: progress.setGoal!,
-              color: AppTokens.highlight,
             ),
         ],
       ),
@@ -840,14 +813,12 @@ class _GoalMeter extends StatelessWidget {
     required this.value,
     required this.count,
     required this.goal,
-    this.color = AppTokens.accent,
   });
 
   final String label;
   final String value;
   final int count;
   final int goal;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -872,7 +843,9 @@ class _GoalMeter extends StatelessWidget {
                 Expanded(
                   child: Container(
                     height: 5,
-                    color: index < filled ? color : AppTokens.surface3,
+                    color: index < filled
+                        ? AppTokens.accent
+                        : AppTokens.surface3,
                   ),
                 ),
                 if (index < segments - 1) const SizedBox(width: 3),
@@ -888,7 +861,7 @@ class _GoalMeter extends StatelessWidget {
             textAlign: TextAlign.end,
             maxLines: 1,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: count >= goal ? color : AppTokens.textPrimary,
+              color: count >= goal ? AppTokens.accent : AppTokens.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -926,11 +899,13 @@ class _SectionHeading extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
+              Container(width: 3, height: 18, color: AppTokens.accent),
+              const SizedBox(width: AppTokens.space1),
               Expanded(
                 child: Text(
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

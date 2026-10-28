@@ -60,9 +60,11 @@ persistence, schema-migration snapshots, and Safe Mode are not implemented.
 
 Post-M9 owner pass (2026-10-26) adds the pre-session dashboard, body-weight
 check-ins, the weekly summary, RIR explainer, a painted brand emblem, the
-refreshed palette, the post-workout summary and its cat mascot, optional weekly
-goals in document schema v4, the plate/warm-up calculator, and the night-session
-visual system.
+post-workout summary and its cat mascot, optional weekly goals in document
+schema v4, the plate/warm-up calculator, and the night-session visual system.
+The 2026-10-28 Obsidian Telemetry pass replaces that visual layer with square,
+achromatic surfaces, a regenerated aperture brand kit, white hairline charts,
+square toggles, and a new contrast/geometry guard.
 The new domain logic (weekly series, session/exercise stats, body-weight edits,
 goal progress/streak, plate math, session records) has lift_core tests; the
 document store has a v2→v3 test and a v3→v4 read/write test; body weight, weekly

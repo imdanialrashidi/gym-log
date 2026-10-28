@@ -806,7 +806,7 @@ class _WarmupToggle extends StatelessWidget {
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
               border: Border.all(
-                color: selected ? AppTokens.accent : AppTokens.outline,
+                color: selected ? AppTokens.accent : AppTokens.outlineStrong,
               ),
             ),
             child: Row(
@@ -932,7 +932,9 @@ class _NumberDeck extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
             border: Border(
               bottom: BorderSide(
-                color: errorText == null ? AppTokens.outline : AppTokens.danger,
+                color: errorText == null
+                    ? AppTokens.outlineStrong
+                    : AppTokens.danger,
                 width: errorText == null ? 1 : 2,
               ),
             ),
@@ -1057,13 +1059,17 @@ class _RirScale extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTokens.radiusSmall),
-        border: Border.all(color: AppTokens.outline),
+        border: Border.all(color: AppTokens.outlineStrong),
       ),
       child: Column(
         children: <Widget>[
           for (int row = 0; row < 2; row += 1) ...<Widget>[
             if (row > 0)
-              const Divider(height: 1, thickness: 1, color: AppTokens.outline),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppTokens.outlineStrong,
+              ),
             Row(
               children: <Widget>[
                 for (int column = 0; column < 3; column += 1) ...<Widget>[
@@ -1071,7 +1077,7 @@ class _RirScale extends StatelessWidget {
                     const SizedBox(
                       width: 1,
                       height: AppTokens.minTouchTarget,
-                      child: ColoredBox(color: AppTokens.outline),
+                      child: ColoredBox(color: AppTokens.outlineStrong),
                     ),
                   Expanded(
                     child: _RirCell(

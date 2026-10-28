@@ -25,26 +25,18 @@ class ProgressTrack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double safe = value.isNaN ? 0 : value.clamp(0.0, 1.0);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppTokens.radiusPill),
-      child: SizedBox(
-        height: height,
-        child: Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            ColoredBox(color: backgroundColor),
-            FractionallySizedBox(
-              alignment: AlignmentDirectional.centerStart,
-              widthFactor: safe,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(AppTokens.radiusPill),
-                ),
-              ),
-            ),
-          ],
-        ),
+    return SizedBox(
+      height: height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          ColoredBox(color: backgroundColor),
+          FractionallySizedBox(
+            alignment: AlignmentDirectional.centerStart,
+            widthFactor: safe,
+            child: ColoredBox(color: color),
+          ),
+        ],
       ),
     );
   }

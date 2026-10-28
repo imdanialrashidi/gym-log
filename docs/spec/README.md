@@ -106,8 +106,10 @@ trend, weekly summary, dashboard, RIR explainer, post-workout summary, weekly
 goals, plate calculator, night-session visual system, post-workout cat, Persian voice) are
 documented with local IDs
 in [PRODUCT.md](../PRODUCT.md#owner-requested-extensions-2026-10-26) and
-[DESIGN.md](../DESIGN.md#owner-requested-extensions). They do not edit, relabel,
-or renumber a spec requirement row.
+[DESIGN.md](../DESIGN.md#owner-requested-extensions). The 2026-10-28 Obsidian
+Telemetry rebrand supersedes the night-session description; the current visual
+contract is [DESIGN.md](../DESIGN.md) and [PALETTE.md](../PALETTE.md). These
+local extensions do not edit, relabel, or renumber a spec requirement row.
 
 ## Verification invariant
 

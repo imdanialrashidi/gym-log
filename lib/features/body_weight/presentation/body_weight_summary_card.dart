@@ -93,9 +93,7 @@ class BodyWeightSummaryCard extends StatelessWidget {
                               ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTokens.weight,
-                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(),
                       ),
                     ],
                   ),
@@ -121,7 +119,6 @@ class BodyWeightSummaryCard extends StatelessWidget {
                           value: week.weightGrams?.toDouble(),
                         ),
                     ],
-                    color: AppTokens.weight,
                   ),
                 ),
               ],

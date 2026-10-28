@@ -2,18 +2,18 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../app/theme/app_tokens.dart';
 
-/// The app's single panel surface: a rounded navy card with a hairline border.
+/// The app's single panel surface: a square instrument plate with a 1 px
+/// hairline.
 ///
-/// Cards are raised by fill and border, not by shadow. [AppCard.gradient] is
-/// decorative and clips to the same radius; the base color stays underneath so
-/// text contrast never depends on a gradient stop.
+/// Cards are raised by fill and structure, never by shadow, gradient, or blur.
+/// [radius] is retained for rare special cases but defaults to the system's
+/// hard 0 dp corner.
 class AppCard extends StatelessWidget {
   const AppCard({
     required this.child,
     super.key,
     this.padding = const EdgeInsetsDirectional.all(AppTokens.space2),
     this.color,
-    this.gradient,
     this.borderColor,
     this.radius = AppTokens.radiusLarge,
     this.onTap,
@@ -23,7 +23,6 @@ class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color? color;
-  final Gradient? gradient;
   final Color? borderColor;
   final double radius;
   final VoidCallback? onTap;
@@ -35,12 +34,9 @@ class AppCard extends StatelessWidget {
     final Widget content = Padding(padding: padding, child: child);
     final Widget core = DecoratedBox(
       decoration: BoxDecoration(
-        color: gradient == null ? (color ?? AppTokens.surface) : null,
-        gradient: gradient,
+        color: color ?? AppTokens.surface,
         borderRadius: shape,
-        border: Border.all(
-          color: borderColor ?? AppTokens.outline.withValues(alpha: 0.8),
-        ),
+        border: Border.all(color: borderColor ?? AppTokens.outline),
       ),
       child: Material(
         color: Colors.transparent,
@@ -50,12 +46,6 @@ class AppCard extends StatelessWidget {
       ),
     );
 
-    return Semantics(
-      container: true,
-      label: semanticsLabel,
-      child: gradient == null
-          ? core
-          : ClipRRect(borderRadius: shape, child: core),
-    );
+    return Semantics(container: true, label: semanticsLabel, child: core);
   }
 }

@@ -411,7 +411,6 @@ void main() {
                 width: 320,
                 child: ProgressChart(
                   points: points,
-                  color: const Color(0xFF3DDC97),
                   formatValue: (double value) => value.round().toString(),
                   emptyMessage: 'No values',
                   semanticsLabel: 'Progress',
@@ -451,7 +450,6 @@ void main() {
         home: Scaffold(
           body: ProgressChart(
             points: points,
-            color: const Color(0xFF3DDC97),
             formatValue: (double value) => value.round().toString(),
             emptyMessage: 'No values',
             semanticsLabel: 'Progress',

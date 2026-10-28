@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gym_log/core/widgets/square_switch.dart';
 import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -143,12 +144,14 @@ void main() {
 
     expect(
       tester
-          .widget<Switch>(find.byKey(const Key('goal-session-enabled')))
+          .widget<SquareSwitch>(find.byKey(const Key('goal-session-enabled')))
           .value,
       isTrue,
     );
     expect(
-      tester.widget<Switch>(find.byKey(const Key('goal-set-enabled'))).value,
+      tester
+          .widget<SquareSwitch>(find.byKey(const Key('goal-set-enabled')))
+          .value,
       isFalse,
     );
     await tester.ensureVisible(find.byKey(const Key('goal-save')));

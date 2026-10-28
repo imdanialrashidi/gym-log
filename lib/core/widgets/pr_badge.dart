@@ -35,9 +35,11 @@ class PrBadge extends StatelessWidget {
             horizontal: AppTokens.space1,
             vertical: 2,
           ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppTokens.highlight),
+          decoration: const BoxDecoration(
+            color: AppTokens.accent,
+            border: Border.fromBorderSide(
+              BorderSide(color: AppTokens.outlineStrong),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -45,13 +47,13 @@ class PrBadge extends StatelessWidget {
               const Icon(
                 Icons.emoji_events_outlined,
                 size: 14,
-                color: AppTokens.highlight,
+                color: AppTokens.onAccent,
               ),
               const SizedBox(width: 4),
               Text(
                 l10n.prBadge,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppTokens.highlight,
+                  color: AppTokens.onAccent,
                   fontWeight: FontWeight.w700,
                 ),
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gym_log/app/app_info.dart';
+import 'package:gym_log/core/widgets/square_switch.dart';
 import 'package:gym_log/features/settings/presentation/about_screen.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -105,7 +106,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final SwitchListTile toggle = tester.widget<SwitchListTile>(backup);
+    final SquareSwitch toggle = tester.widget<SquareSwitch>(backup);
     expect(toggle.value, isFalse);
     expect(toggle.onChanged, isNull);
     expect(find.text('Allow Android backup'), findsOneWidget);

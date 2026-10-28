@@ -33,7 +33,7 @@ class AppShell extends StatelessWidget {
           padding: EdgeInsetsDirectional.only(start: AppTokens.space2),
           child: Align(
             alignment: AlignmentDirectional.centerStart,
-            child: BrandMark(size: 30, showWordmark: false),
+            child: BrandMark(size: 32, showWordmark: false),
           ),
         ),
         titleSpacing: AppTokens.space1,
@@ -45,12 +45,8 @@ class AppShell extends StatelessWidget {
               onPressed: () => unawaited(context.push('/settings')),
               tooltip: l10n.settingsTitle,
               style: IconButton.styleFrom(
-                side: const BorderSide(color: AppTokens.outline),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(AppTokens.radiusSmall),
-                  ),
-                ),
+                side: const BorderSide(color: AppTokens.outlineStrong),
+                shape: const RoundedRectangleBorder(),
               ),
               icon: const Icon(Icons.settings_outlined, size: 20),
             ),

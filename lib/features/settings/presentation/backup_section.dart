@@ -9,6 +9,7 @@ import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
+import '../../../core/widgets/square_switch.dart';
 import '../../../data/app_data_controller.dart';
 import '../../../data/app_data_store.dart';
 import '../../../data/backup_flow.dart';
@@ -155,15 +156,19 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
         // DAT-007/ADR-0007: Android Auto Backup is a manifest/build-time
         // policy. This build enforces it off, so the control communicates the
         // effective state instead of pretending a runtime switch can change it.
-        SwitchListTile(
-          key: const Key('android-backup-toggle'),
+        ListTile(
           contentPadding: const EdgeInsetsDirectional.symmetric(
             horizontal: AppTokens.space1,
           ),
+          leading: const Icon(Icons.lock_outline),
           title: Text(l10n.androidBackupTitle),
           subtitle: Text(l10n.androidBackupHint),
-          value: false,
-          onChanged: null,
+          trailing: SquareSwitch(
+            key: const Key('android-backup-toggle'),
+            value: false,
+            onChanged: null,
+            semanticLabel: l10n.androidBackupTitle,
+          ),
         ),
         ListTile(
           key: const Key('export-data'),

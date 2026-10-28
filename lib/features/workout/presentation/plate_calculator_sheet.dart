@@ -77,14 +77,9 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
       child: Padding(
         padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppTokens.surface,
-            borderRadius: const BorderRadiusDirectional.vertical(
-              top: Radius.circular(AppTokens.radiusLarge),
-            ),
-            border: Border(
-              top: BorderSide(color: AppTokens.accent.withValues(alpha: 0.5)),
-            ),
+            border: Border(top: BorderSide(color: AppTokens.outlineStrong)),
           ),
           child: SingleChildScrollView(
             child: Padding(

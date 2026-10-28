@@ -6,7 +6,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../app/app_clock.dart';
 import '../../../app/document_gate.dart';
-import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
@@ -109,7 +108,6 @@ class BodyWeightScreen extends ConsumerWidget {
                         value: week.weightGrams?.toDouble(),
                       ),
                   ],
-                  color: AppTokens.weight,
                   formatValue: (double value) => context.digits(
                     '${formatWeight(value.round(), unit)} '
                     '${weightUnitLabel(context, unit)}',
@@ -165,7 +163,6 @@ class BodyWeightScreen extends ConsumerWidget {
                             child: const Icon(
                               Icons.monitor_weight_outlined,
                               size: 19,
-                              color: AppTokens.weight,
                             ),
                           ),
                           const SizedBox(width: AppTokens.space2),
@@ -309,8 +306,7 @@ class _WeightHero extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final BodyWeightEntry? latest = entry;
     return AppCard(
-      gradient: AppGradients.hero,
-      borderColor: AppTokens.accentDeep.withValues(alpha: 0.45),
+      borderColor: AppTokens.outlineStrong,
       padding: const EdgeInsetsDirectional.all(AppTokens.space3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

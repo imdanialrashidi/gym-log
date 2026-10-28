@@ -28,6 +28,11 @@ final List<_Pair> _textPairs = <_Pair>[
     AppTokens.surface3,
   ),
   const _Pair(
+    'textPrimary on surface4',
+    AppTokens.textPrimary,
+    AppTokens.surface4,
+  ),
+  const _Pair(
     'textSecondary on background',
     AppTokens.textSecondary,
     AppTokens.background,
@@ -47,10 +52,25 @@ final List<_Pair> _textPairs = <_Pair>[
     AppTokens.textSecondary,
     AppTokens.surface3,
   ),
+  const _Pair(
+    'textSecondary on surface4',
+    AppTokens.textSecondary,
+    AppTokens.surface4,
+  ),
+  const _Pair(
+    'textMuted on background',
+    AppTokens.textMuted,
+    AppTokens.background,
+  ),
+  const _Pair('textMuted on surface', AppTokens.textMuted, AppTokens.surface),
+  const _Pair('textMuted on surface2', AppTokens.textMuted, AppTokens.surface2),
+  const _Pair('textMuted on surface3', AppTokens.textMuted, AppTokens.surface3),
+  const _Pair('textMuted on surface4', AppTokens.textMuted, AppTokens.surface4),
   const _Pair('accent on background', AppTokens.accent, AppTokens.background),
   const _Pair('accent on surface', AppTokens.accent, AppTokens.surface),
   const _Pair('accent on surface2', AppTokens.accent, AppTokens.surface2),
   const _Pair('accent on surface3', AppTokens.accent, AppTokens.surface3),
+  const _Pair('accent on surface4', AppTokens.accent, AppTokens.surface4),
   const _Pair(
     'highlight on background',
     AppTokens.highlight,
@@ -61,6 +81,8 @@ final List<_Pair> _textPairs = <_Pair>[
   const _Pair('highlight on surface3', AppTokens.highlight, AppTokens.surface3),
   const _Pair('danger on background', AppTokens.danger, AppTokens.background),
   const _Pair('danger on surface', AppTokens.danger, AppTokens.surface),
+  const _Pair('danger on surface2', AppTokens.danger, AppTokens.surface2),
+  const _Pair('danger on surface3', AppTokens.danger, AppTokens.surface3),
   const _Pair('info on background', AppTokens.info, AppTokens.background),
   const _Pair('info on surface', AppTokens.info, AppTokens.surface),
   const _Pair('info on surface2', AppTokens.info, AppTokens.surface2),
@@ -70,9 +92,36 @@ final List<_Pair> _textPairs = <_Pair>[
   const _Pair('weight on surface2', AppTokens.weight, AppTokens.surface2),
   const _Pair('weight on surface3', AppTokens.weight, AppTokens.surface3),
   const _Pair('onAccent on accent', AppTokens.onAccent, AppTokens.accent),
+  const _Pair('onDanger on danger', AppTokens.onDanger, AppTokens.danger),
+  const _Pair('onInfo on info', AppTokens.onInfo, AppTokens.info),
   const _Pair('background on danger', AppTokens.background, AppTokens.danger),
   const _Pair('background on info', AppTokens.background, AppTokens.info),
   const _Pair('background on weight', AppTokens.background, AppTokens.weight),
+];
+
+/// Non-text control boundaries must clear 3:1. Panel hairlines are decorative
+/// and are deliberately excluded.
+final List<_Pair> _controlPairs = <_Pair>[
+  const _Pair(
+    'outlineStrong on background',
+    AppTokens.outlineStrong,
+    AppTokens.background,
+  ),
+  const _Pair(
+    'outlineStrong on surface',
+    AppTokens.outlineStrong,
+    AppTokens.surface,
+  ),
+  const _Pair(
+    'outlineStrong on surface2',
+    AppTokens.outlineStrong,
+    AppTokens.surface2,
+  ),
+  const _Pair(
+    'outlineStrong on surface3',
+    AppTokens.outlineStrong,
+    AppTokens.surface3,
+  ),
 ];
 
 void main() {
@@ -100,9 +149,28 @@ void main() {
       failures,
       isEmpty,
       reason:
-          'Text contrast failures. The owner palette was not changed:\n'
+          'Text contrast failures. The Obsidian palette was not changed:\n'
           '${failures.join('\n')}\n$report',
     );
+  });
+
+  test('every interactive control boundary clears WCAG 3:1', () {
+    final List<String> failures = <String>[];
+    for (final _Pair pair in _controlPairs) {
+      final double ratio = _contrast(pair.foreground, pair.background);
+      if (ratio < 3) {
+        failures.add('${pair.name} = ${ratio.toStringAsFixed(2)}:1');
+      }
+    }
+    expect(failures, isEmpty, reason: failures.join('\n'));
+  });
+
+  test('Obsidian Telemetry geometry is square', () {
+    expect(AppTokens.radiusSmall, 0);
+    expect(AppTokens.radiusMedium, 0);
+    expect(AppTokens.radiusLarge, 0);
+    expect(AppTokens.radiusPill, 0);
+    expect(AppTokens.minTouchTarget, 48);
   });
 
   test('a failing pair reports a passing smallest fix', () {

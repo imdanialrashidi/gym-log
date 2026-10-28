@@ -92,9 +92,7 @@ class _WorkoutLiveBarState extends ConsumerState<WorkoutLiveBar>
               decoration: BoxDecoration(
                 color: AppTokens.surface2,
                 borderRadius: shape,
-                border: Border.all(
-                  color: AppTokens.accent.withValues(alpha: 0.38),
-                ),
+                border: Border.all(color: AppTokens.outlineStrong),
               ),
               child: Padding(
                 padding: const EdgeInsetsDirectional.all(AppTokens.space2),
@@ -110,10 +108,7 @@ class _WorkoutLiveBarState extends ConsumerState<WorkoutLiveBar>
                           child: Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppTokens.accent,
-                              shape: BoxShape.circle,
-                            ),
+                            color: AppTokens.accent,
                           ),
                         ),
                         const SizedBox(width: AppTokens.space1),

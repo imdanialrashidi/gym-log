@@ -8,7 +8,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../../app/app_clock.dart';
 import '../../../app/document_gate.dart';
 import '../../../app/routes.dart';
-import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
@@ -183,8 +182,7 @@ class _WeekOverviewCard extends StatelessWidget {
     }
     return AppCard(
       key: const Key('progress-week-overview'),
-      gradient: AppGradients.hero,
-      borderColor: AppTokens.accentDeep.withValues(alpha: 0.45),
+      borderColor: AppTokens.outlineStrong,
       padding: const EdgeInsetsDirectional.all(AppTokens.space3),
       onTap: onOpen,
       child: Column(

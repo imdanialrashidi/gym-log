@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +6,6 @@ import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/routes.dart';
-import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
@@ -224,8 +222,7 @@ class _SummaryHero extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return AppCard(
       key: const Key('session-summary-hero'),
-      gradient: AppGradients.hero,
-      borderColor: AppTokens.accentDeep.withValues(alpha: 0.55),
+      borderColor: AppTokens.outlineStrong,
       padding: const EdgeInsetsDirectional.all(AppTokens.space3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,20 +431,15 @@ class _SessionSeal extends StatelessWidget {
     final Widget seal = SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _SealPainter(
-          ring: AppTokens.accent,
-          marker: records > 0 ? AppTokens.highlight : AppTokens.accentDeep,
-        ),
-      ),
+      child: CustomPaint(painter: _SealPainter(hasRecords: records > 0)),
     );
     if (reduceMotion) {
       return seal;
     }
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.88, end: 1),
-      duration: const Duration(milliseconds: 360),
-      curve: Curves.easeOutBack,
+      tween: Tween<double>(begin: 0.96, end: 1),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
       builder: (BuildContext context, double value, Widget? child) {
         return Opacity(
           opacity: value.clamp(0.0, 1.0),
@@ -459,74 +451,63 @@ class _SessionSeal extends StatelessWidget {
   }
 }
 
+/// A square machined stamp: outer frame, inner rule, one check stroke, and a
+/// single record index mark. No circles, no festive ticks.
 class _SealPainter extends CustomPainter {
-  const _SealPainter({required this.ring, required this.marker});
+  const _SealPainter({required this.hasRecords});
 
-  final Color ring;
-  final Color marker;
+  final bool hasRecords;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Offset center = size.center(Offset.zero);
-    final double radius = size.shortestSide / 2 - 2;
-    final Paint ringPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = ring.withValues(alpha: 0.55);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -1.2,
-      5.2,
-      false,
-      ringPaint,
-    );
-    final Paint inner = Paint()
+    final Rect outer = (Offset.zero & size).deflate(1);
+    final Paint frame = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..color = ring.withValues(alpha: 0.18);
-    canvas.drawCircle(center, radius - 9, inner);
-    final Paint markerPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round
-      ..color = marker;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius - 4),
-      2.7,
-      0.9,
-      false,
-      markerPaint,
+      ..color = AppTokens.textPrimary.withValues(alpha: 0.55);
+    canvas.drawRect(outer, frame);
+
+    final Rect inner = outer.deflate(size.shortestSide * 0.075);
+    canvas.drawRect(
+      inner,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = AppTokens.textPrimary.withValues(alpha: 0.18),
     );
+
+    // Corner index marks: the optical-frame signature of the brand.
+    final Paint index = Paint()..color = AppTokens.textPrimary;
+    const double tick = 5;
+    canvas.drawRect(Rect.fromLTWH(outer.left, outer.top, tick, 1.5), index);
+    canvas.drawRect(Rect.fromLTWH(outer.left, outer.top, 1.5, tick), index);
+    if (hasRecords) {
+      canvas.drawRect(
+        Rect.fromLTWH(outer.right - 6, outer.top + 6, 6, 6),
+        index,
+      );
+    }
+
+    final Offset center = size.center(Offset.zero);
+    final double reach = size.shortestSide * 0.21;
     final Path check = Path()
-      ..moveTo(center.dx - radius * 0.3, center.dy)
-      ..lineTo(center.dx - radius * 0.06, center.dy + radius * 0.24)
-      ..lineTo(center.dx + radius * 0.38, center.dy - radius * 0.26);
+      ..moveTo(center.dx - reach, center.dy)
+      ..lineTo(center.dx - reach * 0.22, center.dy + reach * 0.72)
+      ..lineTo(center.dx + reach, center.dy - reach * 0.80);
     canvas.drawPath(
       check,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.8
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
+        ..strokeWidth = 2.4
+        ..strokeCap = StrokeCap.square
+        ..strokeJoin = StrokeJoin.miter
         ..color = AppTokens.textPrimary,
     );
-    final Paint tick = Paint()..color = marker;
-    for (int index = 0; index < 4; index += 1) {
-      final double angle = -0.6 + index * 0.35;
-      final Offset tickCenter = Offset(
-        center.dx + radius * 0.8 * _cos(angle),
-        center.dy + radius * 0.8 * _sin(angle),
-      );
-      canvas.drawCircle(tickCenter, 1.4, tick);
-    }
   }
-
-  static double _cos(double value) => math.cos(value);
-  static double _sin(double value) => math.sin(value);
 
   @override
   bool shouldRepaint(_SealPainter oldDelegate) =>
-      oldDelegate.ring != ring || oldDelegate.marker != marker;
+      oldDelegate.hasRecords != hasRecords;
 }
 
 class _SummarySectionTitle extends StatelessWidget {

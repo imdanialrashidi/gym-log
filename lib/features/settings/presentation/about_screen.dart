@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../app/app_info.dart';
 import '../../../app/theme/app_tokens.dart';
+import '../../../app/theme/brand_mark.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
 import '../../../core/links/external_link.dart';
@@ -30,7 +31,7 @@ class AboutScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(l10n.appTitle, style: theme.textTheme.headlineSmall),
+                const BrandMark(size: 56, showTagline: true),
                 const SizedBox(height: AppTokens.space1),
                 Text(
                   l10n.aboutVersion(context.digits(appVersion)),

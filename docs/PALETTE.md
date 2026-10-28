@@ -2,156 +2,157 @@
 
 _[نسخهٔ فارسی در پایان همین فایل](#پالت-فارسی)_
 
-Single-page handoff reference for the **night-session** palette. The app is
-dark-only; there is no light theme. The canonical values live in
+Single-page handoff reference for **Obsidian Telemetry**, the app's achromatic
+instrument palette. The app is dark-only; there is no light UI theme. The
+canonical values live in
 [`lib/app/theme/app_tokens.dart`](../lib/app/theme/app_tokens.dart), and the
 measured pairs are guarded by
 [`test/theme/contrast_test.dart`](../test/theme/contrast_test.dart). This file
 mirrors that source so a designer, a store listing, or a new screen can use the
-same colors without opening Dart.
+same values without opening Dart.
 
-Style in one line: **near-black navy canvas, one electric-blue light, soft
-rounded instrument panels, numbers as the hero.**
+Style in one line: **black instrument face, machined zinc surfaces, 1 px
+structure, and pure white as the only strike-point.**
 
 ## Core surfaces
 
-| Token | Hex | RGB | Role | White text | Secondary text |
-|---|---|---|---:|---:|---:|
-| `background` | `#070B14` | `7, 11, 20` | App canvas, page background | 18.36:1 | 8.29:1 |
-| `surface` | `#0E1524` | `14, 21, 36` | Cards, sheets, navigation bar | 17.02:1 | 7.68:1 |
-| `surface2` | `#162034` | `22, 32, 52` | Raised card, input field, saved row | 15.19:1 | 6.86:1 |
-| `surface3` | `#1F2B42` | `31, 43, 66` | Pressed/selected surface, snackbar | 13.22:1 | 5.97:1 |
-| `outline` | `#26344F` | `38, 52, 79` | Hairline borders and dividers — **decorative only** | — | — |
+| Token | Hex | RGB | Role | White text | Secondary text | Muted text |
+|---|---|---|---:|---:|---:|---:|
+| `background` | `#09090B` | `9, 9, 11` | App canvas, page background | 19.90:1 | 7.76:1 | 6.27:1 |
+| `surface` | `#121214` | `18, 18, 20` | Cards, sheets, app bar, navigation | 18.71:1 | 7.30:1 | 5.89:1 |
+| `surface2` | `#18181B` | `24, 24, 27` | Inputs, raised controls, saved rows | 17.72:1 | 6.91:1 | 5.58:1 |
+| `surface3` | `#201F22` | `32, 31, 34` | Pressed/selected recess, tracks | 16.40:1 | 6.40:1 | 5.17:1 |
+| `surface4` | `#2A2A2C` | `42, 42, 44` | Utility fill, snackbar | 14.32:1 | 5.59:1 | 4.51:1 |
+| `outline` | `#27272A` | `39, 39, 42` | Decorative panel/dividing hairline — **not a control boundary** | — | — | — |
 
-`outline` is never a control boundary, focus ring, or the only state signal.
-Use `accent` for focus and selection.
+`outline` is never a button border, input boundary, focus ring, or the only
+state signal. It measures 1.34:1 on the canvas.
 
-## Text and actions
+## Text, actions, and controls
 
 | Token | Hex | RGB | Role | Contrast |
 |---|---|---|---:|---:|
-| `textPrimary` | `#F4F7FF` | `244, 247, 255` | Primary text, big numbers | 18.36:1 on canvas |
-| `textSecondary` | `#9AA9C4` | `154, 169, 196` | Labels, hints, supporting copy | 8.29:1 on canvas |
-| `accent` | `#5B9BFF` | `91, 155, 255` | The single action color; links, focus, selected state | 7.10:1 on canvas, 5.87:1 on `surface2` |
-| `accentDeep` | `#2F6BFF` | `47, 107, 255` | Gradient/decorative companion; **never small text** | — |
-| `onAccent` | `#061024` | `6, 16, 36` | Text/icon on an accent fill | 6.84:1 on `accent` |
+| `textPrimary` | `#FFFFFF` | `255, 255, 255` | Primary text, hero metrics, white strike-point | 19.90:1 on canvas |
+| `textSecondary` | `#A1A1AA` | `161, 161, 170` | Supporting copy, labels, secondary metrics | 7.76:1 on canvas |
+| `textMuted` | `#8E9192` | `142, 145, 146` | Micro-labels, passive indices, units | 6.27:1 on canvas; 4.51:1 on `surface4` |
+| `outlineStrong` | `#71717A` | `113, 113, 122` | Interactive control boundary; **not text** | 4.12:1 on canvas, 3.87:1 on surface, 3.67:1 on surface2, 3.39:1 on surface3; 2.96:1 on surface4 (do not use there) |
+| `accent` | `#FFFFFF` | `255, 255, 255` | The single action, focus, and selected state | 19.90:1 on canvas |
+| `onAccent` | `#09090B` | `9, 9, 11` | Text/icon on a white fill | 19.90:1 |
 
-Use **one** accent action per surface. Do not introduce a second action hue.
+There is exactly **one** action signal: pure white. A screen may have one
+white-filled primary action; secondary actions are outline buttons with a
+`#71717A` boundary.
 
-## Semantic colors
+## Semantic aliases
 
-| Token | Hex | RGB | Role | Contrast on canvas |
-|---|---|---|---:|---:|
-| `highlight` | `#FFC857` | `255, 200, 87` | Personal records, gold brand marker, celebratory emphasis | 12.79:1 |
-| `danger` | `#FF6B7A` | `255, 107, 122` | Errors, destructive actions | 7.16:1 |
-| `info` | `#6EE7F9` | `110, 231, 249` | Hints, rest progress, charts | 13.55:1 |
-| `weight` | `#A78BFA` | `167, 139, 250` | Body-weight series only, distinct from training volume | 7.23:1 |
+The implementation keeps semantic names so product code reads clearly, but
+every alias resolves to the same achromatic scale. Meaning must be carried by
+text, icons, stroke weight, or inversion.
 
-Semantic colors never carry meaning alone: pair them with text, an icon, or a
-pattern (PR label + gold, error text + red, RIR number + selected fill).
-
-## Gradients
-
-| Name | Stops | Use |
+| Token | Hex | Role |
 |---|---|---|
-| `AppGradients.hero` | `#172C54` → `#0C1628` (55%) → `#0E1524` | Active-session hero, weekly hero |
-| `AppGradients.accent` | `#5B9BFF` → `#2F6BFF` | Decorative accent fills |
-| `AppGradients.weight` | `#A78BFA` → `#6EE7F9` | Body-weight chart area |
-| `AppGradients.gold` | `#FFD98A` → `#FFC857` | PR seal / brand marker |
-| `AppGradients.surface` | `#152038` → `#0E1524` | Top-lit raised surfaces |
+| `highlight` | `#FFFFFF` | Personal records; rendered as a white filled badge with a `PR` label and trophy glyph |
+| `danger` | `#FFFFFF` | Errors and destructive actions; rendered with a 2 px white stroke, an icon, and a text message. No red |
+| `onDanger` | `#09090B` | Text on a white destructive fill |
+| `info` | `#A1A1AA` | Passive hints; no hue |
+| `onInfo` | `#09090B` | Text on an info fill |
+| `weight` | `#A1A1AA` | Body-weight readout; differentiated by label and dash pattern |
+| `accentDeep` | `#A1A1AA` | Legacy alias for decorative borders/readouts; gradients are no longer used |
 
-Every gradient sits on a solid role that carries contrast; text never depends
-on a gradient stop. On the hero gradient the worst stop still gives
-`textPrimary` 12.85:1, `textSecondary` 5.80:1, and `accent` 4.97:1.
-
-## Spacing, shape, motion
+## Geometry, spacing, motion
 
 | Token | Value |
 |---|---|
 | Space scale | 4, 8, 16, 24, 32, 40, 48 dp |
-| Card radius | 20 dp |
-| Control radius | 12–16 dp |
-| Pill | 999 dp |
+| Card / control / pill radius | **0 dp** |
+| Panel and divider hairline | 1 px `#27272A` |
+| Focus / active stroke | 1–2 px `#FFFFFF` |
 | Minimum touch target | 48 dp |
+| Minimum clear space around the mark | 15% of the mark width |
 | Fast / normal / slow motion | 150 / 200 / 300 ms |
 | Page padding | 16 dp below 360 dp width; 24 dp otherwise |
 
-Panels are raised by fill and a 1 dp translucent border, not by shadows.
-Rounded panels, pill status chips, tabular figures for every changing number.
-Respect reduced motion: state changes apply immediately.
+Panels are separated by fill steps and hairlines, not shadows, blur, or
+gradients. Status chips, nav indicators, toggles, and every other control are
+squares. Respect reduced motion: state changes apply immediately.
 
 ## Ready-to-paste CSS
 
 ```css
 :root {
   /* surfaces */
-  --gl-background: #070b14;
-  --gl-surface: #0e1524;
-  --gl-surface-2: #162034;
-  --gl-surface-3: #1f2b42;
-  --gl-outline: #26344f;
+  --gl-background: #09090b;
+  --gl-surface: #121214;
+  --gl-surface-2: #18181b;
+  --gl-surface-3: #201f22;
+  --gl-surface-4: #2a2a2c;
+  --gl-hairline: #27272a;
+  --gl-control-outline: #71717a;
 
   /* text */
-  --gl-text-primary: #f4f7ff;
-  --gl-text-secondary: #9aa9c4;
+  --gl-text-primary: #ffffff;
+  --gl-text-secondary: #a1a1aa;
+  --gl-text-muted: #8e9192;
 
-  /* action */
-  --gl-accent: #5b9bff;
-  --gl-accent-deep: #2f6bff;
-  --gl-on-accent: #061024;
+  /* action and aliases */
+  --gl-accent: #ffffff;
+  --gl-on-accent: #09090b;
+  --gl-highlight: #ffffff;
+  --gl-danger: #ffffff;
+  --gl-info: #a1a1aa;
+  --gl-weight: #a1a1aa;
 
-  /* semantics */
-  --gl-highlight: #ffc857;
-  --gl-danger: #ff6b7a;
-  --gl-info: #6ee7f9;
-  --gl-weight: #a78bfa;
-
-  /* gradients */
-  --gl-hero: linear-gradient(135deg, #172c54, #0c1628 55%, #0e1524);
-  --gl-gold: linear-gradient(135deg, #ffd98a, #ffc857);
-  --gl-weight-series: linear-gradient(135deg, #a78bfa, #6ee7f9);
+  /* structure */
+  --gl-radius: 0px;
+  --gl-hairline-width: 1px;
 }
 ```
 
 ## Do / do not
 
-- **Do** keep the canvas near-black and let the numbers lead.
-- **Do** use `accent` for the one primary action and focus state.
-- **Do** check any new text pair at **≥ 4.5:1** before shipping.
-- **Do** keep non-text controls at **≥ 3:1** and touch targets at **≥ 48 dp**.
-- **Do not** add neon, purple/blue gradient text, or a second action color.
+- **Do** keep the canvas black and let the numbers and structure lead.
+- **Do** use `#FFFFFF` for the one primary action, focus, and selected state.
+- **Do** use `outlineStrong` for interactive control boundaries and `outline`
+  only for panel structure.
+- **Do** check any new text pair at **≥ 4.5:1** and any new control boundary at
+  **≥ 3:1** before shipping.
+- **Do** keep touch targets at **≥ 48 dp** and preserve meaning without color.
+- **Do not** add red/green/blue/gold/purple state colors, a second action hue,
+  gradients, glows, shadows, or rounded panels.
+- **Do not** use `#71717A` for small text.
 - **Do not** use `outline` as a button border or focus ring.
-- **Do not** use `accentDeep` for small text.
 - **Do not** use color as the only difference between two states.
 
 ## پالت فارسی
 
-پالت تک‌صفحه‌ای اپ، برای تحویل به طراح یا ساخت صفحهٔ تازه. اپ فقط حالت تیره
+پالت تک‌صفحه‌ای اپ برای تحویل به طراح یا ساخت صفحهٔ تازه. اپ فقط حالت تیره
 دارد و مرجع نهایی کد در `lib/app/theme/app_tokens.dart` است؛ نسبت‌های کنتراست
 با `test/theme/contrast_test.dart` بررسی می‌شوند.
 
 | نقش | کد رنگ | کاربرد |
 |---|---|---|
-| پس‌زمینه | `#070B14` | بوم اصلی صفحه |
-| سطح ۱ | `#0E1524` | کارت، شیت، نوار پایین |
-| سطح ۲ | `#162034` | ورودی، کارت برجسته، ست ثبت‌شده |
-| سطح ۳ | `#1F2B42` | حالت فشرده/انتخاب‌شده، اسنک‌بار |
-| خط دور | `#26344F` | فقط خط تزئینی؛ هرگز تنها نشانگر وضعیت نباشد |
-| متن اصلی | `#F4F7FF` | متن و اعداد بزرگ |
-| متن دوم | `#9AA9C4` | برچسب، راهنما، توضیح |
-| اکسنت | `#5B9BFF` | تنها رنگ اقدام، لینک، فوکوس |
-| اکسنت تیره | `#2F6BFF` | فقط گرادیان و تزئین؛ متن ریز نه |
-| روی اکسنت | `#061024` | متن/آیکن روی دکمهٔ آبی |
-| هایلایت | `#FFC857` | رکورد شخصی، نشان طلایی برند |
-| خطر | `#FF6B7A` | خطا و اقدام حذفی |
-| اطلاعات | `#6EE7F9` | راهنما، پیشرفت استراحت، نمودار |
-| وزن بدن | `#A78BFA` | فقط سری وزن بدن، جدا از حجم تمرین |
+| پس‌زمینه | `#09090B` | بوم اصلی صفحه |
+| سطح ۱ | `#121214` | کارت، شیت، نوار بالا و پایین |
+| سطح ۲ | `#18181B` | ورودی، کنترل برجسته، ست ثبت‌شده |
+| سطح ۳ | `#201F22` | حالت فشرده/انتخاب‌شده، ریل پیشرفت |
+| سطح ۴ | `#2A2A2C` | پرکنندهٔ سودمند، اسنک‌بار |
+| خط تزئینی | `#27272A` | فقط ساختار و جداکننده؛ هرگز تنها نشانگر کنترل نباشد |
+| کادر کنترل | `#71717A` | دور دکمه و ورودی؛ متن ریز نه |
+| متن اصلی | `#FFFFFF` | متن و اعداد بزرگ، تنها اقدام سفید |
+| متن دوم | `#A1A1AA` | برچسب، راهنما، توضیح |
+| متن کم‌رنگ | `#8E9192` | ریزبرچسب، واحد، شاخص غیرفعال |
+| روی سفید | `#09090B` | متن/آیکن روی دکمهٔ سفید |
+| رکورد شخصی | `#FFFFFF` | نشان سفید با برچسب PR و آیکن؛ بدون طلایی |
+| خطر | `#FFFFFF` | خطای متنی + خط ۲ پیکسلی + آیکن؛ بدون قرمز |
+| اطلاعات | `#A1A1AA` | راهنمای غیرفعال، بدون رنگ |
+| وزن بدن | `#A1A1AA` | فقط خوانش وزن؛ با برچسب و خط‌چین از سری تمرین جدا می‌شود |
 
 قاعده‌ها: متن حداقل کنتراست ۴.۵ به ۱، کنترل‌های غیرمتنی حداقل ۳ به ۱،
-لمس حداقل ۴۸ دی‌پی، و هیچ معنایی فقط با رنگ منتقل نشود. یک صفحه، یک اقدام
-آبی. برای هر رنگ تازه، اول کنتراست را اندازه بگیر و بعد استفاده کن.
+لمس حداقل ۴۸ دی‌پی، گوشه‌های صفر، بدون گرادیان/سایه/هاله، و هیچ معنایی فقط
+با رنگ منتقل نشود. یک صفحه، یک اقدام سفید.
 
 ---
 
-Last measured: 2026-10-26 (WCAG 2.x relative luminance). Update this file and
-`docs/DESIGN.md` together when a token changes.
+Last measured: 2026-10-28 (WCAG 2.x relative luminance). Update this file,
+`docs/DESIGN.md`, and `lib/app/theme/app_tokens.dart` together when a token
+changes.

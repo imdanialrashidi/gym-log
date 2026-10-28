@@ -109,7 +109,6 @@ class _ExerciseProgressScreenState
         key: const Key('progress-chart-weight'),
         title: l10n.progressChartWeightTitle,
         points: progress.bestWeightSeries,
-        color: AppTokens.accent,
         formatValue: weightValue,
         emptyMessage: l10n.progressChartEmptyValues,
         axisKeyPrefix: 'progress-chart-weight',
@@ -119,7 +118,6 @@ class _ExerciseProgressScreenState
         title: l10n.progressChartE1rmTitle,
         subtitle: l10n.progressChartE1rmHint,
         points: progress.estimatedOneRepMaxSeries,
-        color: AppTokens.info,
         formatValue: weightValue,
         emptyMessage: l10n.progressChartEmptyValues,
         axisKeyPrefix: 'progress-chart-e1rm',
@@ -128,7 +126,6 @@ class _ExerciseProgressScreenState
         key: const Key('progress-chart-reps'),
         title: l10n.progressChartRepsTitle,
         points: progress.repsSeries,
-        color: AppTokens.highlight,
         formatValue: (double value) => value.round().toString(),
         emptyMessage: l10n.progressChartEmptyValues,
         axisKeyPrefix: 'progress-chart-reps',
@@ -138,7 +135,6 @@ class _ExerciseProgressScreenState
         title: l10n.progressChartRirTitle,
         subtitle: l10n.progressChartRirHint,
         points: progress.rirSeries,
-        color: AppTokens.textPrimary,
         formatValue: (double value) => value.round().toString(),
         emptyMessage: l10n.progressChartEmptyValues,
         axisKeyPrefix: 'progress-chart-rir',
@@ -232,6 +228,8 @@ class _TrainingTotalsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final bool hasTime = training.totalSpan != Duration.zero;
+    final bool hasAverage = training.averageSpan != null;
     return AppCard(
       key: const Key('progress-training-totals'),
       child: Column(
@@ -244,24 +242,21 @@ class _TrainingTotalsCard extends StatelessWidget {
               Expanded(
                 child: StatTile(
                   label: l10n.totalTime,
-                  value: training.totalSpan == Duration.zero
-                      ? l10n.notEnoughData
-                      : formatTrainingDurationShort(
-                          context,
-                          training.totalSpan,
-                        ),
+                  value: hasTime
+                      ? formatTrainingDurationShort(context, training.totalSpan)
+                      : '—',
                   icon: Icons.timer_outlined,
                 ),
               ),
               Expanded(
                 child: StatTile(
                   label: l10n.averageTime,
-                  value: training.averageSpan == null
-                      ? l10n.notEnoughData
-                      : formatTrainingDurationShort(
+                  value: hasAverage
+                      ? formatTrainingDurationShort(
                           context,
                           training.averageSpan,
-                        ),
+                        )
+                      : '—',
                   icon: Icons.av_timer_outlined,
                 ),
               ),
@@ -289,6 +284,28 @@ class _TrainingTotalsCard extends StatelessWidget {
               ),
             ],
           ),
+          if (!hasTime || !hasAverage) ...<Widget>[
+            const SizedBox(height: AppTokens.space2),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Icon(
+                  Icons.info_outline,
+                  size: 15,
+                  color: AppTokens.textMuted,
+                ),
+                const SizedBox(width: AppTokens.space1),
+                Expanded(
+                  child: Text(
+                    context.digits(l10n.notEnoughData),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTokens.textMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -443,10 +460,8 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             context.digits(value),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppTokens.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 2),
           Text(

@@ -34,7 +34,20 @@ class SectionHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text(title, style: theme.textTheme.titleMedium),
+                Row(
+                  children: <Widget>[
+                    Container(width: 3, height: 16, color: AppTokens.accent),
+                    const SizedBox(width: AppTokens.space1),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 if (subtitle != null)
                   Padding(
                     padding: const EdgeInsetsDirectional.only(top: 2),

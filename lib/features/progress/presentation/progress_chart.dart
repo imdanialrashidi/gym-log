@@ -17,7 +17,6 @@ import '../../../core/widgets/app_card.dart';
 class ProgressChart extends StatelessWidget {
   const ProgressChart({
     required this.points,
-    required this.color,
     required this.formatValue,
     required this.emptyMessage,
     required this.semanticsLabel,
@@ -26,7 +25,6 @@ class ProgressChart extends StatelessWidget {
   });
 
   final List<ProgressPoint> points;
-  final Color color;
   final String Function(double value) formatValue;
   final String emptyMessage;
   final String semanticsLabel;
@@ -94,7 +92,7 @@ class ProgressChart extends StatelessWidget {
             width: double.infinity,
             child: RepaintBoundary(
               child: CustomPaint(
-                painter: _ProgressChartPainter(points: points, color: color),
+                painter: _ProgressChartPainter(points: points),
               ),
             ),
           ),
@@ -111,7 +109,6 @@ class ProgressChartSection extends StatelessWidget {
   const ProgressChartSection({
     required this.title,
     required this.points,
-    required this.color,
     required this.formatValue,
     required this.emptyMessage,
     this.subtitle,
@@ -122,7 +119,6 @@ class ProgressChartSection extends StatelessWidget {
   final String title;
   final String? subtitle;
   final List<ProgressPoint> points;
-  final Color color;
   final String Function(double value) formatValue;
   final String emptyMessage;
   final String? axisKeyPrefix;
@@ -151,7 +147,6 @@ class ProgressChartSection extends StatelessWidget {
             const SizedBox(height: AppTokens.space1),
             ProgressChart(
               points: points,
-              color: color,
               formatValue: formatValue,
               emptyMessage: emptyMessage,
               semanticsLabel: context.digits(
@@ -236,10 +231,9 @@ class _DateAxis extends StatelessWidget {
 }
 
 class _ProgressChartPainter extends CustomPainter {
-  const _ProgressChartPainter({required this.points, required this.color});
+  const _ProgressChartPainter({required this.points});
 
   final List<ProgressPoint> points;
-  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -287,55 +281,33 @@ class _ProgressChartPainter extends CustomPainter {
       return plot.bottom - plot.height * fraction;
     }
 
+    // Fine dashed coordinate rules, not a filled plot area.
     final Paint grid = Paint()
-      ..color = AppTokens.outline.withValues(alpha: 0.7)
+      ..color = AppTokens.outline
       ..strokeWidth = 1;
     for (int index = 0; index < 3; index++) {
       final double y = plot.top + plot.height * index / 2;
-      canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), grid);
+      _dashedLine(canvas, Offset(plot.left, y), Offset(plot.right, y), grid);
     }
 
     canvas.save();
     canvas.clipRect(plot);
 
     final Paint line = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
+      ..color = AppTokens.textPrimary
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.square
+      ..strokeJoin = StrokeJoin.miter
       ..style = PaintingStyle.stroke;
-    final Paint area = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: <Color>[
-          color.withValues(alpha: 0.24),
-          color.withValues(alpha: 0.01),
-        ],
-      ).createShader(plot);
 
     Path? linePath;
-    Path? areaPath;
-    Offset? segmentStart;
-    Offset? segmentEnd;
 
     void flush() {
-      final Path? currentLine = linePath;
-      final Path? currentArea = areaPath;
-      if (currentLine != null && currentArea != null) {
-        final Offset last = segmentEnd!;
-        final Offset first = segmentStart!;
-        final Path fill = Path.from(currentArea)
-          ..lineTo(last.dx, plot.bottom)
-          ..lineTo(first.dx, plot.bottom)
-          ..close();
-        canvas.drawPath(fill, area);
-        canvas.drawPath(currentLine, line);
+      final Path? current = linePath;
+      if (current != null) {
+        canvas.drawPath(current, line);
       }
       linePath = null;
-      areaPath = null;
-      segmentStart = null;
-      segmentEnd = null;
     }
 
     for (final ProgressPoint point in points) {
@@ -347,40 +319,73 @@ class _ProgressChartPainter extends CustomPainter {
       final Offset offset = Offset(xFor(point.date), yFor(value));
       if (linePath == null) {
         linePath = Path()..moveTo(offset.dx, offset.dy);
-        areaPath = Path()..moveTo(offset.dx, offset.dy);
-        segmentStart = offset;
       } else {
         linePath!.lineTo(offset.dx, offset.dy);
-        areaPath!.lineTo(offset.dx, offset.dy);
       }
-      segmentEnd = offset;
     }
     flush();
 
+    // Square point markers at readable densities.
     if (points.length <= 60) {
-      final Paint dot = Paint()..color = color;
+      final Paint dot = Paint()..color = AppTokens.textPrimary;
       for (final ProgressPoint point in withValues) {
-        canvas.drawCircle(
-          Offset(xFor(point.date), yFor(point.value!)),
-          2.6,
+        final Offset offset = Offset(xFor(point.date), yFor(point.value!));
+        canvas.drawRect(
+          Rect.fromCenter(center: offset, width: 2.4, height: 2.4),
           dot,
         );
       }
     }
+
+    // Current cursor: a crosshair plus a diamond, with no glow halo.
     final ProgressPoint last = withValues.last;
     final Offset lastOffset = Offset(xFor(last.date), yFor(last.value!));
-    canvas.drawCircle(
-      lastOffset,
-      7,
-      Paint()..color = color.withValues(alpha: 0.16),
+    final Paint cursor = Paint()
+      ..color = AppTokens.textPrimary
+      ..strokeWidth = 1;
+    canvas.drawLine(
+      lastOffset.translate(-6, 0),
+      lastOffset.translate(6, 0),
+      cursor,
     );
-    canvas.drawCircle(lastOffset, 4, Paint()..color = color);
+    canvas.drawLine(
+      lastOffset.translate(0, -6),
+      lastOffset.translate(0, 6),
+      cursor,
+    );
+    final Path diamond = Path()
+      ..moveTo(lastOffset.dx, lastOffset.dy - 3.2)
+      ..lineTo(lastOffset.dx + 3.2, lastOffset.dy)
+      ..lineTo(lastOffset.dx, lastOffset.dy + 3.2)
+      ..lineTo(lastOffset.dx - 3.2, lastOffset.dy)
+      ..close();
+    canvas.drawPath(diamond, Paint()..color = AppTokens.textPrimary);
 
     canvas.restore();
   }
 
+  void _dashedLine(Canvas canvas, Offset start, Offset end, Paint paint) {
+    const double dash = 4;
+    const double gap = 4;
+    final double distance = (end - start).distance;
+    if (distance <= 0) {
+      return;
+    }
+    final Offset direction = (end - start) / distance;
+    double offset = 0;
+    while (offset < distance) {
+      final double segment = math.min(dash, distance - offset);
+      canvas.drawLine(
+        start + direction * offset,
+        start + direction * (offset + segment),
+        paint,
+      );
+      offset += dash + gap;
+    }
+  }
+
   @override
   bool shouldRepaint(covariant _ProgressChartPainter oldDelegate) {
-    return !identical(points, oldDelegate.points) || color != oldDelegate.color;
+    return !identical(points, oldDelegate.points);
   }
 }

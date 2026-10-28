@@ -17,6 +17,7 @@ import '../../../core/widgets/app_backdrop.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_formats.dart';
 import '../../../core/widgets/number_input.dart';
+import '../../../core/widgets/square_switch.dart';
 import '../../../data/app_data_controller.dart';
 import '../../goals/presentation/weekly_goal_sheet.dart';
 import 'backup_section.dart';
@@ -540,10 +541,11 @@ class _SwitchRow extends StatelessWidget {
               ],
             ),
           ),
-          Switch(
+          SquareSwitch(
             key: const Key('rest-timer-enabled'),
             value: value,
             onChanged: onChanged,
+            semanticLabel: title,
           ),
         ],
       ),

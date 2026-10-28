@@ -51,6 +51,12 @@ Everything here is honest, opt-in, and low-cost. None of it is forced on users.
 
 ### 29.4 Visual identity (Recommendation)
 
+> **Implementation note (2026-10-28):** the visual identity below is the
+> original specification recommendation and is retained as historical input.
+> The implemented contract is the achromatic Obsidian Telemetry system in
+> [DESIGN.md](../DESIGN.md) and [PALETTE.md](../PALETTE.md); do not add a
+> second palette from this table.
+
 **Principles:** dark-first, high contrast, generous spacing, large touch targets, numbers as the hero, minimal chrome.
 
 | Token | HEX | Use |

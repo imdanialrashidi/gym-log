@@ -4,7 +4,6 @@ import 'package:lift_core/lift_core.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/document_gate.dart';
-import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/calendar/calendar_service.dart';
 import '../../../core/l10n/digit_style_scope.dart';
@@ -300,8 +299,7 @@ class _SessionSummaryCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return AppCard(
       key: const Key('session-summary-card'),
-      gradient: AppGradients.hero,
-      borderColor: AppTokens.accentDeep.withValues(alpha: 0.4),
+      borderColor: AppTokens.outlineStrong,
       padding: const EdgeInsetsDirectional.all(AppTokens.space3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

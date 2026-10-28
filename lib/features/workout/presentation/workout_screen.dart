@@ -9,7 +9,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../../app/app_clock.dart';
 import '../../../app/document_gate.dart';
 import '../../../app/routes.dart';
-import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_tokens.dart';
 import '../../../core/l10n/digit_style_scope.dart';
 import '../../../core/l10n/l10n.dart';
@@ -491,8 +490,7 @@ class _ActiveSessionHero extends ConsumerWidget {
     );
     return AppCard(
       key: const Key('active-session-hero'),
-      gradient: AppGradients.hero,
-      borderColor: AppTokens.accentDeep.withValues(alpha: 0.55),
+      borderColor: AppTokens.outlineStrong,
       padding: const EdgeInsetsDirectional.all(AppTokens.space3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -14,7 +14,7 @@ class MiniTrend extends StatelessWidget {
     required this.points,
     this.color = AppTokens.accent,
     this.height = 48,
-    this.strokeWidth = 2,
+    this.strokeWidth = 1.5,
     super.key,
   });
 
@@ -111,8 +111,8 @@ class _MiniTrendPainter extends CustomPainter {
     final Paint stroke = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.square
+      ..strokeJoin = StrokeJoin.miter
       ..style = PaintingStyle.stroke;
 
     Path? line;
@@ -138,12 +138,13 @@ class _MiniTrendPainter extends CustomPainter {
 
     final ProgressPoint last = withValues.last;
     final Offset lastOffset = Offset(xFor(last.date), yFor(last.value!));
-    canvas.drawCircle(
-      lastOffset,
-      strokeWidth + 2.5,
-      Paint()..color = color.withValues(alpha: 0.18),
-    );
-    canvas.drawCircle(lastOffset, strokeWidth + 0.5, Paint()..color = color);
+    final Path diamond = Path()
+      ..moveTo(lastOffset.dx, lastOffset.dy - 3)
+      ..lineTo(lastOffset.dx + 3, lastOffset.dy)
+      ..lineTo(lastOffset.dx, lastOffset.dy + 3)
+      ..lineTo(lastOffset.dx - 3, lastOffset.dy)
+      ..close();
+    canvas.drawPath(diamond, Paint()..color = color);
   }
 
   @override
