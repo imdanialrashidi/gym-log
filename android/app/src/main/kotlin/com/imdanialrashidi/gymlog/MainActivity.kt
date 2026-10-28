@@ -1,4 +1,4 @@
-package com.example.gym_log
+package com.imdanialrashidi.gymlog
 
 import android.app.Activity
 import android.content.Intent

@@ -112,6 +112,14 @@ pinned Flutter/Vazirmatn assets. Regenerate only after an intentional visual
 change, then review the image diff. `test/golden_coverage_test.dart` enforces an
 LTR/RTL pair for every screen state.
 
+Session screens render start times in the local time zone, so the lane pins
+`TZ=UTC` before running tests; CI runs in UTC. Run golden commands with the same
+pin, or the session-summary images drift by a few pixels:
+
+```sh
+TZ=UTC flutter test --update-goldens test/workout_golden_test.dart
+```
+
 Regenerate the native-speaker review sheet after changing fa copy:
 
 ```sh
@@ -144,21 +152,22 @@ store signing material.
 
 ## Android release guard
 
-`applicationId` is the placeholder `com.example.gym_log` until the owner
-decides the permanent identity. Release builds are intentionally refused:
+`applicationId` is the permanent `com.imdanialrashidi.gymlog` (owner decision,
+2026-10-28). The Gradle guard still refuses any `com.example.*` identity, so the
+placeholder can never reach a release by accident. A release build also needs
+the owner's signing secrets, which never live in the repository:
 
 ```sh
 flutter build apk --release
-# FAIL: Release build refused: applicationId 'com.example.gym_log' is a placeholder.
+# FAIL: Release build refused: signing secrets are missing (...).
 ```
 
 The Gradle guard also verifies the merged release manifest has no `INTERNET`
 permission and has Android backup disabled. Debug/profile manifests keep the
 Flutter development `INTERNET` permission; release does not. The tag-triggered
 release workflow is `.github/workflows/release.yml`; the owner runbook is
-[docs/RELEASE.md](RELEASE.md). Release builds are still refused while the
-`applicationId` is the placeholder or the signing secrets are absent, and no
-release has been performed yet. Do not add signing material to the repository.
+[docs/RELEASE.md](RELEASE.md). No release has been performed yet. Do not add
+signing material to the repository.
 
 ## Network-restricted workstation note
 

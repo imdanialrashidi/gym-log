@@ -84,10 +84,10 @@ simulated.
 
 - Product contract: `docs/PRODUCT.md`; requirements and statuses: `docs/spec/`.
 - Stack and invariants: `docs/ARCHITECTURE.md`; visual contract: `docs/DESIGN.md`.
-- Reference device, permanent `applicationId`, project name, and license are
-  **Needs Decision**. Release builds are refused while the applicationId is the
-  placeholder or signing secrets are absent. About states "All rights reserved"
-  until the owner chooses and publishes a license. Device performance criteria
+- `applicationId` (`com.imdanialrashidi.gymlog`) and the MIT license are
+  **Decided** (2026-10-28). The public product name and the reference device are
+  **Needs Decision**. Release builds are refused while signing secrets are
+  absent or the identity regresses to `com.example`. Device performance criteria
   remain `UNPROVEN`; `NFR-PERF-003` is proven by the CI fixture benchmark.
   Owner release steps live in `docs/RELEASE.md`.
 - `scripts/project-verify.sh` is the canonical local lane; CI runs
@@ -263,7 +263,7 @@ template self-checks. The Flutter archive and version are pinned in
 | Guard | Command | Fails when |
 |---|---|---|
 | Release manifest posture (`NFR-ARCH-001`, `DAT-007`, `PHO-001`) | `(cd android && ./gradlew --console=plain :app:verifyReleaseManifest)` | merged release manifest has `INTERNET`, broad storage/media location, `CAMERA`, `allowBackup` is not `false`, `fullBackupContent` is not `false`, or `dataExtractionRules` is missing |
-| Placeholder release identity | `flutter build apk --release` or `(cd android && ./gradlew :app:verifyReleaseApplicationId)` (expected failure until owner decision) | `applicationId` starts with `com.example.` |
+| Placeholder release identity | `(cd android && ./gradlew :app:verifyReleaseApplicationId)` (passes with the permanent id; guards against a `com.example` regression) | `applicationId` starts with `com.example.` |
 | fa/en resource parity (`L10N-002`) | `dart run tool/guards/check_l10n.dart` | a key or placeholder exists in only one locale, or a value is empty |
 | fa review coverage (`L10N-010`) | `dart run tool/guards/check_fa_review_sheet.dart` | a fa key or its Persian text is missing from `docs/l10n/fa-review-sheet.md`, or the sheet has stale content |
 | Direction-aware layout (`L10N-001`, `L10N-004`) | `dart run tool/guards/check_directionality.dart` | app code hard-codes physical left/right spacing, alignment, corners, or LTR text direction (chart excepted) |

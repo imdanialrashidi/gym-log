@@ -13,14 +13,18 @@ certificate forces every user to uninstall, which deletes local training data.
 The `applicationId` can never change after the first public release. A lost key
 is therefore a data-loss event for users, not an inconvenience.
 
+Decisions recorded on 2026-10-28:
+
+- `applicationId`: `com.imdanialrashidi.gymlog`. It is permanent from the first
+  public release; the display name can change without touching it.
+- License: MIT (see `LICENSE`); the About screen states `MIT`.
+
 Owner decisions still open before the first release:
 
-- permanent project name and `applicationId` (currently the placeholder
-  `com.example.gym_log`, which release builds refuse);
-- project license (About currently states "All rights reserved"; choose and
-  publish a license before a public release, then update the About string and
-  this doc);
+- public product name (the launcher label is still "Gym Log", a generic name
+  with known collisions; changing the label does not change the identity);
 - reference device for the performance run (`docs/perf/REFERENCE_DEVICE.md`).
+  The owner has a recent Android phone; record its model and version there.
 
 ## 1. Create the keystore once, offline
 
@@ -198,6 +202,11 @@ Run on a real device, not an emulator.
    and confirm validation and previews behave.
 7. Record device, Android version, previous/new version codes, date, and result
    in the release checklist. `A14` stays `UNPROVEN` until this passes.
+
+The first public release has no previous signed APK and no update path: the
+permanent `applicationId` starts a new install identity. Record a fresh-install
+round-trip instead (create data, export, uninstall, reinstall, import) and start
+the update drill at the next release, using the first release as its baseline.
 
 ## 8. Failure paths
 

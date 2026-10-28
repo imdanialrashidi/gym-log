@@ -33,8 +33,8 @@ gate, and a tag-triggered release workflow. Device performance budgets remain
 signing and the upgrade drill also remain owner steps (`docs/RELEASE.md`).
 Sessions persist in the interim app-private JSON document with private,
 EXIF-stripped photo files alongside it; the Drift database is a later
-milestone. The `applicationId` is a placeholder and release builds are
-intentionally refused.
+milestone. The permanent `applicationId` is `com.imdanialrashidi.gymlog`;
+release builds still require the owner's signing secrets and the upgrade drill.
 
 ## Development
 

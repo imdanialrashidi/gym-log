@@ -20,7 +20,7 @@ void main() {
     expect(find.text('About'), findsOneWidget);
     expect(find.text('Version $appVersion'), findsOneWidget);
     expect(find.text('App license'), findsOneWidget);
-    expect(find.text('All rights reserved'), findsOneWidget);
+    expect(find.text('MIT'), findsOneWidget);
     expect(find.text('Open-source licenses'), findsOneWidget);
     expect(find.text('Source code'), findsOneWidget);
     expect(find.text('Donate'), findsOneWidget);

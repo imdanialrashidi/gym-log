@@ -123,6 +123,6 @@ Status note: Flutter/Android is Confirmed. Riverpod/go_router, integer grams, im
 - File save/share package remains pending license/maintenance/size verification at pin time. `image_picker` and `image` are pinned and recorded in `docs/DEPENDENCIES.md`.
 - **Backup toggle (resolved):** ADR-0007's runtime toggle is implemented as an enforced-off policy row because Android Auto Backup is build-time and `DAT-007`/A18 require the release manifest to keep `allowBackup="false"`. A future runtime opt-in requires a verified platform mechanism and an explicit ADR/guard revision; do not weaken the manifest guard.
 - Flutter SDK is pinned at `3.47.7` (Dart `3.13.5`); upgrades require a new pin review.
-- Project name, `applicationId` (placeholder `com.example.gym_log`; release refused), license, and reference device remain owner decisions.
+- `applicationId` is the permanent `com.imdanialrashidi.gymlog` and the license is MIT (both recorded 2026-10-28); the public product name and the reference device remain owner decisions.
 
 See [Section 28](spec/21-open-decisions.md) and [the specification index](spec/README.md#open-decisions).

@@ -8,7 +8,14 @@ as pre-release; see `docs/RELEASE.md`.
 
 ## [Unreleased]
 
-Schema change: v4 adds optional weekly goals (`weeklySessionGoal` /
+No unreleased changes.
+
+## [0.2.0] - 2026-10-28
+
+Build: 2
+Schema: v4 (weekly goals and body-weight check-ins)
+
+The document schema moves to v4: optional weekly goals (`weeklySessionGoal` /
 `weeklySetGoal`) inside settings, on top of v3 body-weight check-ins. Older
 v1–v3 documents are read with empty/default newer fields and rewritten as v4;
 nothing is discarded. The backup format stays `schemaVersion: 1`; additive
@@ -94,6 +101,15 @@ fields are omitted while absent so historical fixtures keep round-tripping.
 - Reopening the app mid-workout restores the active session, logged sets, and a
   still-running rest countdown.
 - Older JSON fixtures still round-trip exactly after the schema extension.
+
+### Notes
+
+- The permanent `applicationId` is now `com.imdanialrashidi.gymlog`. Anyone
+  running the earlier debug build must export, uninstall, and reinstall; a
+  different identity cannot update in place.
+- The project is MIT licensed and the About screen states `MIT`.
+- The document schema changes to v4, so this build is published as a
+  pre-release until the fresh-install round-trip and friend checks pass.
 
 ## [0.1.0] - 2026-10-25
 

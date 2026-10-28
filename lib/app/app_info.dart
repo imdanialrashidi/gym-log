@@ -1,7 +1,7 @@
 /// Public app identity written into exports. Keep in sync with `pubspec.yaml`;
 /// `test/data/export_reminder_test.dart` reads the pubspec version and compares
 /// it with [appVersion].
-const String appVersion = '0.1.0';
+const String appVersion = '0.2.0';
 
 /// Top-level export generator marker.
 const String appGenerator = 'gym-log';

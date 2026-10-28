@@ -16,7 +16,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.gym_log"
+    namespace = "com.imdanialrashidi.gymlog"
     // Pinned to the Flutter 3.47.7 stable Android defaults. See docs/DEVELOPMENT.md.
     compileSdk = 36
 
@@ -30,9 +30,11 @@ android {
     }
 
     defaultConfig {
-        // The permanent identity is an owner decision. The release guard below
-        // refuses release builds while this remains under com.example.
-        applicationId = "com.example.gym_log"
+        // Permanent identity, chosen by the owner on 2026-10-28. It can never
+        // change after the first public release: a different id is a different
+        // app. The display name may change freely. The release guard below
+        // still refuses any com.example.* identity as a regression check.
+        applicationId = "com.imdanialrashidi.gymlog"
         minSdk = 24
         targetSdk = 36
         versionCode = flutter.versionCode
@@ -74,8 +76,8 @@ flutter {
 //
 // NFR-ARCH-001: release builds must not declare INTERNET.
 // DAT-007 / NFR-PRV-001: Android backup must be disabled by default.
-// Section 23.5 / DAT-005: signing comes only from owner secrets; a placeholder
-// applicationId or missing key must never produce a release build.
+// Section 23.5 / DAT-005: signing comes only from owner secrets; a com.example
+// identity or missing key must never produce a release build.
 //
 // These tasks are wired into assembleRelease/bundleRelease. They also run in
 // isolation in the verification lane so the merged release manifest is checked
@@ -88,7 +90,7 @@ val configuredApplicationId: String? = android.defaultConfig.applicationId
 
 tasks.register("verifyReleaseApplicationId") {
     group = "verification"
-    description = "Refuses release builds while applicationId is a placeholder."
+    description = "Refuses a release build under a com.example placeholder identity."
     doLast {
         if (configuredApplicationId == null ||
             configuredApplicationId == "com.example" ||
@@ -96,8 +98,9 @@ tasks.register("verifyReleaseApplicationId") {
         ) {
             throw GradleException(
                 "Release build refused: applicationId \"$configuredApplicationId\" " +
-                    "is a placeholder ($placeholderApplicationId). The owner must " +
-                    "choose the permanent applicationId before a release."
+                    "is a placeholder ($placeholderApplicationId). Choose a " +
+                    "permanent applicationId; it can never change after the " +
+                    "first public release."
             )
         }
         logger.lifecycle(

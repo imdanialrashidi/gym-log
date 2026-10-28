@@ -8,7 +8,7 @@ Regenerate with `dart run tool/fa_review_sheet.dart`.
 |---|---|---|---|---|
 | `aboutDonate` | General | حمایت مالی | Donate | Review tone and clarity. |
 | `aboutLicenseLabel` | General | مجوز برنامه | App license | Review tone and clarity. |
-| `aboutLicenseValue` | General | کلیهٔ حقوق محفوظ است. | All rights reserved | Review tone and clarity. |
+| `aboutLicenseValue` | General | MIT | MIT | Review tone and clarity. |
 | `aboutLinkFailed` | General | مرورگر باز نشد. | Could not open a browser. | Review tone and clarity. |
 | `aboutNotMedicalAdvice` | General | Gym Log یک دفتر تمرین است، نه توصیهٔ پزشکی. پیش از تغییر برنامهٔ تمرینی با یک متخصص واجد شرایط مشورت کن. | Gym Log is a training log, not medical advice. Consult a qualified professional before changing your training. | Review tone and clarity. |
 | `aboutOpenSourceLicenses` | General | مجوزهای متن‌باز | Open-source licenses | Review tone and clarity. |

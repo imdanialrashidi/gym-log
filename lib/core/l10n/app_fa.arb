@@ -319,7 +319,7 @@
     }
   },
   "aboutLicenseLabel": "مجوز برنامه",
-  "aboutLicenseValue": "کلیهٔ حقوق محفوظ است.",
+  "aboutLicenseValue": "MIT",
   "aboutOpenSourceLicenses": "مجوزهای متن‌باز",
   "aboutSourceCode": "کد منبع",
   "aboutDonate": "حمایت مالی",
