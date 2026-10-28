@@ -98,6 +98,7 @@ same-ID/different-content records keep the local version.
 
 ```text
 test/fixtures/export/v0.1.0.json
+test/fixtures/export/v0.2.0.json
 ```
 
 `test/data/backup_round_trip_test.dart` discovers every `*.json` in that
