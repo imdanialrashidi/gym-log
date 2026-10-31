@@ -116,4 +116,22 @@ make_tree
 sed -i 's|@[0-9a-f]\{40\}|@v4|' "$case_dir/.github/workflows/quality.yml"
 expect_fail check_workflow_pins "movable action tag"
 
+make_tree
+cat > "$case_dir/.github/workflows/static-fixture.yml" <<'YAML'
+name: static-fixture
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+YAML
+expect_fail check_workflow_pins "movable action tag in a non-Flutter workflow"
+
+make_tree
+sed -i '/^  FLUTTER_VERSION:/d' "$case_dir/.github/workflows/quality.yml"
+expect_fail check_workflow_pins "missing Flutter toolchain pin"
+
 printf 'Guard self-check passed.\n'

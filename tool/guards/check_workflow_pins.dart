@@ -1,10 +1,13 @@
 import 'dart:io';
 
-/// Fails when a GitHub workflow uses a movable action tag or when the workflow
-/// toolchain variables drift from `tool/toolchain.env`.
+/// Fails when a GitHub workflow uses a movable action tag or when a
+/// Flutter-based workflow's toolchain variables drift from
+/// `tool/toolchain.env`.
 ///
 /// A tag such as `@v4` can be moved after review; a full 40-hex commit SHA
 /// cannot. This guard makes the pinning rule in `docs/QUALITY.md` executable.
+/// Non-Flutter workflows (for example the static Pages deploy) do not need
+/// Flutter pins, but every workflow still needs full-SHA action pins.
 void main() {
   final List<String> violations = <String>[];
   final Map<String, String> env = _readEnv(File('tool/toolchain.env'));
@@ -47,7 +50,9 @@ void main() {
       final String name = file.uri.pathSegments.last;
       final String text = file.readAsStringSync();
       _checkPins(text, name, violations);
-      _checkToolchain(text, name, env, violations);
+      if (_isFlutterWorkflow(text)) {
+        _checkToolchain(text, name, env, violations);
+      }
     }
   }
 
@@ -60,9 +65,16 @@ void main() {
     return;
   }
   stdout.writeln(
-    'Workflow pin guard passed: every action uses a full SHA and the '
-    'workflow toolchain matches tool/toolchain.env.',
+    'Workflow pin guard passed: every action uses a full SHA and every '
+    'Flutter workflow matches tool/toolchain.env.',
   );
+}
+
+/// A workflow is Flutter-based when it mentions Flutter anywhere. This is
+/// intentionally conservative: a false positive requires the pins, while a
+/// false negative would let an unpinned toolchain ship.
+bool _isFlutterWorkflow(String text) {
+  return RegExp(r'flutter', caseSensitive: false).hasMatch(text);
 }
 
 void _checkPins(String text, String name, List<String> violations) {
