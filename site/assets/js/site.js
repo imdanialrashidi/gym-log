@@ -112,6 +112,11 @@
 
   // Reveal on scroll ---------------------------------------------------------
   var reveals = Array.prototype.slice.call(doc.querySelectorAll("[data-reveal]"));
+  // The hero is the first screen: never let its phone preview wait for a
+  // scroll observer on small viewports.
+  doc.querySelectorAll(".hero [data-reveal]").forEach(function (element) {
+    element.classList.add("is-visible");
+  });
   if ("IntersectionObserver" in window) {
     var revealObserver = new IntersectionObserver(
       function (entries) {
