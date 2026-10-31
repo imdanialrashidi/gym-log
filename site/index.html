@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gym Log — باشگاه، بدون دفترچه.</title>
+  <meta name="description" content="Gym Log، ژورنال تمرین بدنسازی آفلاین: ثبت وزنه، تکرار و RIR، پیشنهاد بار بعدی، رکورد شخصی و نمودار پیشرفت. بدون حساب کاربری، بدون اینترنت، برای اندروید.">
+  <meta name="theme-color" content="#09090b">
+  <meta name="color-scheme" content="dark">
+  <meta name="author" content="Danial Rashidi">
+  <meta name="application-name" content="Gym Log">
+  <link rel="canonical" href="https://imdanialrashidi.github.io/gym-log/">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/img/favicon-180.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fa_IR">
+  <meta property="og:site_name" content="Gym Log">
+  <meta property="og:title" content="Gym Log — باشگاه، بدون دفترچه.">
+  <meta property="og:description" content="ثبت وزنه، تکرار و RIR؛ پیشنهاد بار بعدی، رکورد شخصی و نمودار پیشرفت. بدون حساب، بدون اینترنت، روی گوشی خودت.">
+  <meta property="og:url" content="https://imdanialrashidi.github.io/gym-log/">
+  <meta property="og:image" content="https://imdanialrashidi.github.io/gym-log/assets/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:alt" content="Gym Log — YOUR TRAINING, MEASURED.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Gym Log — باشگاه، بدون دفترچه.">
+  <meta name="twitter:description" content="ژورنال تمرین بدنسازی آفلاین، بدون حساب و بدون اینترنت.">
+  <meta name="twitter:image" content="https://imdanialrashidi.github.io/gym-log/assets/img/og.png">
+
+  <link rel="preload" href="assets/fonts/vazirmatn-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/vazirmatn-bold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/site.css">
+  <script>document.documentElement.classList.replace('no-js','js');</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Gym Log",
+    "alternateName": "جیم لاگ",
+    "description": "ژورنال تمرین بدنسازی آفلاین با ثبت وزنه، تکرار و RIR، پیشنهاد بار بعدی، رکورد شخصی و نمودار پیشرفت.",
+    "url": "https://imdanialrashidi.github.io/gym-log/",
+    "downloadUrl": "https://github.com/imdanialrashidi/gym-log/releases/download/v0.2.1/gym-log-v0.2.1.apk",
+    "softwareVersion": "0.2.1",
+    "operatingSystem": "Android 7.0+",
+    "applicationCategory": "HealthApplication",
+    "inLanguage": ["fa", "en"],
+    "license": "https://opensource.org/license/mit",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Danial Rashidi", "url": "https://danialrashidi.ir" },
+    "codeRepository": "https://github.com/imdanialrashidi/gym-log",
+    "featureList": [
+      "Offline workout logging",
+      "Weight, reps and RIR tracking",
+      "Double progression suggestions",
+      "Personal records and Epley e1RM",
+      "Per-exercise progress charts",
+      "Jalali history calendar",
+      "Rest timer",
+      "Plate and warm-up calculator",
+      "Private progress photos",
+      "Validated JSON backup and restore",
+      "Persian and English interfaces"
+    ]
+  }
+  </script>
+</head>
+<body>
+  <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v15m0 0 6-6m-6 6-6-6M4 21h16"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-up-right" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11"/><path d="M15 9V4H4v11h5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19"/></symbol>
+    <symbol id="i-top" viewBox="0 0 24 24"><path d="M12 21V6m0 0L6 12m6-6 6 6M4 3h16"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">پرش به محتوای اصلی</a>
+  <div class="page-progress" aria-hidden="true"><span data-progress></span></div>
+
+  <header class="site-head" data-head>
+    <div class="wrap head-inner">
+      <a class="brand" href="#top" aria-label="Gym Log — بازگشت به بالا">
+        <img class="brand-mark" src="assets/img/brand/mark-256.png" width="128" height="128" alt="">
+        <span class="brand-type">
+          <span class="brand-name" lang="en" dir="ltr">GYM LOG</span>
+          <span class="brand-tag" lang="en" dir="ltr">YOUR TRAINING, MEASURED.</span>
+        </span>
+      </a>
+
+      <nav class="desk-nav" aria-label="ناوبری اصلی">
+        <a href="#why">چرا</a>
+        <a href="#features">قابلیت‌ها</a>
+        <a href="#screens">اسکرین‌شات‌ها</a>
+        <a href="#privacy">حریم خصوصی</a>
+        <a href="#faq">پرسش‌ها</a>
+      </nav>
+
+      <div class="head-actions">
+        <a class="btn btn--primary btn--head" href="https://github.com/imdanialrashidi/gym-log/releases/download/v0.2.1/gym-log-v0.2.1.apk">
+          <span>دریافت APK</span>
+          <svg class="icon" aria-hidden="true"><use href="#i-down"/></svg>
+        </a>
+        <button class="menu-btn" type="button" aria-label="باز کردن منو" aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false" data-menu-open>
+          <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="head-axis" aria-hidden="true">
+      <span>LOCAL / 001</span>
+      <span class="axis-line"></span>
+      <span><span data-scroll-percent>000</span>%</span>
+    </div>
+  </header>
+
+  <dialog class="menu" id="site-menu" data-menu aria-labelledby="menu-title">
+    <div class="menu-head">
+      <span class="micro" id="menu-title" lang="en" dir="ltr">INDEX / GYM LOG</span>
+      <button class="icon-btn" type="button" aria-label="بستن منو" data-menu-close>
+        <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <nav class="menu-nav" aria-label="ناوبری موبایل">
+      <a href="#why"><span>01</span>چرا Gym Log</a>
+      <a href="#features"><span>02</span>قابلیت‌ها</a>
+      <a href="#screens"><span>03</span>اسکرین‌شات‌ها</a>
+      <a href="#privacy"><span>04</span>حریم خصوصی</a>
+      <a href="#download"><span>05</span>دانلود</a>
+      <a href="#faq"><span>06</span>پرسش‌ها</a>
+    </nav>
+    <div class="menu-foot">
+      <a class="btn btn--primary" href="https://github.com/imdanialrashidi/gym-log/releases/download/v0.2.1/gym-log-v0.2.1.apk">
+        <span>دانلود نسخهٔ ۰.۲.۱</span>
+        <svg class="icon" aria-hidden="true"><use href="#i-down"/></svg>
+      </a>
+      <p class="micro">ANDROID 7+ · 61.3 MB · NO ACCOUNT</p>
+    </div>
+  </dialog>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="hero-ghost" aria-hidden="true">
+        <img src="assets/img/brand/mark-640.png" width="640" height="640" alt="">
+      </div>
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow reveal" data-reveal>
+            <span class="status-square" aria-hidden="true"></span>
+            <span class="micro" lang="en" dir="ltr">GYM_LOG // OFFLINE STRENGTH TELEMETRY</span>
+            <span class="eyebrow-rule" aria-hidden="true"></span>
+            <span class="micro micro--dim" lang="en" dir="ltr">v0.2.1</span>
+          </div>
+
+          <h1 class="display" id="hero-title">
+            <span class="display-line"><span>باشگاه،</span></span>
+            <span class="display-line display-line--second"><span>بدون دفترچه.</span></span>
+          </h1>
+
+          <p class="hero-deck">هر کیلو، هر تکرار، هر رکورد؛<br>یک‌جا روی گوشی خودت.</p>
+          <p class="hero-body">Gym Log وزنه، تکرار و RIR را همان لحظه ثبت می‌کند، بار بعدی را پیشنهاد می‌دهد و رکورد و نمودار پیشرفتت را می‌سازد. بدون حساب، بدون اینترنت، بدون چیز اضافه.</p>
+
+          <div class="hero-actions">
+            <a class="btn btn--primary btn--lg" href="https://github.com/imdanialrashidi/gym-log/releases/download/v0.2.1/gym-log-v0.2.1.apk">
+              <span>دانلود APK</span>
+              <svg class="icon" aria-hidden="true"><use href="#i-down"/></svg>
+            </a>
+            <a class="btn btn--line btn--lg" href="#screens">
+              <span>دیدن داخل اپ</span>
+              <svg class="icon icon--rotate" aria-hidden="true"><use href="#i-down"/></svg>
+            </a>
+          </div>
+
+          <ul class="hero-meta" aria-label="مشخصات نسخه">
+            <li><span class="micro" lang="en" dir="ltr">VERSION</span><b>0.2.1</b></li>
+            <li><span class="micro" lang="en" dir="ltr">SIZE</span><b>۶۱٫۳ مگابایت</b></li>
+            <li><span class="micro" lang="en" dir="ltr">ANDROID</span><b>۷ و بالاتر</b></li>
+          </ul>
+          <p class="hero-fine">ریلیز رسمی GitHub · مجوز MIT · بدون حساب کاربری</p>
+        </div>
+
+        <div class="hero-visual">
+          <div class="console-wrap reveal" data-reveal>
+            <div class="console-index" aria-hidden="true"><span>01</span><small lang="en">READOUT</small></div>
+            <figure class="console">
+              <div class="console-bar">
+                <span class="micro" lang="en" dir="ltr">REAL INTERFACE / SESSION 01</span>
+                <span class="console-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="console-screen">
+                <picture>
+                  <source type="image/avif" srcset="assets/img/screens/01_workout-400.avif 400w, assets/img/screens/01_workout-800.avif 800w" sizes="(max-width: 760px) 76vw, 340px">
+                  <source type="image/webp" srcset="assets/img/screens/01_workout-400.webp 400w, assets/img/screens/01_workout-800.webp 800w" sizes="(max-width: 760px) 76vw, 340px">
+                  <img src="assets/img/screens/01_workout-800.webp" width="800" height="1777" alt="رابط تمرین در جریان Gym Log با کارت تمرین فعال، حجم، ست‌های پرس سینه، وزن، تکرار و RIR" fetchpriority="high" decoding="async">
+                </picture>
+                <span class="scanline" aria-hidden="true"></span>
+              </div>
+              <div class="console-bar console-bar--bottom">
+                <span class="micro" lang="en" dir="ltr">ACTIVE SESSION</span>
+                <span class="console-clock" dir="ltr">45:00</span>
+                <span class="micro" lang="en" dir="ltr">SET 02 / 03</span>
+              </div>
+              <figcaption class="sr-only">نمای واقعی از صفحهٔ تمرین Gym Log.</figcaption>
+            </figure>
+          </div>
+          <p class="hero-caption micro" lang="en" dir="ltr"><span class="status-square"></span> CAPTURED ON DEVICE / PERSIAN UI</p>
+        </div>
+      </div>
+      <a class="scroll-mark" href="#why" aria-label="اسکرول به بخش بعد">
+        <span class="micro" lang="en" dir="ltr">SCROLL TO INSPECT</span>
+        <span class="scroll-line" aria-hidden="true"></span>
+      </a>
+    </section>
+
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>WEIGHT</span><i></i><span>REPS</span><i></i><span>RIR</span><i></i><span>DOUBLE PROGRESSION</span><i></i><span>1RM</span><i></i><span>PR</span><i></i><span>OFFLINE</span><i></i><span>JSON BACKUP</span><i></i><span>FA · EN</span><i></i>
+        <span>WEIGHT</span><i></i><span>REPS</span><i></i><span>RIR</span><i></i><span>DOUBLE PROGRESSION</span><i></i><span>1RM</span><i></i><span>PR</span><i></i><span>OFFLINE</span><i></i><span>JSON BACKUP</span><i></i><span>FA · EN</span><i></i>
+      </div>
+    </div>
+
+    <section class="stats-band" aria-label="Gym Log در یک نگاه">
+      <div class="wrap stats-grid">
+        <div class="stat reveal" data-reveal>
+          <span class="micro" lang="en" dir="ltr">ACCOUNT</span>
+          <span class="stat-num">۰</span>
+          <h2 class="stat-label">حساب کاربری</h2>
+          <p>بدون ثبت‌نام. اپ را باز کن و تمرین را شروع کن.</p>
+        </div>
+        <div class="stat reveal" data-reveal>
+          <span class="micro" lang="en" dir="ltr">NETWORK</span>
+          <span class="stat-num">۰</span>
+          <h2 class="stat-label">مجوز اینترنت</h2>
+          <p>در نسخهٔ انتشار، اپ حتی مجوز دسترسی به شبکه ندارد.</p>
+        </div>
+        <div class="stat reveal" data-reveal>
+          <span class="micro" lang="en" dir="ltr">LOCAL</span>
+          <span class="stat-num">۱۰۰٪</span>
+          <h2 class="stat-label">روی دستگاه</h2>
+          <p>داده‌های تمرین از گوشی بیرون نمی‌روند.</p>
+        </div>
+        <div class="stat reveal" data-reveal>
+          <span class="micro" lang="en" dir="ltr">SURFACE</span>
+          <span class="stat-num">۴</span>
+          <h2 class="stat-label">تب، یک ابزار</h2>
+          <p>تمرین، برنامه، تاریخچه و پیشرفت؛ بدون شلوغی.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section why" id="why" aria-labelledby="why-title">
+      <div class="wrap">
+        <div class="sec-head">
+          <div class="sec-kicker reveal" data-reveal>
+            <span class="sec-index" lang="en" dir="ltr">01</span>
+            <span class="micro" lang="en" dir="ltr">WHY / THE POINT</span>
+          </div>
+          <h2 class="sec-title reveal" id="why-title" data-reveal>دفترچه یادت می‌رود.<br><span class="dim">اعداد نه.</span></h2>
+          <p class="sec-lead reveal" data-reveal>بین ست‌ها وقتِ نوشتن نیست. یک تأیید، یک عدد، یک تصمیم بعدی. Gym Log همان دفترچه‌ای است که همیشه همرته — فقط دقیق‌تر.</p>
+        </div>
+
+        <div class="why-grid">
+          <div class="why-statement reveal" data-reveal>
+            <span class="rule-mark" aria-hidden="true"></span>
+            <p class="why-quote">این یک فید اجتماعی نیست.<br>یک بازی هم نیست.<br><span class="dim">یک ابزار اندازه‌گیری است.</span></p>
+            <p class="why-body">برای کسی که با بازهٔ تکرار و RIR تمرین می‌کند و می‌خواهد بداند بار بعدی چه باشد. رابط فارسی، اعداد خوانا، و دقیقاً همان چیزی که بین دو ست لازم داری.</p>
+          </div>
+
+          <ol class="steps">
+            <li class="step reveal" data-reveal>
+              <span class="step-num" lang="en" dir="ltr">01</span>
+              <div><h3>برنامه‌ات را بچین</h3><p>حرکت بساز، روز بچین و بازهٔ تکرار بده. یا برنامه را از JSON وارد کن.</p></div>
+            </li>
+            <li class="step reveal" data-reveal>
+              <span class="step-num" lang="en" dir="ltr">02</span>
+              <div><h3>ست را ثبت کن</h3><p>وزن، تکرار و RIR؛ پیش‌فرض‌ها آماده‌اند و ثبت با یک تأیید انجام می‌شود.</p></div>
+            </li>
+            <li class="step reveal" data-reveal>
+              <span class="step-num" lang="en" dir="ltr">03</span>
+              <div><h3>روند را ببین</h3><p>رکورد، ۱RM و پیشنهاد بار بعدی از تاریخچهٔ خودت ساخته می‌شوند.</p></div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="section features" id="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <div class="sec-head sec-head--split">
+          <div class="sec-kicker reveal" data-reveal>
+            <span class="sec-index" lang="en" dir="ltr">02</span>
+            <span class="micro" lang="en" dir="ltr">FEATURES / READOUT</span>
+          </div>
+          <h2 class="sec-title reveal" id="features-title" data-reveal>هر عدد،<br>یک تصمیم بعدی.</h2>
+          <p class="sec-lead reveal" data-reveal>ابزارهایی که سر جای خودشان می‌نشینند، نه یک لیست بی‌پایان. از RIR تا نمودار، همه برای یک کار: اینکه بدانی الان چه کاری بکنی.</p>
+        </div>
+
+        <div class="bento">
+          <article class="card card--lead reveal" data-reveal>
+            <div class="card-top">
+              <span class="micro" lang="en" dir="ltr">F-01 / EFFORT</span>
+              <span class="card-state"><span class="status-square"></span><span class="micro" lang="en" dir="ltr">INTERACTIVE</span></span>
+            </div>
+            <div class="lead-grid">
+              <div class="card-copy">
+                <h3>RIR، نه حدس.</h3>
+                <p>هر ست با تکرارهای باقی‌مانده ثبت می‌شود؛ ست گرم‌کردنی جدا می‌ماند تا ست‌های کارآمد واقعی بمانند. بعد هم اپ می‌گوید بار بعدی چه باشد.</p>
+                <p class="card-hint"><span class="hint-line" aria-hidden="true"></span>یک بار دکمهٔ ثبت را بزن.</p>
+              </div>
+              <div class="set-demo" data-set-demo>
+                <div class="set-demo-head">
+                  <span>پرس سینه</span>
+                  <span class="micro" lang="en" dir="ltr">SET 02</span>
+                </div>
+                <div class="set-row">
+                  <span class="set-value"><b>۱۰۷٫۵</b><small>کیلوگرم</small></span>
+                  <span class="set-times" aria-hidden="true">×</span>
+                  <span class="set-value"><b>۸</b><small>تکرار</small></span>
+                  <span class="set-rir"><span class="micro" lang="en" dir="ltr">RIR</span><b>۱</b></span>
+                  <button class="set-check" type="button" aria-label="ثبت نمونهٔ ست" aria-pressed="false" data-set-check>
+                    <svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                  </button>
+                </div>
+                <div class="set-feedback" aria-live="polite">
+                  <span class="set-idle">آمادهٔ ثبت</span>
+                  <span class="set-saved">ثبت شد <span aria-hidden="true">·</span> پیشنهاد بعدی: ۱۱۰ کیلوگرم</span>
+                </div>
+                <p class="demo-note micro" lang="en" dir="ltr">SCHEMATIC / TAP TO PREVIEW</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card card--progression reveal" data-reveal>
+            <div class="card-top">
+              <span class="micro" lang="en" dir="ltr">F-02 / PROGRESSION</span>
+              <span class="micro micro--dim" lang="en" dir="ltr">DOUBLE PROGRESSION</span>
+            </div>
+            <h3>کِی وزنه را بالا ببری؟</h3>
+            <p>با بازهٔ تکرار و قانون double progression، اپ می‌گوید تکرار را کامل کنی یا وزنه را سنگین‌تر کنی — با دلیل، نه حس.</p>
+            <div class="ladder" aria-hidden="true">
+              <span class="ladder-cell">۸</span>
+              <span class="ladder-cell">۸</span>
+              <span class="ladder-cell">۸</span>
+              <span class="ladder-line"></span>
+              <span class="ladder-next">+۲٫۵<small>KG</small></span>
+            </div>
+            <p class="card-footnote"><span class="status-square" aria-hidden="true"></span>بازهٔ تکرار پر شد؟ وزنه بالا می‌رود.</p>
+          </article>
+
+          <article class="card card--sm reveal" data-reveal>
+            <div class="card-top"><span class="micro" lang="en" dir="ltr">F-03 / RECORD</span><span class="micro micro--dim" lang="en" dir="ltr">E1RM</span></div>
+            <h3>رکورد و ۱RM</h3>
+            <p>بهترین ست، رکورد هر حرکت و تخمین ۱RM، خودکار از تاریخچهٔ خودت.</p>
+            <div class="viz viz-pr" aria-hidden="true">
+              <span class="pr-stamp" lang="en" dir="ltr">PR</span>
+              <b>۱۲۶٫۴۲</b>
+              <span class="micro" lang="en" dir="ltr">KG / EST. 1RM</span>
+            </div>
+          </article>
+
+          <article class="card card--sm reveal" data-reveal>
+            <div class="card-top"><span class="micro" lang="en" dir="ltr">F-04 / TRACE</span><span class="micro micro--dim" lang="en" dir="ltr">4W · 12W · 1Y</span></div>
+            <h3>نمودار پیشرفت</h3>
+            <p>بار و ۱RM هر حرکت روی یک نمودار ساده، در بازهٔ دلخواه.</p>
+            <div class="viz viz-chart" aria-hidden="true">
+              <svg viewBox="0 0 280 96" preserveAspectRatio="none" focusable="false">
+                <path class="chart-grid" d="M0 22h280M0 48h280M0 74h280"/>
+                <path class="chart-line" pathLength="1" d="M0 80 40 72 74 66 110 50 146 56 182 36 218 30 252 12 280 8"/>
+                <path class="chart-tick" d="M218 24v12M252 6v12"/>
+              </svg>
+              <span class="chart-axis"><span>۴ هفته</span><span>همه</span></span>
+            </div>
+          </article>
+
+          <article class="card card--sm reveal" data-reveal>
+            <div class="card-top"><span class="micro" lang="en" dir="ltr">F-05 / REST</span><span class="micro micro--dim" lang="en" dir="ltr">IN-APP</span></div>
+            <h3>تایمر استراحت</h3>
+            <p>بین ست‌ها وقت استراحت را می‌شمارد تا تمرین از ریتم نیفتد.</p>
+            <div class="viz viz-timer" aria-hidden="true">
+              <span class="timer-num" dir="ltr">01:30</span>
+              <span class="timer-track"><span class="timer-fill"></span></span>
+              <span class="timer-axis"><span class="micro" lang="en" dir="ltr">REST</span><span class="micro" lang="en" dir="ltr">NEXT SET</span></span>
+            </div>
+          </article>
+
+          <article class="card card--sm reveal" data-reveal>
+            <div class="card-top"><span class="micro" lang="en" dir="ltr">F-06 / CALENDAR</span><span class="micro micro--dim" lang="en" dir="ltr">JALALI</span></div>
+            <h3>تقویم شمسی</h3>
+            <p>هفتهٔ شنبه‌شروع؛ هر جلسه روی تقویم و آمار هر ماه.</p>
+            <div class="viz viz-cal" aria-hidden="true">
+              <div class="cal-head"><span>مهر ۱۴۰۵</span><span class="micro" lang="en" dir="ltr">14 SESSIONS</span></div>
+              <div class="cal-grid">
+                <span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span>
+                <i></i><i></i><i></i><i></i><i></i><i></i><i class="is-trained"></i>
+                <i></i><i class="is-trained"></i><i></i><i></i><i class="is-trained"></i><i></i><i></i>
+                <i class="is-trained"></i><i></i><i></i><i class="is-trained"></i><i></i><i></i><i></i>
+                <i></i><i class="is-trained"></i><i></i><i></i><i class="is-trained"></i><i></i><i></i>
+              </div>
+            </div>
+          </article>
+
+          <article class="card card--sm reveal" data-reveal>
+            <div class="card-top"><span class="micro" lang="en" dir="ltr">F-07 / LOAD</span><span class="micro micro--dim" lang="en" dir="ltr">BARBELL</span></div>
+            <h3>ماشین‌حساب صفحه</h3>
+            <p>تقسیم وزنه روی هالتر و پله‌های گرم‌کردن، قبل از ست سنگین.</p>
+            <div class="viz viz-plate" aria-hidden="true">
+              <span class="plate-set">
+                <span class="plate plate--lg">۲۵</span><span class="plate plate--md">۱۰</span><span class="plate plate--sm">۵</span>
+              </span>
+              <span class="plate-bar"></span>
+              <span class="micro" lang="en" dir="ltr">20 KG BAR / PER SIDE</span>
+            </div>
+          </article>
+
+          <article class="card card--sm reveal" data-reveal>
+            <div class="card-top"><span class="micro" lang="en" dir="ltr">F-08 / SUMMARY</span><span class="micro micro--dim" lang="en" dir="ltr">END SESSION</span></div>
+            <h3>خلاصهٔ جلسه</h3>
+            <p>حجم، ست کارآمد، رکوردها و یک خداحافظی خوش‌خیم؛ بعد، خانه.</p>
+            <div class="viz viz-summary" aria-hidden="true">
+              <span class="stamp"><svg class="icon"><use href="#i-check"/></svg></span>
+              <span class="summary-copy"><b>۳٬۵۸۰ <small>KG</small></b><span class="micro" lang="en" dir="ltr">VOLUME</span></span>
+              <span class="summary-note">تمرین تموم شد!</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="extras">
+          <div class="extras-head reveal" data-reveal>
+            <div class="sec-kicker">
+              <span class="sec-index" lang="en" dir="ltr">+</span>
+              <span class="micro" lang="en" dir="ltr">ALSO IN THE BOX</span>
+            </div>
+            <h3>و این‌ها هم، بدون تنظیم اضافه.</h3>
+          </div>
+          <ul class="extras-grid">
+            <li class="reveal" data-reveal><span class="extra-idx" lang="en" dir="ltr">01</span><div><h4>کتابخانه و برنامه‌ساز</h4><p>حرکت بساز، روز بچین، بازهٔ تکرار بده.</p></div></li>
+            <li class="reveal" data-reveal><span class="extra-idx" lang="en" dir="ltr">02</span><div><h4>خلاصهٔ هفتگی و وزن</h4><p>ست‌ها به تفکیک عضله، حجم هفته و روند وزن.</p></div></li>
+            <li class="reveal" data-reveal><span class="extra-idx" lang="en" dir="ltr">03</span><div><h4>اهداف هفتگی</h4><p>هدف جلسه و ست کارآمد، با استریک آرام.</p></div></li>
+            <li class="reveal" data-reveal><span class="extra-idx" lang="en" dir="ltr">04</span><div><h4>عکس پیشرفت خصوصی</h4><p>حداکثر سه عکس در جلسه، بدون متادیتای مکان.</p></div></li>
+            <li class="reveal" data-reveal><span class="extra-idx" lang="en" dir="ltr">05</span><div><h4>بکاپ JSON</h4><p>خروجی کامل، ورودی اعتبارسنجی‌شده، Merge یا Replace.</p></div></li>
+            <li class="reveal" data-reveal><span class="extra-idx" lang="en" dir="ltr">06</span><div><h4>فارسی، انگلیسی، RTL</h4><p>رابط کامل دو زبانه و ارقام فارسی یا لاتین.</p></div></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section gallery" id="screens" aria-labelledby="screens-title">
+      <div class="wrap">
+        <div class="sec-head sec-head--split">
+          <div class="sec-kicker reveal" data-reveal>
+            <span class="sec-index" lang="en" dir="ltr">03</span>
+            <span class="micro" lang="en" dir="ltr">INTERFACE / CAPTURE</span>
+          </div>
+          <h2 class="sec-title reveal" id="screens-title" data-reveal>همان چیزی که<br>روی گوشی می‌بینی.</h2>
+          <p class="sec-lead reveal" data-reveal>بدون ماکاپ، بدون روتوش. این‌ها صفحه‌های واقعی اپ با دیتای نمونه‌اند؛ فارسی، راست‌به‌چپ، و به‌همین سادگی.</p>
+        </div>
+
+        <div class="gallery-shell reveal" data-gallery data-reveal>
+          <div class="screen-list" role="group" aria-label="صفحه‌های اپ">
+            <button class="screen-tab is-active" type="button" data-target="screen-01" data-caption="ست‌ها همان لحظه ثبت می‌شوند؛ پیش‌فرض‌ها آماده، تایمر در دسترس." aria-pressed="true" aria-controls="screen-01">
+              <span class="tab-idx" lang="en" dir="ltr">01</span>
+              <span class="tab-main"><span class="tab-title">تمرین در جریان</span><span class="tab-sub">ست‌ها همان لحظه ثبت می‌شوند؛ پیش‌فرض‌ها آماده‌اند.</span></span>
+              <span class="tab-mark" aria-hidden="true"></span>
+            </button>
+            <button class="screen-tab" type="button" data-target="screen-02" data-caption="بار، ۱RM و رکورد هر حرکت؛ روی یک نمودار تمیز." aria-pressed="false" aria-controls="screen-02">
+              <span class="tab-idx" lang="en" dir="ltr">02</span>
+              <span class="tab-main"><span class="tab-title">پیشرفت حرکت</span><span class="tab-sub">بار، ۱RM و رکورد هر حرکت؛ روی یک نمودار تمیز.</span></span>
+              <span class="tab-mark" aria-hidden="true"></span>
+            </button>
+            <button class="screen-tab" type="button" data-target="screen-03" data-caption="جلسه‌ها، ست‌ها، حجم و روند وزن؛ خلاصهٔ هفته در یک نگاه." aria-pressed="false" aria-controls="screen-03">
+              <span class="tab-idx" lang="en" dir="ltr">03</span>
+              <span class="tab-main"><span class="tab-title">خلاصهٔ هفته</span><span class="tab-sub">جلسه‌ها، ست‌ها، حجم و روند وزن؛ یک نگاه.</span></span>
+              <span class="tab-mark" aria-hidden="true"></span>
+            </button>
+            <button class="screen-tab" type="button" data-target="screen-04" data-caption="همهٔ حرکت‌ها و هفتهٔ جاری؛ روند هر حرکت از تاریخچهٔ خودت." aria-pressed="false" aria-controls="screen-04">
+              <span class="tab-idx" lang="en" dir="ltr">04</span>
+              <span class="tab-main"><span class="tab-title">پیشرفت کلی</span><span class="tab-sub">همهٔ حرکت‌ها و هفتهٔ جاری؛ روند هر حرکت.</span></span>
+              <span class="tab-mark" aria-hidden="true"></span>
+            </button>
+            <button class="screen-tab" type="button" data-target="screen-05" data-caption="حجم، ست کارآمد، رکوردها و تفکیک عضله؛ بستن پروندهٔ جلسه." aria-pressed="false" aria-controls="screen-05">
+              <span class="tab-idx" lang="en" dir="ltr">05</span>
+              <span class="tab-main"><span class="tab-title">خلاصهٔ جلسه</span><span class="tab-sub">حجم، رکوردها و تفکیک عضله؛ پایان جلسه.</span></span>
+              <span class="tab-mark" aria-hidden="true"></span>
+            </button>
+            <button class="screen-tab" type="button" data-target="screen-06" data-caption="تقویم شمسی و آمار ماه؛ هر جلسه سر جای خودش." aria-pressed="false" aria-controls="screen-06">
+              <span class="tab-idx" lang="en" dir="ltr">06</span>
+              <span class="tab-main"><span class="tab-title">تاریخچه</span><span class="tab-sub">تقویم شمسی و آمار ماه؛ هر جلسه سر جایش.</span></span>
+              <span class="tab-mark" aria-hidden="true"></span>
+            </button>
+            <p class="screen-help micro" lang="en" dir="ltr">SELECT A READOUT<br>TO INSPECT</p>
+            <div class="gallery-aside">
+              <span class="micro" lang="en" dir="ltr">APPENDIX / UI-005</span>
+              <p>هر شش صفحه از رابط فارسی همین اپ گرفته شده‌اند؛ بدون ماکاپ و با دیتای نمونهٔ داخل اپ.</p>
+              <dl>
+                <div><dt lang="en" dir="ltr">LOCALE</dt><dd lang="en" dir="ltr">FA · EN</dd></div>
+                <div><dt lang="en" dir="ltr">DIRECTION</dt><dd lang="en" dir="ltr">RTL / LTR</dd></div>
+                <div><dt lang="en" dir="ltr">CHROME</dt><dd lang="en" dir="ltr">DARK ONLY</dd></div>
+              </dl>
+            </div>
+          </div>
+
+          <div class="stage">
+            <div class="stage-bar">
+              <span class="micro" lang="en" dir="ltr"><span class="status-square"></span> REAL CAPTURE</span>
+              <span class="micro" lang="en" dir="ltr"><span data-gallery-count>01</span> / 06</span>
+            </div>
+            <div class="stage-frames">
+              <figure class="stage-frame is-active" id="screen-01" data-panel aria-hidden="false">
+                <picture>
+                  <source type="image/avif" srcset="assets/img/screens/01_workout-400.avif 400w, assets/img/screens/01_workout-800.avif 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <source type="image/webp" srcset="assets/img/screens/01_workout-400.webp 400w, assets/img/screens/01_workout-800.webp 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <img src="assets/img/screens/01_workout-800.webp" width="800" height="1777" alt="صفحهٔ تمرین در جریان با ثبت وزن، تکرار و RIR" loading="lazy" decoding="async">
+                </picture>
+              </figure>
+              <figure class="stage-frame" id="screen-02" data-panel aria-hidden="true">
+                <picture>
+                  <source type="image/avif" srcset="assets/img/screens/02_progress-400.avif 400w, assets/img/screens/02_progress-800.avif 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <source type="image/webp" srcset="assets/img/screens/02_progress-400.webp 400w, assets/img/screens/02_progress-800.webp 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <img src="assets/img/screens/02_progress-800.webp" width="800" height="1777" alt="صفحهٔ پیشرفت حرکت با نمودار بار، رکورد و تخمین ۱RM" loading="lazy" decoding="async">
+                </picture>
+              </figure>
+              <figure class="stage-frame" id="screen-03" data-panel aria-hidden="true">
+                <picture>
+                  <source type="image/avif" srcset="assets/img/screens/03_weekly-400.avif 400w, assets/img/screens/03_weekly-800.avif 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <source type="image/webp" srcset="assets/img/screens/03_weekly-400.webp 400w, assets/img/screens/03_weekly-800.webp 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <img src="assets/img/screens/03_weekly-800.webp" width="800" height="1777" alt="صفحهٔ خلاصهٔ هفته با جلسه‌ها، ست‌ها، حجم، زمان و روند وزن" loading="lazy" decoding="async">
+                </picture>
+              </figure>
+              <figure class="stage-frame" id="screen-04" data-panel aria-hidden="true">
+                <picture>
+                  <source type="image/avif" srcset="assets/img/screens/04_overview-400.avif 400w, assets/img/screens/04_overview-800.avif 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <source type="image/webp" srcset="assets/img/screens/04_overview-400.webp 400w, assets/img/screens/04_overview-800.webp 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <img src="assets/img/screens/04_overview-800.webp" width="800" height="1777" alt="صفحهٔ پیشرفت کلی با کارت هفته و بهترین رکورد هر حرکت" loading="lazy" decoding="async">
+                </picture>
+              </figure>
+              <figure class="stage-frame" id="screen-05" data-panel aria-hidden="true">
+                <picture>
+                  <source type="image/avif" srcset="assets/img/screens/05_summary-400.avif 400w, assets/img/screens/05_summary-800.avif 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <source type="image/webp" srcset="assets/img/screens/05_summary-400.webp 400w, assets/img/screens/05_summary-800.webp 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <img src="assets/img/screens/05_summary-800.webp" width="800" height="1777" alt="خلاصهٔ بعد از تمرین با حجم، رکوردها، تفکیک عضله و جملهٔ گربهٔ اپ" loading="lazy" decoding="async">
+                </picture>
+              </figure>
+              <figure class="stage-frame" id="screen-06" data-panel aria-hidden="true">
+                <picture>
+                  <source type="image/avif" srcset="assets/img/screens/06_history-400.avif 400w, assets/img/screens/06_history-800.avif 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <source type="image/webp" srcset="assets/img/screens/06_history-400.webp 400w, assets/img/screens/06_history-800.webp 800w" sizes="(max-width: 760px) 84vw, 380px">
+                  <img src="assets/img/screens/06_history-800.webp" width="800" height="1777" alt="صفحهٔ تاریخچه با تقویم شمسی، روزهای تمرین و آمار ماه" loading="lazy" decoding="async">
+                </picture>
+              </figure>
+            </div>
+            <div class="stage-bar stage-bar--bottom">
+              <span data-gallery-caption aria-live="polite">ست‌ها همان لحظه ثبت می‌شوند؛ پیش‌فرض‌ها آماده، تایمر در دسترس.</span>
+              <span class="micro" lang="en" dir="ltr">FA / RTL</span>
+            </div>
+          </div>
+        </div>
+        <p class="gallery-note micro" lang="en" dir="ltr">SCREENS RENDERED FROM THE REAL APP / SAMPLE DATA</p>
+      </div>
+    </section>
+
+    <section class="section privacy" id="privacy" aria-labelledby="privacy-title">
+      <div class="wrap">
+        <div class="sec-head sec-head--split">
+          <div class="sec-kicker reveal" data-reveal>
+            <span class="sec-index" lang="en" dir="ltr">04</span>
+            <span class="micro" lang="en" dir="ltr">PRIVACY / LOCAL ONLY</span>
+          </div>
+          <h2 class="sec-title reveal" id="privacy-title" data-reveal>بیرون از گوشی،<br><span class="dim">هیچ‌جا.</span></h2>
+          <p class="sec-lead reveal" data-reveal>حریم خصوصی اینجا یک تنظیم نیست؛ معماری است. نه حساب، نه آنالیتیکس، نه مجوز اینترنت در نسخهٔ انتشار.</p>
+        </div>
+
+        <div class="privacy-grid">
+          <div class="privacy-copy reveal" data-reveal>
+            <div class="privacy-seal" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="7" y="7" width="14" height="14"/>
+                <rect x="43" y="7" width="14" height="14"/>
+                <rect x="25" y="43" width="14" height="14"/>
+                <path d="M21 14h22M14 21l14 22M50 21 36 43"/>
+                <path class="seal-slash" d="M5 59 59 5" stroke-width="2"/>
+              </svg>
+              <span class="micro" lang="en" dir="ltr">NETWORK / 0</span>
+            </div>
+            <h3>دادهٔ تمرین، دارایی خودت است.</h3>
+            <p>هر چیزی که ثبت می‌کنی در حافظهٔ خصوصی اپ روی گوشی می‌ماند. پشتیبان‌گیری خودکار اندروید هم خاموش است تا داده بی‌اجازه جابه‌جا نشود. برای انتقال گوشی، خودت خروجی JSON می‌گیری و در گوشی تازه وارد می‌کنی.</p>
+            <ul class="privacy-list">
+              <li>عکس‌های پیشرفت فقط روی گوشی، با EXIF و موقعیت مکانی پاک‌شده.</li>
+              <li>خروجی JSON شامل عکس‌ها نمی‌شود و ورودی قبل از نوشتن اعتبارسنجی می‌شود.</li>
+              <li>هیچ تبلیغ، ردیاب یا SDK آمارگیری در اپ نیست.</li>
+            </ul>
+            <a class="text-link" href="https://github.com/imdanialrashidi/gym-log" target="_blank" rel="noopener noreferrer">کد منبع را ببین <svg class="icon" aria-hidden="true"><use href="#i-up-right"/></svg></a>
+          </div>
+
+          <div class="privacy-readout reveal" data-reveal role="group" aria-label="وضعیت حریم خصوصی">
+            <div class="readout-head">
+              <span class="micro" lang="en" dir="ltr">PRIVACY / READOUT</span>
+              <span class="readout-status"><span class="status-square"></span><span class="micro" lang="en" dir="ltr">LOCAL ONLY</span></span>
+            </div>
+            <span class="readout-ghost" aria-hidden="true" lang="en" dir="ltr">NONE</span>
+            <dl class="readout-list">
+              <div><dt><span class="readout-code" lang="en" dir="ltr">ACC</span><span class="readout-label" lang="en" dir="ltr">ACCOUNT</span></dt><dd><b lang="en" dir="ltr">NONE</b><small>هیچ ورود یا حسابی</small></dd></div>
+              <div><dt><span class="readout-code" lang="en" dir="ltr">NET</span><span class="readout-label" lang="en" dir="ltr">NETWORK</span></dt><dd><b lang="en" dir="ltr">NONE</b><small>بدون مجوز اینترنت در انتشار</small></dd></div>
+              <div><dt><span class="readout-code" lang="en" dir="ltr">ANL</span><span class="readout-label" lang="en" dir="ltr">ANALYTICS</span></dt><dd><b lang="en" dir="ltr">NONE</b><small>هیچ ردیاب یا تبلیغی</small></dd></div>
+              <div><dt><span class="readout-code" lang="en" dir="ltr">STO</span><span class="readout-label" lang="en" dir="ltr">STORAGE</span></dt><dd><b lang="en" dir="ltr">DEVICE</b><small>حافظهٔ خصوصی اپ</small></dd></div>
+              <div><dt><span class="readout-code" lang="en" dir="ltr">IMG</span><span class="readout-label" lang="en" dir="ltr">PHOTOS</span></dt><dd><b lang="en" dir="ltr">EXIF / STRIPPED</b><small>بدون متادیتای مکان</small></dd></div>
+              <div><dt><span class="readout-code" lang="en" dir="ltr">BAK</span><span class="readout-label" lang="en" dir="ltr">BACKUP</span></dt><dd><b lang="en" dir="ltr">JSON</b><small>خروجی و ورودی اعتبارسنجی‌شده</small></dd></div>
+            </dl>
+            <p class="readout-foot micro" lang="en" dir="ltr">NO CLOUD · NO ACCOUNT · NO TRACKING</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section download" id="download" aria-labelledby="download-title">
+      <div class="wrap">
+        <div class="download-head">
+          <div class="sec-kicker reveal" data-reveal>
+            <span class="sec-index" lang="en" dir="ltr">05</span>
+            <span class="micro" lang="en" dir="ltr">GET THE APP / ANDROID</span>
+          </div>
+          <h2 class="download-title reveal" id="download-title" data-reveal>برو سر تمرین.</h2>
+          <p class="sec-lead reveal" data-reveal>نسخهٔ ۰.۲.۱ آماده است. دانلود مستقیم و رایگان از GitHub، بدون فروشگاه، بدون حساب. فایل و checksum را از همان ریلیز بردار.</p>
+        </div>
+
+        <div class="download-panel reveal" data-reveal>
+          <div class="download-top">
+            <div class="download-id">
+              <img src="assets/img/brand/app-icon-512.png" width="512" height="512" alt="" class="download-icon">
+              <div>
+                <span class="micro" lang="en" dir="ltr">GYM LOG / RELEASE</span>
+                <span class="download-version" lang="en" dir="ltr">0.2.1 <small>STABLE</small></span>
+              </div>
+            </div>
+            <span class="micro micro--dim" lang="en" dir="ltr">BUILD 003 · 2026-10-28</span>
+          </div>
+
+          <a class="download-cta" href="https://github.com/imdanialrashidi/gym-log/releases/download/v0.2.1/gym-log-v0.2.1.apk">
+            <span class="download-cta-text">
+              <span class="micro" lang="en" dir="ltr">DIRECT DOWNLOAD / APK</span>
+              <span class="download-cta-title">دریافت Gym Log <span aria-hidden="true">↓</span></span>
+              <span class="download-cta-meta"><span class="download-cta-file" lang="en" dir="ltr">gym-log-v0.2.1.apk</span><span aria-hidden="true">·</span><span>۶۱٫۳ مگابایت</span><span aria-hidden="true">·</span><span>اندروید ۷ و بالاتر</span></span>
+            </span>
+            <span class="download-cta-icon" aria-hidden="true"><svg class="icon"><use href="#i-down"/></svg></span>
+          </a>
+
+          <div class="download-specs">
+            <div><span class="micro" lang="en" dir="ltr">VERSION</span><b lang="en" dir="ltr">0.2.1</b></div>
+            <div><span class="micro" lang="en" dir="ltr">BUILD</span><b lang="en" dir="ltr">003</b></div>
+            <div><span class="micro" lang="en" dir="ltr">ANDROID</span><b>۷ و بالاتر</b></div>
+            <div><span class="micro" lang="en" dir="ltr">SIZE</span><b>۶۱٫۳ مگابایت</b></div>
+            <div><span class="micro" lang="en" dir="ltr">LICENSE</span><b lang="en" dir="ltr">MIT</b></div>
+            <div><span class="micro" lang="en" dir="ltr">RELEASED</span><b>۶ آبان ۱۴۰۵</b></div>
+          </div>
+
+          <div class="checksum">
+            <div class="checksum-head">
+              <span class="micro" lang="en" dir="ltr">SHA-256 / VERIFY AFTER DOWNLOAD</span>
+              <button class="copy-btn" type="button" data-copy="c233692d3bb5225449d369c31841f33559e163a6c326092e0586406fc6693bf5">
+                <svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>
+                <span data-copy-label>کپی</span>
+              </button>
+            </div>
+            <code class="checksum-value" dir="ltr">c233692d3bb5225449d369c31841f33559e163a6c326092e0586406fc6693bf5</code>
+            <p class="checksum-hint">فایل <a href="https://github.com/imdanialrashidi/gym-log/releases/download/v0.2.1/gym-log-v0.2.1.apk.sha256" target="_blank" rel="noopener noreferrer">.sha256</a> را هم می‌توانی مستقیم از ریلیز بگیری.</p>
+          </div>
+
+          <div class="download-foot">
+            <p><span class="status-square" aria-hidden="true"></span> نصب مستقیم از GitHub؛ پیش از نصب، اجازهٔ نصب از این منبع را در اندروید فعال کن.</p>
+            <div class="download-links">
+              <a class="text-link" href="https://github.com/imdanialrashidi/gym-log/releases/tag/v0.2.1" target="_blank" rel="noopener noreferrer">صفحهٔ ریلیز <svg class="icon" aria-hidden="true"><use href="#i-up-right"/></svg></a>
+              <a class="text-link" href="https://github.com/imdanialrashidi/gym-log/releases" target="_blank" rel="noopener noreferrer">همهٔ نسخه‌ها <svg class="icon" aria-hidden="true"><use href="#i-up-right"/></svg></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq" aria-labelledby="faq-title">
+      <div class="wrap faq-wrap">
+        <div class="faq-head">
+          <div class="sec-kicker reveal" data-reveal>
+            <span class="sec-index" lang="en" dir="ltr">06</span>
+            <span class="micro" lang="en" dir="ltr">NOTES / FAQ</span>
+          </div>
+          <h2 class="sec-title sec-title--sm reveal" id="faq-title" data-reveal>چند نکتهٔ کوتاه.</h2>
+          <p class="sec-lead reveal" data-reveal>چیزهایی که قبل از نصب خوب است بدانی. اگر جوابت اینجا نبود، <a href="https://github.com/imdanialrashidi/gym-log/issues" target="_blank" rel="noopener noreferrer">در GitHub Issue بپرس</a>.</p>
+        </div>
+
+        <div class="faq-list">
+          <details class="faq-item reveal" data-reveal>
+            <summary><span class="faq-idx" lang="en" dir="ltr">01</span><span>بدون حساب کاربری چطور کار می‌کند؟</span><span class="faq-toggle" aria-hidden="true"></span></summary>
+            <div class="faq-body"><p>همه‌چیز روی همان گوشی ذخیره می‌شود. هیچ ثبت‌نام، ایمیل یا حسابی وجود ندارد؛ اپ را باز می‌کنی، برنامه می‌سازی و تمرین را ثبت می‌کنی. حذف اپ یعنی حذف داده‌های داخل آن، پس اگر می‌خواهی بکاپ داشته باشی، از خروجی JSON استفاده کن.</p></div>
+          </details>
+          <details class="faq-item reveal" data-reveal id="faq-backup">
+            <summary><span class="faq-idx" lang="en" dir="ltr">02</span><span>داده‌هایم کجا هستند و چطور بکاپ بگیرم؟</span><span class="faq-toggle" aria-hidden="true"></span></summary>
+            <div class="faq-body"><p>در حافظهٔ خصوصی اپ روی گوشی. از تنظیمات، خروجی JSON بگیر؛ همان فایل برای انتقال به گوشی تازه یا بازیابی به کار می‌آید. ورودی‌ها قبل از نوشتن اعتبارسنجی می‌شوند و عکس‌ها در بکاپ JSON قرار نمی‌گیرند.</p></div>
+          </details>
+          <details class="faq-item reveal" data-reveal>
+            <summary><span class="faq-idx" lang="en" dir="ltr">03</span><span>آیا بدون اینترنت کار می‌کند؟</span><span class="faq-toggle" aria-hidden="true"></span></summary>
+            <div class="faq-body"><p>بله. کل اپ آفلاین است و نسخهٔ انتشار مجوز اینترنت ندارد. فقط برای دانلود یا به‌روزرسانی همین صفحه به اینترنت نیاز داری؛ استفادهٔ روزمره به شبکه وابسته نیست.</p></div>
+          </details>
+          <details class="faq-item reveal" data-reveal>
+            <summary><span class="faq-idx" lang="en" dir="ltr">04</span><span>چرا در Google Play نیست و نصبش امن است؟</span><span class="faq-toggle" aria-hidden="true"></span></summary>
+            <div class="faq-body"><p>توزیع مستقیم از GitHub، بدون وابستگی به فروشگاه و بدون حساب. هر نسخه از ریلیز رسمی همین مخزن می‌آید و یک فایل SHA-256 کنارش منتشر می‌شود تا فایل دانلودشده را بررسی کنی. اندروید برای نصب APK بیرون از فروشگاه، اجازهٔ نصب از این منبع را از تو می‌خواهد.</p></div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <div class="foot-main">
+        <div class="foot-brand">
+          <a class="brand" href="#top" aria-label="Gym Log — بازگشت به بالا">
+            <img class="brand-mark" src="assets/img/brand/mark-256.png" width="128" height="128" alt="">
+            <span class="brand-type">
+              <span class="brand-name" lang="en" dir="ltr">GYM LOG</span>
+              <span class="brand-tag" lang="en" dir="ltr">YOUR TRAINING, MEASURED.</span>
+            </span>
+          </a>
+          <p>ژورنال تمرین بدنسازی، روی گوشی خودت. بدون حساب، بدون اینترنت، بدون حواس‌پرتی.</p>
+          <a class="back-top" href="#top">بازگشت به بالا <svg class="icon" aria-hidden="true"><use href="#i-top"/></svg></a>
+        </div>
+
+        <div class="foot-col">
+          <span class="micro" lang="en" dir="ltr">APP</span>
+          <a href="#download">دانلود</a>
+          <a href="https://github.com/imdanialrashidi/gym-log/releases" target="_blank" rel="noopener noreferrer">ریلیزها</a>
+          <a href="https://github.com/imdanialrashidi/gym-log/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">تغییرات</a>
+        </div>
+        <div class="foot-col">
+          <span class="micro" lang="en" dir="ltr">PROJECT</span>
+          <a href="https://github.com/imdanialrashidi/gym-log" target="_blank" rel="noopener noreferrer">کد منبع</a>
+          <a href="https://github.com/imdanialrashidi/gym-log/issues" target="_blank" rel="noopener noreferrer">گزارش مشکل</a>
+          <a href="https://github.com/imdanialrashidi/gym-log/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">مجوز MIT</a>
+        </div>
+        <div class="foot-col">
+          <span class="micro" lang="en" dir="ltr">AUTHOR</span>
+          <a href="https://danialrashidi.ir" target="_blank" rel="noopener noreferrer">danialrashidi.ir</a>
+          <a href="https://github.com/sponsors/imdanialrashidi" target="_blank" rel="noopener noreferrer">حمایت مالی</a>
+          <a href="https://github.com/imdanialrashidi" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </div>
+
+      <div class="foot-base">
+        <p lang="en" dir="ltr">© 2026 GYM LOG · MIT</p>
+        <p>این صفحه کوکی و آنالیتیکس ندارد. Gym Log یک دفتر تمرین است، نه توصیهٔ پزشکی.</p>
+        <p class="foot-coords" lang="en" dir="ltr">SYSTEM / READY <span class="status-square"></span></p>
+      </div>
+      <img class="foot-word" src="assets/img/brand/wordmark-white.webp" width="1600" height="272" alt="" aria-hidden="true" loading="lazy" decoding="async">
+    </div>
+  </footer>
+
+  <script src="assets/js/site.js" defer></script>
+</body>
+</html>

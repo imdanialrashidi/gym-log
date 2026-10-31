@@ -4,6 +4,8 @@ Local-first, offline Android workout log for logging weight, reps, RIR, and
 rep-range work. Flutter app, Persian-first RTL, English LTR, no account, no
 backend, no analytics, and no `INTERNET` permission in release builds.
 
+Landing page: <https://imdanialrashidi.github.io/gym-log/>
+
 Status: **M9 hardening and release engineering**. The four-tab shell, dark
 theme, fa/en localization, Vazirmatn font, pinned toolchain, CI guardrails,
 exercise library, program/day/plan-item planners, the Workout tab's
@@ -62,6 +64,7 @@ lib/app/          bootstrap, router, theme tokens, locale state
 lib/core/         localization, CalendarService, shared widgets and guards
 lib/features/     shell, workout (dashboard), body_weight, programs, history, progress, photos, settings
 packages/lift_core/  pure Dart domain package (guard-enforced)
+site/             static GitHub Pages landing page
 test/             unit, widget, contrast, golden tests
 android/          pinned Flutter Android host and release guards
 tool/             guards and pinned toolchain metadata
